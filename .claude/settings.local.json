@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find . -type f -name *.py)",
+      "Bash(dir:*)",
+      "Bash(start:*)"
+    ]
+  }
+}

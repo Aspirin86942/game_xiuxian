@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=375, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>灵光修仙传</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <div class="game-container">
+            <!-- 角色状态区 -->
+            <div class="panel status-panel">
+                <h2 class="panel-title">道友信息</h2>
+                <div class="status-grid">
+                    <div class="status-row">
+                        <span class="label">道号：</span>
+                        <span class="value" id="player-name">无名散修</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="label">境界：</span>
+                        <span class="value" id="realm-display">炼气·前期</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="label">修为：</span>
+                        <span class="value" id="cultivation-display">0 / 100</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="label">突破概率：</span>
+                        <span class="value" id="breakthrough-rate">80%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 修炼区 -->
+            <div class="panel cultivation-panel">
+                <div class="floating-text-container" id="floating-container"></div>
+                <button class="main-button" id="main-btn">吐纳聚气</button>
+                <p class="hint-text" id="hint-text">点击按钮开始修炼</p>
+                <!-- 挂机系统 -->
+                <div class="auto-cultivate-section" id="auto-section" style="display: none;">
+                    <button class="auto-toggle-btn" id="auto-toggle-btn">
+                        <span class="toggle-icon">☯</span>
+                        <span class="toggle-text" id="auto-toggle-text">自动吐纳：关</span>
+                    </button>
+                    <p class="auto-status" id="auto-status-text">筑基期解锁自动修炼</p>
+                </div>
+            </div>
+
+            <!-- 奇遇日志区 -->
+            <div class="panel log-panel">
+                <h2 class="panel-title">修行日志</h2>
+                <div class="log-container" id="log-container"></div>
+            </div>
+
+            <!-- 操作区 -->
+            <div class="panel action-panel">
+                <button class="action-btn" id="reset-btn">重开</button>
+                <button class="action-btn" id="export-btn">导出</button>
+                <button class="action-btn" id="import-btn">导入</button>
+                <button class="action-btn" id="inventory-btn">储物袋</button>
+                <button class="action-btn" id="adventure-btn">游历</button>
+                <button class="action-btn" id="settings-btn">设置</button>
+            </div>
+
+            <!-- 战斗状态区 -->
+            <div class="panel combat-panel" id="combat-panel" style="display: none;">
+                <h2 class="panel-title">战斗</h2>
+                <div class="combat-status">
+                    <div class="combat-side">
+                        <span class="combat-name">玩家</span>
+                        <div class="hp-bar"><div class="hp-fill" id="player-hp-fill"></div></div>
+                        <span class="hp-text" id="player-hp-text">100/100</span>
+                    </div>
+                    <div class="combat-side">
+                        <span class="combat-name" id="monster-name">妖兽</span>
+                        <div class="hp-bar"><div class="hp-fill" id="monster-hp-fill"></div></div>
+                        <span class="hp-text" id="monster-hp-text">?/?</span>
+                    </div>
+                </div>
+                <div class="combat-log" id="combat-log"></div>
+            </div>
+
+            <!-- 剧情面板 -->
+            <div class="panel story-panel" id="story-panel" style="display: none;">
+                <h2 class="panel-title" id="story-title">剧情</h2>
+                <div class="story-content" id="story-content"></div>
+                <div class="story-actions" id="story-actions"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置面板 -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content settings-content">
+            <h3 class="settings-title">设置</h3>
+            <div class="settings-list">
+                <div class="setting-item">
+                    <span class="setting-label">音效</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="audio-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">音乐</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="music-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="inventory-actions">
+                <button class="btn-close" id="close-settings">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 储物袋面板 -->
+    <div class="modal" id="inventory-modal">
+        <div class="modal-content inventory-content">
+            <h3 class="inventory-title">储物袋</h3>
+            <div class="inventory-list" id="inventory-list"></div>
+            <div class="inventory-actions">
+                <button class="btn-close" id="close-inventory">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content">
+            <p>确定要重置修为吗？当前进度将丢失！</p>
+            <div class="modal-buttons">
+                <button class="btn-cancel" id="cancel-reset">取消</button>
+                <button class="btn-confirm" id="confirm-reset">确认重置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 剧情对话框 -->
+    <div class="modal" id="dialogue-modal">
+        <div class="modal-content dialogue-content">
+            <div class="dialogue-avatar" id="dialogue-avatar"></div>
+            <div class="dialogue-text" id="dialogue-text"></div>
+            <div class="dialogue-actions" id="dialogue-actions"></div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

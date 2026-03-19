@@ -2,151 +2,280 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=375, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>灵光修仙传</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-wrapper">
-        <div class="game-container">
-            <!-- 角色状态区 -->
-            <div class="panel status-panel">
-                <h2 class="panel-title">道友信息</h2>
-                <div class="status-grid">
-                    <div class="status-row">
-                        <span class="label">道号：</span>
-                        <span class="value" id="player-name">无名散修</span>
-                    </div>
-                    <div class="status-row">
-                        <span class="label">境界：</span>
-                        <span class="value" id="realm-display">炼气·前期</span>
-                    </div>
-                    <div class="status-row">
-                        <span class="label">修为：</span>
-                        <span class="value" id="cultivation-display">0 / 100</span>
-                    </div>
-                    <div class="status-row">
-                        <span class="label">突破概率：</span>
-                        <span class="value" id="breakthrough-rate">80%</span>
+    <div class="game-shell">
+        <div class="ink-orb ink-orb-left"></div>
+        <div class="ink-orb ink-orb-right"></div>
+
+        <main class="game-frame">
+            <header class="status-card">
+                <div class="status-overview">
+                    <div class="hero-mark">灵</div>
+                    <div class="status-copy">
+                        <p class="status-caption">凡尘之外，尚有一线天光</p>
+                        <h1 id="player-name">无名散修</h1>
+                        <p class="status-location" id="location-display">青牛镇</p>
                     </div>
                 </div>
-            </div>
-
-            <!-- 修炼区 -->
-            <div class="panel cultivation-panel">
-                <div class="floating-text-container" id="floating-container"></div>
-                <button class="main-button" id="main-btn">吐纳聚气</button>
-                <p class="hint-text" id="hint-text">点击按钮开始修炼</p>
-                <!-- 挂机系统 -->
-                <div class="auto-cultivate-section" id="auto-section" style="display: none;">
-                    <button class="auto-toggle-btn" id="auto-toggle-btn">
-                        <span class="toggle-icon">☯</span>
-                        <span class="toggle-text" id="auto-toggle-text">自动吐纳：关</span>
-                    </button>
-                    <p class="auto-status" id="auto-status-text">筑基期解锁自动修炼</p>
-                </div>
-            </div>
-
-            <!-- 奇遇日志区 -->
-            <div class="panel log-panel">
-                <h2 class="panel-title">修行日志</h2>
-                <div class="log-container" id="log-container"></div>
-            </div>
-
-            <!-- 操作区 -->
-            <div class="panel action-panel">
-                <button class="action-btn" id="reset-btn">重开</button>
-                <button class="action-btn" id="export-btn">导出</button>
-                <button class="action-btn" id="import-btn">导入</button>
-                <button class="action-btn" id="inventory-btn">储物袋</button>
-                <button class="action-btn" id="adventure-btn">游历</button>
-                <button class="action-btn" id="settings-btn">设置</button>
-            </div>
-
-            <!-- 战斗状态区 -->
-            <div class="panel combat-panel" id="combat-panel" style="display: none;">
-                <h2 class="panel-title">战斗</h2>
-                <div class="combat-status">
-                    <div class="combat-side">
-                        <span class="combat-name">玩家</span>
-                        <div class="hp-bar"><div class="hp-fill" id="player-hp-fill"></div></div>
-                        <span class="hp-text" id="player-hp-text">100/100</span>
+                <div class="status-metrics">
+                    <div class="metric-card">
+                        <span class="metric-label">境界</span>
+                        <strong class="metric-value" id="realm-display">炼气·初期</strong>
                     </div>
-                    <div class="combat-side">
-                        <span class="combat-name" id="monster-name">妖兽</span>
-                        <div class="hp-bar"><div class="hp-fill" id="monster-hp-fill"></div></div>
-                        <span class="hp-text" id="monster-hp-text">?/?</span>
+                    <div class="metric-card">
+                        <span class="metric-label">修为</span>
+                        <strong class="metric-value" id="cultivation-display">0 / 100</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">突破</span>
+                        <strong class="metric-value" id="breakthrough-rate">80%</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">路数</span>
+                        <strong class="metric-value" id="route-display">未定</strong>
                     </div>
                 </div>
-                <div class="combat-log" id="combat-log"></div>
-            </div>
+            </header>
 
-            <!-- 剧情面板 -->
-            <div class="panel story-panel" id="story-panel" style="display: none;">
-                <h2 class="panel-title" id="story-title">剧情</h2>
-                <div class="story-content" id="story-content"></div>
-                <div class="story-actions" id="story-actions"></div>
-            </div>
-        </div>
+            <section class="page-stack">
+                <section class="page active" data-page="cultivation">
+                    <article class="card cultivation-card">
+                        <div class="card-header">
+                            <div>
+                                <p class="eyebrow">静室</p>
+                                <h2>吐纳聚气</h2>
+                            </div>
+                            <button class="ghost-btn" id="toggle-log-btn" type="button">札记</button>
+                        </div>
+                        <div class="cultivation-stage">
+                            <div class="floating-text-container" id="floating-container"></div>
+                            <button class="main-button" id="main-btn" type="button">吐纳聚气</button>
+                            <p class="hint-text" id="hint-text">点击按钮开始修炼</p>
+                        </div>
+                        <div class="auto-panel" id="auto-panel">
+                            <div>
+                                <p class="mini-label">挂机吐纳</p>
+                                <p class="auto-status" id="auto-status-text">筑基期后解锁自动吐纳</p>
+                            </div>
+                            <button class="toggle-btn" id="auto-toggle-btn" type="button">
+                                <span class="toggle-dot"></span>
+                                <span id="auto-toggle-text">自动吐纳：关</span>
+                            </button>
+                        </div>
+                    </article>
+
+                    <article class="card route-card">
+                        <div class="card-header">
+                            <div>
+                                <p class="eyebrow">心迹</p>
+                                <h2>道心与因果</h2>
+                            </div>
+                        </div>
+                        <div class="route-summary" id="route-summary"></div>
+                    </article>
+
+                    <article class="card log-card" id="log-drawer-card">
+                        <div class="card-header">
+                            <div>
+                                <p class="eyebrow">札记</p>
+                                <h2>修行日志</h2>
+                            </div>
+                        </div>
+                        <div class="log-container" id="log-container"></div>
+                    </article>
+                </section>
+
+                <section class="page" data-page="story">
+                    <article class="card story-card">
+                        <div class="card-header">
+                            <div>
+                                <p class="eyebrow">主线</p>
+                                <h2 id="story-title">暂无新剧情</h2>
+                            </div>
+                            <span class="story-meta" id="story-meta">静候机缘</span>
+                        </div>
+                        <p class="story-summary" id="story-summary">剧情会随着修为、关系与抉择逐步展开。</p>
+
+                        <div class="story-reader" id="story-reader">
+                            <div class="story-speaker" id="story-speaker">旁白</div>
+                            <div class="story-line" id="story-line">前路未开。</div>
+                        </div>
+
+                        <div class="story-history" id="story-history"></div>
+
+                        <div class="story-controls">
+                            <button class="primary-btn" id="story-continue-btn" type="button">继续</button>
+                            <button class="ghost-btn" id="story-skip-btn" type="button">跳过本段</button>
+                        </div>
+
+                        <div class="story-choices" id="story-choices"></div>
+                    </article>
+
+                    <article class="card story-side-card">
+                        <div class="card-header">
+                            <div>
+                                <p class="eyebrow">回响</p>
+                                <h2>分支影响</h2>
+                            </div>
+                        </div>
+                        <div class="echo-list" id="echo-list"></div>
+                        <div class="next-goal" id="story-goal"></div>
+                    </article>
+                </section>
+
+                <section class="page" data-page="adventure">
+                    <article class="card location-card">
+                        <div class="card-header">
+                            <div>
+                                <p class="eyebrow">行旅</p>
+                                <h2 id="location-title">青牛镇</h2>
+                            </div>
+                            <button class="primary-btn compact" id="adventure-btn" type="button">出门游历</button>
+                        </div>
+                        <p class="location-desc" id="location-desc">边陲小镇，风里仍有炊烟味。</p>
+                        <div class="npc-list" id="location-npcs"></div>
+                    </article>
+
+                    <article class="card side-story-card">
+                        <div class="card-header">
+                            <div>
+                                <p class="eyebrow">支线</p>
+                                <h2>可触发事件</h2>
+                            </div>
+                        </div>
+                        <div class="side-story-list" id="side-story-list"></div>
+                    </article>
+
+                    <article class="card combat-note-card">
+                        <div class="card-header">
+                            <div>
+                                <p class="eyebrow">战备</p>
+                                <h2>战斗概况</h2>
+                            </div>
+                        </div>
+                        <div class="combat-preview" id="combat-preview">当前无战斗。</div>
+                    </article>
+                </section>
+            </section>
+
+            <nav class="bottom-nav">
+                <button class="nav-btn active" data-tab="cultivation" type="button">
+                    <span>修炼</span>
+                </button>
+                <button class="nav-btn" data-tab="story" type="button">
+                    <span>剧情</span>
+                    <span class="nav-badge" id="story-badge">新</span>
+                </button>
+                <button class="nav-btn" data-tab="adventure" type="button">
+                    <span>游历</span>
+                </button>
+                <button class="nav-btn" data-action="inventory" type="button">
+                    <span>储物</span>
+                </button>
+                <button class="nav-btn" data-action="settings" type="button">
+                    <span>设置</span>
+                </button>
+            </nav>
+        </main>
     </div>
 
-    <!-- 设置面板 -->
-    <div class="modal" id="settings-modal">
-        <div class="modal-content settings-content">
-            <h3 class="settings-title">设置</h3>
-            <div class="settings-list">
-                <div class="setting-item">
-                    <span class="setting-label">音效</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="audio-toggle" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <span class="setting-label">音乐</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="music-toggle" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-            <div class="inventory-actions">
-                <button class="btn-close" id="close-settings">关闭</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 储物袋面板 -->
     <div class="modal" id="inventory-modal">
-        <div class="modal-content inventory-content">
-            <h3 class="inventory-title">储物袋</h3>
+        <div class="modal-panel inventory-panel">
+            <div class="modal-header">
+                <div>
+                    <p class="eyebrow">储物袋</p>
+                    <h3>随身物品</h3>
+                </div>
+                <button class="icon-btn" id="close-inventory" type="button">×</button>
+            </div>
             <div class="inventory-list" id="inventory-list"></div>
-            <div class="inventory-actions">
-                <button class="btn-close" id="close-inventory">关闭</button>
+        </div>
+    </div>
+
+    <div class="modal" id="settings-modal">
+        <div class="modal-panel settings-panel">
+            <div class="modal-header">
+                <div>
+                    <p class="eyebrow">设置</p>
+                    <h3>行止与存档</h3>
+                </div>
+                <button class="icon-btn" id="close-settings" type="button">×</button>
+            </div>
+
+            <div class="settings-grid">
+                <label class="setting-row">
+                    <span>音效</span>
+                    <input id="audio-toggle" type="checkbox" checked>
+                </label>
+                <label class="setting-row">
+                    <span>音乐</span>
+                    <input id="music-toggle" type="checkbox" checked>
+                </label>
+            </div>
+
+            <div class="settings-actions">
+                <button class="ghost-btn" id="export-btn" type="button">导出存档</button>
+                <button class="ghost-btn" id="import-btn" type="button">导入存档</button>
+                <button class="danger-btn" id="reset-btn" type="button">重开</button>
             </div>
         </div>
     </div>
 
-    <!-- 确认对话框 -->
-    <div class="modal" id="confirm-modal">
-        <div class="modal-content">
-            <p>确定要重置修为吗？当前进度将丢失！</p>
-            <div class="modal-buttons">
-                <button class="btn-cancel" id="cancel-reset">取消</button>
-                <button class="btn-confirm" id="confirm-reset">确认重置</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 剧情对话框 -->
     <div class="modal" id="dialogue-modal">
-        <div class="modal-content dialogue-content">
-            <div class="dialogue-avatar" id="dialogue-avatar"></div>
+        <div class="modal-panel dialogue-panel">
+            <div class="modal-header">
+                <div>
+                    <p class="eyebrow">人物</p>
+                    <h3 id="dialogue-name">道友</h3>
+                </div>
+                <button class="icon-btn" id="close-dialogue" type="button">×</button>
+            </div>
+            <div class="dialogue-avatar" id="dialogue-avatar">人</div>
             <div class="dialogue-text" id="dialogue-text"></div>
-            <div class="dialogue-actions" id="dialogue-actions"></div>
         </div>
     </div>
 
+    <div class="modal" id="combat-modal">
+        <div class="modal-panel combat-panel">
+            <div class="modal-header">
+                <div>
+                    <p class="eyebrow">游历遭遇</p>
+                    <h3 id="combat-title">战斗</h3>
+                </div>
+            </div>
+            <div class="combat-bars">
+                <div class="combat-side">
+                    <span>你</span>
+                    <div class="hp-bar"><div class="hp-fill player" id="player-hp-fill"></div></div>
+                    <strong id="player-hp-text">100 / 100</strong>
+                </div>
+                <div class="combat-side">
+                    <span id="monster-name">妖兽</span>
+                    <div class="hp-bar"><div class="hp-fill enemy" id="monster-hp-fill"></div></div>
+                    <strong id="monster-hp-text">0 / 0</strong>
+                </div>
+            </div>
+            <div class="combat-log" id="combat-log"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="confirm-modal">
+        <div class="modal-panel confirm-panel">
+            <h3>确定重开？</h3>
+            <p>当前 v2 存档会被覆盖，角色、剧情与分支都会回到开局。</p>
+            <div class="confirm-actions">
+                <button class="ghost-btn" id="cancel-reset" type="button">取消</button>
+                <button class="danger-btn" id="confirm-reset" type="button">确认重开</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="story-data.js"></script>
+    <script src="game-core.js"></script>
     <script src="game.js"></script>
 </body>
 </html>

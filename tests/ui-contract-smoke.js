@@ -29,6 +29,7 @@ function testProfileAndStoryAnchors(indexHtml, gameJs, gameCoreJs, styleCss) {
     assert(!gameJs.includes('toggleProfileBtn'), 'game.js 不应再绑定顶部折叠按钮');
     assert(gameJs.includes('breakthroughInline'), 'game.js 应更新修炼区突破率文案');
     assert(gameJs.includes("elements.storyProgress.textContent"), 'game.js 应更新剧情页码文案');
+    assert(gameJs.includes('view.chapter.chapterLabel'), 'game.js 应优先使用 chapterLabel 显示插章标题');
     assert(gameJs.includes("'下一页'"), '剧情继续按钮应改为下一页');
     assert(gameJs.includes("'跳至抉择'"), '剧情跳过按钮应改为跳至抉择');
 

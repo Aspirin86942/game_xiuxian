@@ -281,7 +281,9 @@
         }
 
         const isLevelStory = view.source === 'level';
-        const sourceLabel = isLevelStory ? '小境界事件' : `第 ${view.chapter.id + 1} 章`;
+        const sourceLabel = isLevelStory
+            ? '小境界事件'
+            : view.chapter.chapterLabel || (typeof view.chapter.id === 'number' ? `第 ${view.chapter.id + 1} 章` : '主线章节');
         const realmLabel = isLevelStory ? ` · ${GameCore.getRealmLabel(gameState)}` : '';
         const totalPages = view.story.beats.length;
         const currentPage = Math.min(totalPages, gameState.storyCursor.beatIndex + 1);

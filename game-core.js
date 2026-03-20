@@ -519,6 +519,22 @@
         return null;
     }
 
+    function formatStoryLabel(story) {
+        if (!story) {
+            return '未知剧情';
+        }
+        if (story.source === 'level') {
+            return `小境界事件《${story.title}》`;
+        }
+        if (story.chapterLabel) {
+            return story.chapterLabel;
+        }
+        if (typeof story.id === 'number' && Number.isFinite(story.id)) {
+            return `第${story.id + 1}章《${story.title}》`;
+        }
+        return `《${story.title}》`;
+    }
+
     function ensureStoryCursor(state) {
         if (state.ending) {
             state.storyCursor = {
@@ -561,7 +577,7 @@
             }
             state.currentLocation = current.location || state.currentLocation;
             state.unreadStory = true;
-            const storyLabel = current.source === 'level' ? `小境界事件《${current.title}》` : `第${current.id + 1}章《${current.title}》`;
+            const storyLabel = formatStoryLabel(current);
             pushLog(state, `新剧情开启：${storyLabel}`, 'breakthrough');
         }
 
@@ -769,6 +785,14 @@
         ];
     }
 
+    function getMainStoryProgressValue(state) {
+        if (typeof state.storyProgress === 'number' && Number.isFinite(state.storyProgress)) {
+            return state.storyProgress;
+        }
+        const matched = String(state.storyProgress || '').match(/^(\d+)/);
+        return matched ? Number.parseInt(matched[1], 10) : 0;
+    }
+
     function getEchoes(state) {
         const echoes = [];
         if (state.flags.startPath === 'disciple') {
@@ -777,17 +801,62 @@
         if (state.flags.daoLvPromise) {
             echoes.push({ title: '墨府承诺', detail: '墨彩环记得你留过的话，凡俗人情仍在你的后路里。' });
         }
+        if (state.flags.mendedMoHouseDebt) {
+            echoes.push({ title: '墨府补账', detail: '你没有让“卷财离场”停在最后一步，而是回头把墨府那笔账补回了一截。' });
+        }
+        if (state.flags.tookQuhunByForce) {
+            echoes.push({ title: '强取曲魂', detail: '你是带着一层旧债把曲魂拖离墨府的，这让凡俗线始终带着一根刺。' });
+        }
         if (state.flags.savedNangong) {
             echoes.push({ title: '禁地救援', detail: '南宫婉对你的态度会持续影响中后期的对白与结局倾向。' });
         }
+        if (state.flags.lowProfileBanquet) {
+            echoes.push({ title: '燕堡观察', detail: '燕家堡那夜你没急着出手，很多人随后才记得起你这张很难被拖进别处的脸。' });
+        }
+        if (state.flags.builtBanquetNetwork) {
+            echoes.push({ title: '宴席人脉', detail: '你在那座大家族的筵席里借酒搭线，越往后节奏越像你早就记得别人什么时候要翻脸。' });
+        }
+        if (state.flags.enteredLihuayuanLineage) {
+            echoes.push({ title: '门墙在身', detail: '你接过李化元的令牌之后，师门不再只是屋檐，而成了会向你索取责任的一层身份。' });
+        }
+        if (state.flags.usedLihuayuanInfluencePragmatically) {
+            echoes.push({ title: '借势留痕', detail: '你借了李化元一脉的势，也让“是否把自己真正交给某个秩序”成了后面甩不开的问题。' });
+        }
+        if (state.flags.helpedOldFriendAgain) {
+            echoes.push({ title: '旧友照面', detail: '厉飞雨重新把你拉回那个还会被人先问“活着没有”的自己，这条线会一直提醒你别把凡人来路忘净。' });
+        }
+        if (state.flags.keptDistanceFromOldFriend) {
+            echoes.push({ title: '旧情隔席', detail: '你连旧友也停在半步之外，这让后面很多“凡心未死”的回响都更显得艰难。' });
+        }
         if (state.flags.warChoice === 'demonic') {
             echoes.push({ title: '魔道投影', detail: '大战中的站位改变了你之后看待力量和代价的方式。' });
+        }
+        if (state.flags.openlyAcknowledgedNangongImportance) {
+            echoes.push({ title: '并肩已认', detail: '你终于承认南宫婉的重要，往后许多终局判断都会把这看成你肯认人的一次。' });
+        }
+        if (state.flags.avoidedNangongAgain) {
+            echoes.push({ title: '再度回避', detail: '你又一次把真正重要的话转开了，这会让“最冷的路”在后面显得更像惯性。' });
+        }
+        if (state.flags.mineChoice === 'rearGuard') {
+            echoes.push({ title: '回身殿后', detail: '你在矿脉里回头接应过殿后同门，这件事会让旧宗门线在后期继续记得你。' });
+        }
+        if (state.flags.mineChoice === 'betrayGate') {
+            echoes.push({ title: '矿门之叛', detail: '矿门开启那一刻，你和旧宗门之间的线就已经改了颜色。' });
         }
         if (state.flags.returnedToSeclusion) {
             echoes.push({ title: '藏锋之心', detail: '你开始主动回避公开的胜负，更在意“活着留下选择”。' });
         }
         if (state.flags.hasSecretInfo) {
             echoes.push({ title: '暗线消息', detail: '太南山换来的消息没有白费，它让你在宗门和海路两条线里都更懂得留后手。' });
+        }
+        if (state.flags.starSeaStyle === 'hunter' || state.flags.starSeaHunterStart) {
+            echoes.push({ title: '猎妖名声', detail: '你在星海先把猎妖当活法，把战绩写在水面上，让陌生人知道你敢第一个站出来。' });
+        }
+        if (state.flags.starSeaStyle === 'merchant' || state.flags.starSeaTraderStart) {
+            echoes.push({ title: '商路摸索', detail: '你先把商路、契约与分配摸透，很多后来者都记得你曾比他们更早看清钱味。' });
+        }
+        if (state.flags.starSeaStyle === 'secluded' || state.flags.starSeaSecludedStart) {
+            echoes.push({ title: '隐海沉潜', detail: '你在星海先藏得更深，让别人误以为你碰不到，可直到需要退路，没几个人能撕开这层静。' });
         }
         if (state.flags.learnsSecretively) {
             echoes.push({ title: '秘学旁听', detail: '你没有正面拜师，却依旧摸到李化元一脉的门道，这条线会一直影响你看待师门与自由。' });
@@ -804,8 +873,44 @@
         if (state.flags.hasXuTianTu) {
             echoes.push({ title: '残图在手', detail: '虚天残图不只是机缘，更让你持续暴露在更大的觊觎与算计里。' });
         }
+        if (state.flags.grabbedTreasure) {
+            echoes.push({ title: '先手夺宝', detail: '你在虚天殿那次一出手便压住局面，这让后来者再也猜不到你下一步会怎么出手。' });
+        }
+        if (state.flags.watchedXuTianFight) {
+            echoes.push({ title: '虚天旁观', detail: '你选择坐山观虎斗，很多人最后反而在你身上看出是不是在等那个叫你决定的瞬间。' });
+        }
+        if (state.flags.secondHandBroker) {
+            echoes.push({ title: '二手情报', detail: '你把虚天动线转卖出去后，认识到危险只是换了主人，这让你之后看待机缘更现实。' });
+        }
+        if (state.flags.rescuedFromXuTianEdge) {
+            echoes.push({ title: '退路兼顾', detail: '从裂隙边把人拉回来的那次，让你在别人眼里变成既能救人又不忘自己底线的那类人。' });
+        }
+        if (state.flags.slippedPastXuTian) {
+            echoes.push({ title: '悄然退场', detail: '你那次趁乱绕殿而走，留下的是“他或许还没彻底离场”的影子。' });
+        }
+        if (state.flags.soldFragmentMapForResources) {
+            echoes.push({ title: '卖图留影', detail: '你把残图换成了资源，却也记住了“危险只是换了主人”这回事，后面看待机缘会更现实。' });
+        }
+        if (state.flags.avoidedVoidHeavenCoreConflict) {
+            echoes.push({ title: '避局知重', detail: '你主动避开了虚天核心杀局，这条苟修线会让你在大机缘面前更习惯先算活路。' });
+        }
+        if (state.flags.madeAmendsToMocaihuan) {
+            echoes.push({ title: '墨府回身', detail: '你不再只把墨彩环那一线留给“以后再补”，这会让旧账与凡心在终局前多出一层实感。' });
+        }
+        if (state.flags.admittedOldWrongToMocaihuan) {
+            echoes.push({ title: '旧错已认', detail: '你承认过墨府那笔旧错，这会让后面的“债是否算清”不再只是冷冰冰的二选一。' });
+        }
         if (state.flags.acceptedNangongPath) {
             echoes.push({ title: '同路之约', detail: '你没有回避南宫婉那条线，所以终局之前很多话都不会再只停在心里。' });
+        }
+        if (state.flags.returnedToMoHouse) {
+            echoes.push({ title: '旧约回身', detail: '你在终局前重新回到嘉元城，把当年留下的话真正补成了一条线。' });
+        }
+        if (state.flags.answeredLiSummons) {
+            echoes.push({ title: '门墙回首', detail: '李化元线不再只是评价高低，而是被你亲手回收到终局之前。' });
+        }
+        if (state.flags.ascendedWithNangong) {
+            echoes.push({ title: '并肩飞升', detail: '血色禁地埋下的那条线，最后被你们一起带过了界壁。' });
         }
         if (echoes.length === 0) {
             echoes.push({ title: '尚在起势', detail: '关键选择还不够多，继续推进剧情会看到更明显的回响。' });
@@ -814,33 +919,91 @@
     }
 
     function getAvailableSideStories(state) {
+        const storyProgress = getMainStoryProgressValue(state);
         const stories = [];
-        if (state.storyProgress >= 8 && (state.npcRelations['墨彩环'] || 0) >= 40) {
+        if (storyProgress >= 8 && (state.npcRelations['墨彩环'] || 0) >= 40) {
             stories.push({ title: '墨府回信', detail: '墨彩环仍会给你留门，凡俗线不会就此断掉。', npc: '墨彩环' });
+        }
+        if (storyProgress >= 9 && state.flags.tookTreasure) {
+            stories.push({ title: '墨府债目', detail: '你从墨府卷走的那部分东西没有被忘掉，这条账目之后还会回来找你。', npc: '墨彩环' });
+        }
+        if (state.flags.mendedMoHouseDebt) {
+            stories.push({ title: '嘉元补账', detail: '你已经把墨府那笔旧债补回了一截，后面仍有机会把凡俗线续成真正的回身。', npc: '墨彩环' });
+        }
+        if (state.flags.madeAmendsToMocaihuan || state.flags.admittedOldWrongToMocaihuan) {
+            stories.push({ title: '彩环来信', detail: '墨彩环这一线已经不再只是旧宅背景，而是你是否真肯回头认错与补账的试金石。', npc: '墨彩环' });
         }
         if (state.flags.hasQuhun) {
             stories.push({ title: '曲魂守门', detail: '曲魂偶尔会提醒你哪些地方不该正面冲进去。', npc: '曲魂' });
         }
-        if (state.storyProgress >= 14 && getInventoryCount(state, 'zhujidanMaterial') > 0) {
+        if (state.flags.lowProfileBanquet) {
+            stories.push({ title: '燕堡余音', detail: '那晚你没在宴席上急着出手，后来者常说“他不会随便被拖进别人的节奏里”。', npc: '燕家堡' });
+        }
+        if (state.flags.builtBanquetNetwork) {
+            stories.push({ title: '宴席人脉', detail: '你在燕家堡的席上顺势结线，这条“别人记得你订的那手酒”会继续帮你找人。', npc: '燕家堡' });
+        }
+        if (storyProgress >= 14 && getInventoryCount(state, 'zhujidanMaterial') > 0) {
             stories.push({ title: '炼筑基丹', detail: '你已经攒出主药，后续突破会更稳。' });
         }
-        if (state.storyProgress >= 21 && state.flags.starSeaStyle === 'merchant') {
+        if ((state.flags.savedNangong || state.flags.acceptedNangongHelp) && (state.npcRelations['南宫婉'] || 0) >= 60) {
+            stories.push({ title: '掩月来信', detail: '南宫婉这条线已经不只是回响，她会在中后段继续主动把话递到你面前。', npc: '南宫婉' });
+        }
+        if (state.flags.openlyAcknowledgedNangongImportance || state.flags.continuedToOweNangongSilently) {
+            stories.push({ title: '并肩余波', detail: '南宫婉已经不只是禁地旧人，你们之间开始留下会直接影响终局的那类话。', npc: '南宫婉' });
+        }
+        if (storyProgress >= 21 && state.flags.starSeaStyle === 'merchant') {
             stories.push({ title: '海路消息', detail: '商路会让你更早知道风险，也更早闻到钱味。', npc: '万小山' });
         }
         if (state.flags.hasSecretInfo) {
             stories.push({ title: '黑市暗桩', detail: '太南山那条暗线仍然有用，后面可以继续借它探路或换资源。', npc: '万小山' });
         }
-        if (state.flags.madeGardenConnections) {
+        if (state.flags.starSeaStyle === 'hunter') {
+            stories.push({ title: '猎妖比拼', detail: '星海口碑里，你早就被记住是先端上去那类人，今后再有人找你组队就多了点分量。', npc: '万小山' });
+        }
+        if (state.flags.starSeaStyle === 'secluded') {
+            stories.push({ title: '隐海传闻', detail: '许多人只记得你在海边消失的模样，这让你在关键时刻多出些“我其实不想搅局”的缓冲。', npc: '万小山' });
+        }
+       if (state.flags.madeGardenConnections) {
             stories.push({ title: '药园旧友', detail: '你在黄枫谷药园留过人情，药材与传话会更快朝你靠拢。', npc: '李化元' });
         }
         if (state.flags.learnsSecretively) {
             stories.push({ title: '秘法旁注', detail: '你不在名分上拜入门墙，却还是接住了李化元留下的另一层指点。', npc: '李化元' });
         }
+        if (state.flags.liDisciple || state.flags.answeredLiSummons) {
+            stories.push({ title: '门墙旧帖', detail: '李化元这一线已经从“是否拜师”走到“是否回头把门墙旧账说清”。', npc: '李化元' });
+        }
+        if (state.flags.enteredLihuayuanLineage || state.flags.respectedLihuayuanButStayedIndependent || state.flags.usedLihuayuanInfluencePragmatically) {
+            stories.push({ title: '门内眼色', detail: '李化元给你的不只是术法，还是一份“宗门会怎样把人放进局里”的权力教育。', npc: '李化元' });
+        }
+        if (state.flags.helpedOldFriendAgain || state.flags.reconnectedWithLiFeiyu) {
+            stories.push({ title: '旧友酒痕', detail: '厉飞雨这条线不讲大道，只提醒你别把自己一路活成连旧来路都认不出的样子。', npc: '厉飞雨' });
+        }
         if (state.flags.cooperatedAtXuTian) {
             stories.push({ title: '虚天旧盟', detail: '虚天殿的合作没有散场，后续还能继续用这份信任换一条路。', npc: '南宫婉' });
         }
+        if (state.flags.enteredVoidHeavenMapGame || state.flags.soldFragmentMapForResources || state.flags.avoidedVoidHeavenCoreConflict) {
+            stories.push({ title: '虚天余波', detail: '你对残图的处理方式已经定下。后面面对大机缘时，争、卖、避的底色都会更明显。', npc: '万小山' });
+        }
         if (state.flags.acceptedNangongPath) {
             stories.push({ title: '婉约来信', detail: '你既然没有退开，南宫婉的回应也会越来越直接。', npc: '南宫婉' });
+        }
+        if (state.flags.grabbedTreasure) {
+            stories.push({ title: '先手留痕', detail: '那次带着残图冲进虚天殿让你成了别人眼里先动手的那类人，很多局从此先看你表情。', npc: '南宫婉' });
+        }
+        if (state.flags.watchedXuTianFight) {
+            stories.push({ title: '虚天旁观', detail: '你在殿前没有急着表态，活下来的人却都记得你最擅长等别人先露底。', npc: '南宫婉' });
+        }
+        if (state.flags.secondHandBroker) {
+            stories.push({ title: '虚天转手', detail: '你把虚天动线再卖一手之后，很多人都把你当成那类连风暴都能拿来做买卖的人。', npc: '万小山' });
+        }
+        if (state.flags.rescuedFromXuTianEdge) {
+            stories.push({ title: '裂隙救援', detail: '你在那条裂隙救人出入之后，很多人开始想着你是否会在关键时刻把人挺出来。', npc: '南宫婉' });
+        }
+        if (state.flags.slippedPastXuTian) {
+            stories.push({ title: '暗线退场', detail: '你那次绕殿而走，把“别人在乎你没出现”的故事留给了虚天殿。', npc: '南宫婉' });
+        }
+        if (state.flags.returnedToMoHouse) {
+            stories.push({ title: '旧约已续', detail: '嘉元城的那句承诺终于被你重新接上，凡俗线不再只是背景。', npc: '墨彩环' });
         }
         if (stories.length === 0) {
             stories.push({ title: '暂无显性支线', detail: '继续修炼或推进主线后，会解锁新的旁支回响。' });

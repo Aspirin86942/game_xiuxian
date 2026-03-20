@@ -86,6 +86,75 @@ function runMainPath(choiceMap) {
     return state;
 }
 
+function runUntilChapter(choiceMap, targetChapterId) {
+    const state = GameCore.createInitialState();
+    GameCore.ensureStoryCursor(state);
+
+    while (!state.ending) {
+        satisfyMainChapter(state);
+        const view = playToChoices(state);
+        if (view.source === 'level') {
+            const fallbackChoice = view.choices.find((item) => !item.disabled) || view.choices[0];
+            topUpCosts(state, fallbackChoice);
+            const levelResult = GameCore.chooseStoryOption(state, fallbackChoice.id);
+            assert(levelResult.ok, `小境界事件 ${view.chapter.id} 中途阻塞: ${levelResult.error || 'unknown'}`);
+            continue;
+        }
+
+        if (view.chapter.id === targetChapterId) {
+            return { state, view };
+        }
+
+        const choiceId = choiceMap[view.chapter.id];
+        assert(choiceId, `缺少第 ${view.chapter.id} 章选择映射`);
+        const selectedChoice = view.choices.find((item) => item.id === choiceId);
+        topUpCosts(state, selectedChoice);
+        const result = GameCore.chooseStoryOption(state, choiceId);
+        assert(result.ok, `第 ${view.chapter.id} 章选择失败: ${result.error || 'unknown'}`);
+    }
+
+    throw new Error(`未能推进到第 ${targetChapterId} 章`);
+}
+
+function createChapterState(chapterId, configure) {
+    const state = GameCore.createInitialState();
+    state.storyProgress = chapterId;
+    GameCore.LEVEL_STORY_EVENTS.forEach((event) => {
+        state.levelStoryState.events[event.id] = { triggered: true, completed: true };
+    });
+    state.storyCursor = {
+        source: 'main',
+        storyId: null,
+        chapterId: null,
+        beatIndex: 0,
+        mode: 'idle',
+    };
+    if (configure) {
+        configure(state);
+    }
+    satisfyMainChapter(state);
+    GameCore.ensureStoryCursor(state);
+    GameCore.recalculateState(state, false);
+    return state;
+}
+
+function getChapterChoiceView(chapterId, configure) {
+    const state = createChapterState(chapterId, configure);
+    const view = playToChoices(state);
+    assert.strictEqual(view.chapter.id, chapterId);
+    return { state, view };
+}
+
+function withInsertedChoices(choiceMap, overrides) {
+    return {
+        ...choiceMap,
+        '16_feiyu_return': 'share_drink_and_part',
+        '18_nangong_return': 'owe_nangong_silently',
+        '23_mocaihuan_return': 'admit_old_wrong',
+        ...(overrides || {}),
+    };
+}
+
 function testStoryCursorSwitching() {
     const state = GameCore.createInitialState();
     const view = GameCore.getStoryView(state);
@@ -107,7 +176,7 @@ function testStoryCursorSwitching() {
 }
 
 function testMainPathIntegrity() {
-    const state = runMainPath({
+    const state = runMainPath(withInsertedChoices({
         0: 'set_out_now',
         1: 'keep_low_profile',
         2: 'become_disciple',
@@ -123,7 +192,7 @@ function testMainPathIntegrity() {
         12: 'build_connections',
         13: 'go_team',
         14: 'save_nangong',
-        15: 'accept_nangong',
+        15: 'accept_nangong_debt',
         16: 'become_li_disciple',
         17: 'show_strength_banquet',
         18: 'fight_for_sect',
@@ -132,16 +201,47 @@ function testMainPathIntegrity() {
         21: 'hunt_monsters',
         22: 'collect_map',
         23: 'cooperate_allies',
-        24: 'accept_nangong_path',
-        25: 'ending_ascend',
-    });
+        24: 'returned_tiannan_for_bonds',
+        25: 'lingjie_xianzun',
+    }, {
+        '16_feiyu_return': 'help_feiyu_again',
+        '18_nangong_return': 'acknowledge_nangong_importance',
+        '23_mocaihuan_return': 'support_mocaihuan_longterm',
+    }));
 
-    assert.strictEqual(state.ending.id, 'ascend');
+    assert.strictEqual(state.ending.id, 'lingjie_xianzun');
     assert(state.routeScores.orthodox > state.routeScores.demonic);
-    assert((state.npcRelations['南宫婉'] || 0) >= 100);
+    assert((state.npcRelations['南宫婉'] || 0) >= 90);
     const endingView = GameCore.getStoryView(state);
     assert.strictEqual(endingView.source, 'ending');
     assert.strictEqual(endingView.mode, 'ending');
+}
+
+function testMoHouseTreasurePathNoDeadlock() {
+    const { state, view } = runUntilChapter({
+        0: 'set_out_now',
+        1: 'show_drive',
+        2: 'become_disciple',
+        3: 'warn_li',
+        4: 'confront_early',
+        5: 'keep_bottle',
+        6: 'strike_first',
+        7: 'burn_letter',
+        8: 'take_treasure_leave',
+    }, 9);
+
+    assert.strictEqual(view.source, 'main');
+    assert.strictEqual(view.chapter.id, 9);
+    const choiceIds = view.choices.map((item) => item.id);
+    assert(choiceIds.includes('take_quhun'));
+    assert(choiceIds.includes('buy_back_trust'));
+
+    const trustChoice = view.choices.find((item) => item.id === 'buy_back_trust');
+    topUpCosts(state, trustChoice);
+    const result = GameCore.chooseStoryOption(state, trustChoice.id);
+    assert.strictEqual(result.ok, true);
+    assert((state.npcRelations['墨彩环'] || 0) >= 20);
+    assert.strictEqual(state.storyProgress, 10);
 }
 
 function testLevelEventCoverage() {
@@ -149,9 +249,8 @@ function testLevelEventCoverage() {
 
     GameCore.LEVEL_STORY_EVENTS.forEach((event) => {
         const state = GameCore.createInitialState();
-        // 选一个会被主线门槛挡住的位置，避免主线章节优先级压过 level 事件。
-        state.storyProgress = 9;
-        state.npcRelations['墨彩环'] = 0;
+        // 让 storyProgress 指向空章节，避免主线章节优先级压过 level 事件。
+        state.storyProgress = 999;
         GameCore.setRealmScore(state, event.realmScore);
         GameCore.ensureStoryCursor(state);
 
@@ -176,7 +275,7 @@ function testLevelEventCoverage() {
         const costlyChoice = finishedView.choices.find((item) => item.costs);
         if (costlyChoice) {
             const costCheckState = GameCore.createInitialState();
-            costCheckState.storyProgress = 9;
+            costCheckState.storyProgress = 999;
             GameCore.setRealmScore(costCheckState, event.realmScore);
             GameCore.ensureStoryCursor(costCheckState);
             const costView = playToChoices(costCheckState);
@@ -205,7 +304,7 @@ function testBreakthroughQueuesLevelStory() {
 
 function testMissedLevelStoryCanRecover() {
     const state = GameCore.createInitialState();
-    state.storyProgress = 9;
+    state.storyProgress = 999;
     GameCore.setRealmScore(state, 6);
     ['qi_0', 'qi_1', 'qi_2', 'ji_3', 'ji_4'].forEach((eventId) => {
         state.levelStoryState.events[eventId] = { triggered: true, completed: true };
@@ -246,7 +345,7 @@ function testProfileCollapseSaveCompatibility() {
 
 function testResourceValidation() {
     const state = GameCore.createInitialState();
-    state.storyProgress = 9;
+    state.storyProgress = 999;
     GameCore.setRealmScore(state, 5);
     GameCore.ensureStoryCursor(state);
 
@@ -260,6 +359,587 @@ function testResourceValidation() {
     assert.strictEqual(result.ok, false);
     assert.strictEqual(state.inventory.lingshi || 0, 0);
     assertNoNegativeInventory(state);
+}
+
+function testMineChoicesBecomeRouteSpecific() {
+    const orthodoxView = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'keep_low_profile',
+        2: 'become_disciple',
+        3: 'save_li',
+        4: 'collect_evidence',
+        5: 'keep_bottle',
+        6: 'bait_and_counter',
+        7: 'keep_letter',
+        8: 'protect_mo_house',
+        9: 'repair_quhun',
+        10: 'watch_market',
+        11: 'join_yellow_maple',
+        12: 'build_connections',
+        13: 'go_team',
+        14: 'save_nangong',
+        15: 'accept_nangong_debt',
+        16: 'become_li_disciple',
+        17: 'show_strength_banquet',
+        18: 'fight_for_sect',
+    }, {
+        '16_feiyu_return': 'help_feiyu_again',
+        '18_nangong_return': 'acknowledge_nangong_importance',
+    }), 19).view;
+
+    const demonicView = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'show_drive',
+        2: 'become_disciple',
+        3: 'warn_li',
+        4: 'confront_early',
+        5: 'keep_bottle',
+        6: 'strike_first',
+        7: 'burn_letter',
+        8: 'take_treasure_leave',
+        9: 'take_quhun',
+        10: 'watch_market',
+        11: 'sell_token',
+        12: 'push_growth',
+        13: 'go_solo',
+        14: 'kill_for_gain',
+        15: 'cut_nangong_ties',
+        16: 'learn_in_secret',
+        17: 'trade_favors_banquet',
+        18: 'defect_demonic',
+    }, {
+        '16_feiyu_return': 'distance_from_feiyu',
+        '18_nangong_return': 'avoid_nangong_again',
+    }), 19).view;
+
+    const orthodoxChoiceIds = orthodoxView.choices.map((item) => item.id);
+    const demonicChoiceIds = demonicView.choices.map((item) => item.id);
+
+    assert(orthodoxChoiceIds.includes('hold_the_line'));
+    assert(orthodoxChoiceIds.includes('rescue_rearguard'));
+    assert(!orthodoxChoiceIds.includes('open_mine_gate'));
+
+    assert(demonicChoiceIds.includes('open_mine_gate'));
+    assert(demonicChoiceIds.includes('harvest_chaos'));
+    assert(!demonicChoiceIds.includes('hold_the_line'));
+}
+
+function testChapter15ChoiceFlags() {
+    const starter = (state) => {
+        state.flags.savedNangong = true;
+        state.npcRelations['南宫婉'] = 80;
+    };
+    const openingView = getChapterChoiceView(15, starter).view;
+    const choiceIds = openingView.choices.map((item) => item.id);
+
+    assert.deepStrictEqual(choiceIds, [
+        'accept_nangong_debt',
+        'suppress_nangong_feelings',
+        'cut_nangong_ties',
+    ]);
+    assert(openingView.story.beats.length >= 8);
+
+    const acceptState = getChapterChoiceView(15, starter).state;
+    let result = GameCore.chooseStoryOption(acceptState, 'accept_nangong_debt');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(acceptState.flags.acceptedNangongDebt, true);
+    assert.strictEqual(acceptState.flags.acceptedNangongHelp, true);
+    assert.strictEqual(acceptState.flags.successfulFoundationEstablished, true);
+
+    const suppressState = getChapterChoiceView(15, starter).state;
+    result = GameCore.chooseStoryOption(suppressState, 'suppress_nangong_feelings');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(suppressState.flags.suppressedNangongFeelings, true);
+    assert.strictEqual(suppressState.flags.successfulFoundationEstablished, true);
+
+    const cutState = getChapterChoiceView(15, starter).state;
+    result = GameCore.chooseStoryOption(cutState, 'cut_nangong_ties');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(cutState.flags.cutNangongTies, true);
+    assert.strictEqual(cutState.flags.cutEmotion, true);
+    assert.strictEqual(cutState.flags.successfulFoundationEstablished, true);
+}
+
+function testChapter16ChoiceFlags() {
+    const openingView = getChapterChoiceView(16, (state) => {
+        state.npcRelations['南宫婉'] = 70;
+    }).view;
+    const choiceIds = openingView.choices.map((item) => item.id);
+
+    assert.deepStrictEqual(choiceIds, [
+        'become_li_disciple',
+        'keep_free',
+        'learn_in_secret',
+    ]);
+    assert(openingView.story.beats.length >= 8);
+
+    const discipleState = getChapterChoiceView(16).state;
+    let result = GameCore.chooseStoryOption(discipleState, 'become_li_disciple');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(discipleState.storyProgress, '16_feiyu_return');
+    assert.strictEqual(discipleState.flags.liDisciple, true);
+    assert.strictEqual(discipleState.flags.enteredLihuayuanLineage, true);
+
+    const freeState = getChapterChoiceView(16).state;
+    result = GameCore.chooseStoryOption(freeState, 'keep_free');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(freeState.flags.freeCultivator, true);
+    assert.strictEqual(freeState.flags.respectedLihuayuanButStayedIndependent, true);
+
+    const pragmaticState = getChapterChoiceView(16).state;
+    result = GameCore.chooseStoryOption(pragmaticState, 'learn_in_secret');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(pragmaticState.flags.learnsSecretively, true);
+    assert.strictEqual(pragmaticState.flags.usedLihuayuanInfluencePragmatically, true);
+}
+
+function testChapter22ChoiceFlags() {
+    const openingView = getChapterChoiceView(22, (state) => {
+        state.flags.starSeaStyle = 'merchant';
+    }).view;
+    const choiceIds = openingView.choices.map((item) => item.id);
+
+    assert.deepStrictEqual(choiceIds, [
+        'collect_map',
+        'sell_map',
+        'avoid_map',
+    ]);
+    assert(openingView.story.beats.length >= 8);
+
+    const collectState = getChapterChoiceView(22).state;
+    let result = GameCore.chooseStoryOption(collectState, 'collect_map');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(collectState.flags.hasXuTianTu, true);
+    assert.strictEqual(collectState.flags.enteredVoidHeavenMapGame, true);
+    assert.strictEqual(collectState.flags.heldFragmentMap, true);
+
+    const sellState = getChapterChoiceView(22).state;
+    result = GameCore.chooseStoryOption(sellState, 'sell_map');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(sellState.flags.soldXuTianTu, true);
+    assert.strictEqual(sellState.flags.soldFragmentMapForResources, true);
+    assert.strictEqual(sellState.flags.hasXuTianTu, false);
+
+    const avoidState = getChapterChoiceView(22).state;
+    result = GameCore.chooseStoryOption(avoidState, 'avoid_map');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(avoidState.flags.avoidedXuTian, true);
+    assert.strictEqual(avoidState.flags.avoidedVoidHeavenCoreConflict, true);
+}
+
+function testInsertedReturnArcFlags() {
+    const feiyuView = getChapterChoiceView('16_feiyu_return', (state) => {
+        state.npcRelations['厉飞雨'] = 25;
+    }).view;
+    assert(feiyuView.story.beats.length >= 6);
+    assert.deepStrictEqual(feiyuView.choices.map((item) => item.id), [
+        'help_feiyu_again',
+        'share_drink_and_part',
+        'distance_from_feiyu',
+    ]);
+
+    const feiyuState = getChapterChoiceView('16_feiyu_return').state;
+    let result = GameCore.chooseStoryOption(feiyuState, 'help_feiyu_again');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(feiyuState.flags.helpedOldFriendAgain, true);
+    assert.strictEqual(feiyuState.flags.reconnectedWithLiFeiyu, true);
+
+    const nangongState = getChapterChoiceView('18_nangong_return').state;
+    result = GameCore.chooseStoryOption(nangongState, 'acknowledge_nangong_importance');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(nangongState.flags.openlyAcknowledgedNangongImportance, true);
+
+    const mocaihuanState = getChapterChoiceView('23_mocaihuan_return').state;
+    result = GameCore.chooseStoryOption(mocaihuanState, 'support_mocaihuan_longterm');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(mocaihuanState.flags.madeAmendsToMocaihuan, true);
+    assert.strictEqual(mocaihuanState.flags.mendedMoHouseDebt, true);
+}
+
+function testChapter24ChoicesStayVisibleAndUseDebtHooks() {
+    const debtHookView = getChapterChoiceView(24, (state) => {
+        state.flags.daoLvPromise = true;
+        state.npcRelations['墨彩环'] = -10;
+        state.routeScores.orthodox = 4;
+        state.routeScores.secluded = 1;
+    }).view;
+    const choiceIds = debtHookView.choices.map((item) => item.id);
+
+    assert(choiceIds.includes('returned_tiannan_for_settlement'));
+    assert(choiceIds.includes('returned_tiannan_for_bonds'));
+    assert(choiceIds.includes('returned_tiannan_but_remained_hidden'));
+    assert(debtHookView.choices.find((item) => item.id === 'returned_tiannan_for_settlement').text.includes('嘉元城'));
+
+    const settlementState = getChapterChoiceView(24, (state) => {
+        state.flags.daoLvPromise = true;
+        state.npcRelations['墨彩环'] = -10;
+        state.routeScores.orthodox = 4;
+    }).state;
+    let result = GameCore.chooseStoryOption(settlementState, 'returned_tiannan_for_settlement');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(settlementState.flags.returnedTiannanForSettlement, true);
+    assert.strictEqual(settlementState.flags.oldDebtsCleared, true);
+    assert.strictEqual(settlementState.flags.returnedToMoHouse, true);
+
+    const bondView = getChapterChoiceView(24, (state) => {
+        state.flags.openlyAcknowledgedNangongImportance = true;
+        state.npcRelations['南宫婉'] = 62;
+        state.routeScores.orthodox = 5;
+    }).view;
+    assert(bondView.choices.find((item) => item.id === 'returned_tiannan_for_bonds').text.includes('南宫婉'));
+
+    const mocaihuanBondView = getChapterChoiceView(24, (state) => {
+        state.flags.madeAmendsToMocaihuan = true;
+        state.npcRelations['墨彩环'] = 18;
+    }).view;
+    assert(mocaihuanBondView.choices.find((item) => item.id === 'returned_tiannan_for_bonds').text.includes('嘉元城'));
+}
+
+function testEndingChoiceVisibilityTracksStoryState() {
+    const orthodoxEndingView = getChapterChoiceView(25, (state) => {
+        state.routeScores.orthodox = 8;
+        state.routeScores.demonic = 2;
+        state.routeScores.secluded = 3;
+        state.flags.successfulFoundationEstablished = true;
+        state.flags.openlyAcknowledgedNangongImportance = true;
+        state.flags.acceptedNangongPath = true;
+        state.flags.returnedTiannanForBonds = true;
+        state.flags.enteredLihuayuanLineage = true;
+        state.npcRelations['南宫婉'] = 120;
+    }).view;
+    const orthodoxEndingIds = orthodoxEndingView.choices.map((item) => item.id);
+    assert(orthodoxEndingIds.includes('lingjie_xianzun'));
+    assert(!orthodoxEndingIds.includes('renjie_zhizun'));
+
+    const renjieView = getChapterChoiceView(25, (state) => {
+        state.routeScores.orthodox = 2;
+        state.routeScores.demonic = 9;
+        state.routeScores.secluded = 3;
+        state.flags.returnedTiannanForSettlement = true;
+        state.flags.oldDebtsCleared = true;
+    }).view;
+    assert(renjieView.choices.map((item) => item.id).includes('renjie_zhizun'));
+
+    const secludedEndingView = getChapterChoiceView(25, (state) => {
+        state.routeScores.orthodox = 3;
+        state.routeScores.demonic = 2;
+        state.routeScores.secluded = 9;
+        state.flags.returnedToSeclusion = true;
+    }).view;
+    assert(secludedEndingView.choices.map((item) => item.id).includes('xiaoyao_sanxian'));
+
+    const karmaView = getChapterChoiceView(25, (state) => {
+        state.routeScores.orthodox = 1;
+        state.routeScores.demonic = 10;
+        state.routeScores.secluded = 3;
+        state.flags.cutNangongTies = true;
+        state.flags.demonicPathSeed = true;
+        state.npcRelations['南宫婉'] = -30;
+    }).view;
+    assert(karmaView.choices.map((item) => item.id).includes('yinguo_chanshen'));
+
+    const fanxinView = getChapterChoiceView(25, (state) => {
+        state.routeScores.orthodox = 7;
+        state.routeScores.demonic = 2;
+        state.routeScores.secluded = 4;
+        state.flags.openlyAcknowledgedNangongImportance = true;
+        state.flags.returnedTiannanForBonds = true;
+        state.flags.oldDebtsCleared = true;
+        state.flags.madeAmendsToMocaihuan = true;
+        state.flags.enteredLihuayuanLineage = true;
+        state.npcRelations['南宫婉'] = 96;
+        state.npcRelations['墨彩环'] = 55;
+        state.npcRelations['李化元'] = 52;
+    }).view;
+    assert(fanxinView.choices.map((item) => item.id).includes('fanxin_weisi'));
+
+    const coldView = getChapterChoiceView(25, (state) => {
+        state.routeScores.orthodox = 2;
+        state.routeScores.demonic = 8;
+        state.routeScores.secluded = 6;
+        state.flags.avoidedNangongAgain = true;
+        state.flags.cutNangongTies = true;
+        state.flags.mineChoice = 'betrayGate';
+        state.flags.usedLihuayuanInfluencePragmatically = true;
+        state.npcRelations['南宫婉'] = -20;
+    }).view;
+    assert(coldView.choices.map((item) => item.id).includes('taishang_wangqing'));
+}
+
+function testChapterEchoesStayConcrete() {
+    const { view } = getChapterChoiceView(25, (state) => {
+        state.routeScores.orthodox = 8;
+        state.flags.acceptedNangongDebt = true;
+        state.flags.returnedTiannanForBonds = true;
+        state.npcRelations['南宫婉'] = 108;
+    });
+    const beatTexts = view.story.beats.map((item) => item.text);
+    assert(beatTexts.every((text) => !text.includes('这一章走完后')));
+    assert(beatTexts.some((text) => text.includes('南宫婉') || text.includes('门前最后认三样东西') || text.includes('青牛镇')));
+
+    const sixteenTexts = getChapterChoiceView(16, (state) => {
+        state.flags.enteredLihuayuanLineage = true;
+    }).view.story.beats.map((item) => item.text);
+    assert(sixteenTexts.some((text) => text.includes('令牌') || text.includes('师门') || text.includes('李化元')));
+
+    const xuTianTexts = getChapterChoiceView(22, (state) => {
+        state.flags.enteredVoidHeavenMapGame = true;
+        state.flags.hasXuTianTu = true;
+    }).view.story.beats.map((item) => item.text);
+    assert(xuTianTexts.some((text) => text.includes('残图') || text.includes('知道') || text.includes('资格')));
+
+    const insertedTexts = getChapterChoiceView('23_mocaihuan_return', (state) => {
+        state.flags.madeAmendsToMocaihuan = true;
+    }).view.story.beats.map((item) => item.text);
+    assert(insertedTexts.some((text) => text.includes('墨彩环') || text.includes('嘉元城') || text.includes('旧账')));
+}
+
+function testChapter17BeatsAndFlags() {
+    const { view } = getChapterChoiceView(17, (state) => {
+        state.flags.enteredLihuayuanLineage = true;
+    });
+    assert(view.story.beats.length >= 8 && view.story.beats.length <= 10);
+    const lowProfileState = getChapterChoiceView(17).state;
+    let result = GameCore.chooseStoryOption(lowProfileState, 'stay_quiet_banquet');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(lowProfileState.flags.lowProfileBanquet, true);
+    assert.strictEqual(lowProfileState.flags.yanFortObservedQuietly, true);
+
+    const strengthState = getChapterChoiceView(17).state;
+    result = GameCore.chooseStoryOption(strengthState, 'show_strength_banquet');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(strengthState.flags.showedStrength, true);
+    assert.strictEqual(strengthState.flags.yanFortEstablishedPresence, true);
+
+    const networkState = getChapterChoiceView(17).state;
+    result = GameCore.chooseStoryOption(networkState, 'trade_favors_banquet');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(networkState.flags.builtBanquetNetwork, true);
+    assert.strictEqual(networkState.flags.yanFortNetworkBuilt, true);
+}
+
+function testChapter19RouteChoices() {
+    const { state: orthoState, view: orthodoxView } = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'keep_low_profile',
+        2: 'become_disciple',
+        3: 'save_li',
+        4: 'collect_evidence',
+        5: 'keep_bottle',
+        6: 'bait_and_counter',
+        7: 'keep_letter',
+        8: 'protect_mo_house',
+        9: 'repair_quhun',
+        10: 'watch_market',
+        11: 'join_yellow_maple',
+        12: 'build_connections',
+        13: 'go_team',
+        14: 'save_nangong',
+        15: 'accept_nangong_debt',
+        16: 'become_li_disciple',
+        17: 'show_strength_banquet',
+        18: 'fight_for_sect',
+    }, {
+        '16_feiyu_return': 'help_feiyu_again',
+        '18_nangong_return': 'acknowledge_nangong_importance',
+    }), 19);
+    assert(orthodoxView.story.beats.length >= 8 && orthodoxView.story.beats.length <= 10);
+    const orthoIds = orthodoxView.choices.map((item) => item.id);
+    assert(orthoIds.includes('hold_the_line'));
+    assert(orthoIds.includes('rescue_rearguard'));
+    const holdState = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'keep_low_profile',
+        2: 'become_disciple',
+        3: 'save_li',
+        4: 'collect_evidence',
+        5: 'keep_bottle',
+        6: 'bait_and_counter',
+        7: 'keep_letter',
+        8: 'protect_mo_house',
+        9: 'repair_quhun',
+        10: 'watch_market',
+        11: 'join_yellow_maple',
+        12: 'build_connections',
+        13: 'go_team',
+        14: 'save_nangong',
+        15: 'accept_nangong_debt',
+        16: 'become_li_disciple',
+        17: 'show_strength_banquet',
+        18: 'fight_for_sect',
+    }, {
+        '16_feiyu_return': 'help_feiyu_again',
+        '18_nangong_return': 'acknowledge_nangong_importance',
+    }), 19).state;
+    let result = GameCore.chooseStoryOption(holdState, 'hold_the_line');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(holdState.flags.heldSpiritMineLine, true);
+    result = GameCore.chooseStoryOption(orthoState, 'rescue_rearguard');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(orthoState.flags.mineChoice, 'rearGuard');
+    assert.strictEqual(orthoState.flags.ledMineBreakout, true);
+
+    const { state: demoState, view: demonicView } = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'show_drive',
+        2: 'become_disciple',
+        3: 'warn_li',
+        4: 'confront_early',
+        5: 'keep_bottle',
+        6: 'strike_first',
+        7: 'burn_letter',
+        8: 'take_treasure_leave',
+        9: 'take_quhun',
+        10: 'watch_market',
+        11: 'sell_token',
+        12: 'push_growth',
+        13: 'go_solo',
+        14: 'kill_for_gain',
+        15: 'cut_nangong_ties',
+        16: 'learn_in_secret',
+        17: 'trade_favors_banquet',
+        18: 'defect_demonic',
+    }, {
+        '16_feiyu_return': 'distance_from_feiyu',
+        '18_nangong_return': 'avoid_nangong_again',
+    }), 19);
+    const demoIds = demonicView.choices.map((item) => item.id);
+    assert(demoIds.includes('open_mine_gate'));
+    assert(demoIds.includes('harvest_chaos'));
+    result = GameCore.chooseStoryOption(demoState, 'open_mine_gate');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(demoState.flags.mineChoice, 'betrayGate');
+    assert.strictEqual(demoState.flags.escapedMineWithCoreAssets, true);
+
+    const { state: routeSubState, view: routeState } = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'keep_low_profile',
+        2: 'become_disciple',
+        3: 'save_li',
+        4: 'collect_evidence',
+        5: 'keep_bottle',
+        6: 'bait_and_counter',
+        7: 'keep_letter',
+        8: 'protect_mo_house',
+        9: 'repair_quhun',
+        10: 'watch_market',
+        11: 'join_yellow_maple',
+        12: 'build_connections',
+        13: 'go_team',
+        14: 'save_nangong',
+        15: 'accept_nangong_debt',
+        16: 'become_li_disciple',
+        17: 'show_strength_banquet',
+        18: 'fake_fight',
+    }, {
+        '16_feiyu_return': 'share_drink_and_part',
+        '18_nangong_return': 'owe_nangong_silently',
+    }), 19);
+    assert(routeState.choices.map((item) => item.id).includes('lead_breakout'));
+}
+
+function testChapter21StarSeaFlags() {
+    const { view } = getChapterChoiceView(21, (state) => {
+        state.flags.enteredStarSea = true;
+    });
+    assert(view.story.beats.length >= 8 && view.story.beats.length <= 10);
+    assert.deepStrictEqual(view.choices.map((item) => item.id), ['hunt_monsters', 'run_trade', 'seek_cave']);
+    const hunterState = getChapterChoiceView(21).state;
+    let result = GameCore.chooseStoryOption(hunterState, 'hunt_monsters');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(hunterState.flags.starSeaStyle, 'hunter');
+    assert.strictEqual(hunterState.flags.starSeaHunterStart, true);
+
+    const traderState = getChapterChoiceView(21).state;
+    result = GameCore.chooseStoryOption(traderState, 'run_trade');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(traderState.flags.starSeaStyle, 'merchant');
+    assert.strictEqual(traderState.flags.starSeaTraderStart, true);
+
+    const secludedState = getChapterChoiceView(21).state;
+    result = GameCore.chooseStoryOption(secludedState, 'seek_cave');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(secludedState.flags.starSeaStyle, 'secluded');
+    assert.strictEqual(secludedState.flags.starSeaSecludedStart, true);
+}
+
+function testChapter23BranchChoices() {
+    const soldState = getChapterChoiceView(23, (state) => {
+        state.flags.soldXuTianTu = true;
+        state.flags.hasXuTianTu = false;
+    });
+    assert(soldState.view.story.beats.length >= 8 && soldState.view.story.beats.length <= 10);
+    const soldIds = soldState.view.choices.map((item) => item.id);
+    assert(soldIds.includes('sell_route_info'));
+    let result = GameCore.chooseStoryOption(soldState.state, 'sell_route_info');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(soldState.state.storyProgress, '23_mocaihuan_return');
+    assert.strictEqual(soldState.state.flags.starSeaWaitedForBestMoment, true);
+
+    const avoidedState = getChapterChoiceView(23, (state) => {
+        state.flags.avoidedXuTian = true;
+    });
+    const avoidedIds = avoidedState.view.choices.map((item) => item.id);
+    assert(avoidedIds.includes('pull_ally_out'));
+    assert(avoidedIds.includes('slip_past_palace'));
+    result = GameCore.chooseStoryOption(avoidedState.state, 'pull_ally_out');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(avoidedState.state.flags.rescuedFromXuTianEdge, true);
+    assert.strictEqual(avoidedState.state.flags.starSeaHeldAllianceTogether, true);
+    assert.strictEqual(avoidedState.state.storyProgress, '23_mocaihuan_return');
+
+    const defaultState = getChapterChoiceView(23, (state) => {
+        state.flags.hasXuTianTu = true;
+    });
+    assert(defaultState.view.choices.map((item) => item.id).includes('grab_treasure'));
+    result = GameCore.chooseStoryOption(defaultState.state, 'grab_treasure');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(defaultState.state.flags.starSeaSeizedTreasureFirst, true);
+
+    const chainedState = getChapterChoiceView(23, (state) => {
+        state.flags.hasXuTianTu = true;
+    }).state;
+    result = GameCore.chooseStoryOption(chainedState, 'cooperate_allies');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(chainedState.storyProgress, '23_mocaihuan_return');
+    const insertedView = playToChoices(chainedState);
+    assert.strictEqual(insertedView.chapter.id, '23_mocaihuan_return');
+    result = GameCore.chooseStoryOption(chainedState, 'admit_old_wrong');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(chainedState.storyProgress, 24);
+}
+
+function testEchoesAndSideStoriesIncludeNewSignals() {
+    const echoState = GameCore.createInitialState();
+    echoState.flags.lowProfileBanquet = true;
+    echoState.flags.starSeaStyle = 'hunter';
+    echoState.flags.grabbedTreasure = true;
+    const echoTitles = GameCore.getEchoes(echoState).map((item) => item.title);
+    assert(echoTitles.includes('燕堡观察'));
+    assert(echoTitles.includes('猎妖名声'));
+    assert(echoTitles.includes('先手夺宝'));
+
+    const sideState = GameCore.createInitialState();
+    sideState.storyProgress = 23;
+    sideState.flags.lowProfileBanquet = true;
+    sideState.flags.builtBanquetNetwork = true;
+    sideState.flags.starSeaStyle = 'secluded';
+    sideState.flags.grabbedTreasure = true;
+    sideState.flags.watchedXuTianFight = true;
+    sideState.flags.secondHandBroker = true;
+    const sideStories = GameCore.getAvailableSideStories(sideState).map((item) => item.title);
+    assert(sideStories.includes('燕堡余音'));
+    assert(sideStories.includes('隐海传闻'));
+    assert(sideStories.includes('先手留痕'));
+    assert(sideStories.includes('虚天旁观'));
+    assert(sideStories.includes('虚天转手'));
+}
+
+function testStringChapterLogsNoNaN() {
+    ['16_feiyu_return', '18_nangong_return', '23_mocaihuan_return'].forEach((chapterId) => {
+        const state = createChapterState(chapterId);
+        assert(state.logs.every((entry) => !entry.message.includes('NaN')));
+    });
 }
 
 function testStoryPagingState() {
@@ -284,7 +964,7 @@ function testStoryPagingState() {
 }
 
 function testBranchEchoes() {
-    const orthodoxState = runMainPath({
+    const orthodoxState = runMainPath(withInsertedChoices({
         0: 'set_out_now',
         1: 'keep_low_profile',
         2: 'become_disciple',
@@ -300,7 +980,7 @@ function testBranchEchoes() {
         12: 'build_connections',
         13: 'go_team',
         14: 'save_nangong',
-        15: 'accept_nangong',
+        15: 'accept_nangong_debt',
         16: 'become_li_disciple',
         17: 'show_strength_banquet',
         18: 'fight_for_sect',
@@ -309,13 +989,17 @@ function testBranchEchoes() {
         21: 'hunt_monsters',
         22: 'collect_map',
         23: 'cooperate_allies',
-        24: 'accept_nangong_path',
-        25: 'ending_ascend',
-    });
+        24: 'returned_tiannan_for_bonds',
+        25: 'lingjie_xianzun',
+    }, {
+        '16_feiyu_return': 'help_feiyu_again',
+        '18_nangong_return': 'acknowledge_nangong_importance',
+        '23_mocaihuan_return': 'support_mocaihuan_longterm',
+    }));
     const orthodoxEcho = GameCore.getEchoes(orthodoxState).map((item) => item.title);
     assert(orthodoxEcho.includes('禁地救援'));
 
-    const demonicState = runMainPath({
+    const demonicState = runMainPath(withInsertedChoices({
         0: 'set_out_now',
         1: 'show_drive',
         2: 'become_disciple',
@@ -331,7 +1015,7 @@ function testBranchEchoes() {
         12: 'push_growth',
         13: 'go_solo',
         14: 'kill_for_gain',
-        15: 'cut_emotion',
+        15: 'cut_nangong_ties',
         16: 'learn_in_secret',
         17: 'trade_favors_banquet',
         18: 'defect_demonic',
@@ -340,16 +1024,20 @@ function testBranchEchoes() {
         21: 'run_trade',
         22: 'sell_map',
         23: 'grab_treasure',
-        24: 'settle_old_scores',
-        25: 'ending_rule_mortal',
-    });
+        24: 'returned_tiannan_for_settlement',
+        25: 'renjie_zhizun',
+    }, {
+        '16_feiyu_return': 'distance_from_feiyu',
+        '18_nangong_return': 'avoid_nangong_again',
+        '23_mocaihuan_return': 'confirm_mocaihuan_safe',
+    }));
     const demonicEcho = GameCore.getEchoes(demonicState).map((item) => item.title);
     assert(demonicEcho.includes('魔道投影'));
     const demonicEndingView = GameCore.getStoryView(demonicState);
     assert.strictEqual(demonicEndingView.source, 'ending');
-    assert.strictEqual(demonicEndingView.ending.id, 'mortal');
+    assert.strictEqual(demonicEndingView.ending.id, 'renjie_zhizun');
 
-    const secludedState = runMainPath({
+    const secludedState = runMainPath(withInsertedChoices({
         0: 'pack_and_leave',
         1: 'keep_low_profile',
         2: 'stay_independent',
@@ -365,7 +1053,7 @@ function testBranchEchoes() {
         12: 'farm_quietly',
         13: 'prepare_heavy',
         14: 'watch_and_wait',
-        15: 'focus_breakthrough',
+        15: 'suppress_nangong_feelings',
         16: 'keep_free',
         17: 'stay_quiet_banquet',
         18: 'fake_fight',
@@ -374,23 +1062,42 @@ function testBranchEchoes() {
         21: 'seek_cave',
         22: 'avoid_map',
         23: 'watch_last',
-        24: 'hide_again',
-        25: 'ending_wander',
-    });
+        24: 'returned_tiannan_but_remained_hidden',
+        25: 'xiaoyao_sanxian',
+    }, {
+        '16_feiyu_return': 'distance_from_feiyu',
+        '18_nangong_return': 'avoid_nangong_again',
+        '23_mocaihuan_return': 'confirm_mocaihuan_safe',
+    }));
     const secludedEcho = GameCore.getEchoes(secludedState).map((item) => item.title);
     assert(secludedEcho.includes('藏锋之心'));
     const secludedEndingView = GameCore.getStoryView(secludedState);
     assert.strictEqual(secludedEndingView.source, 'ending');
-    assert.strictEqual(secludedEndingView.ending.id, 'wander');
+    assert.strictEqual(secludedEndingView.ending.id, 'xiaoyao_sanxian');
 }
 
 testStoryCursorSwitching();
 testMainPathIntegrity();
+testMoHouseTreasurePathNoDeadlock();
 testLevelEventCoverage();
 testBreakthroughQueuesLevelStory();
 testMissedLevelStoryCanRecover();
 testProfileCollapseSaveCompatibility();
 testResourceValidation();
+testMineChoicesBecomeRouteSpecific();
+testChapter15ChoiceFlags();
+testChapter16ChoiceFlags();
+testChapter22ChoiceFlags();
+testInsertedReturnArcFlags();
+testChapter24ChoicesStayVisibleAndUseDebtHooks();
+testEndingChoiceVisibilityTracksStoryState();
+testChapterEchoesStayConcrete();
+testChapter17BeatsAndFlags();
+testChapter19RouteChoices();
+testChapter21StarSeaFlags();
+testChapter23BranchChoices();
+testEchoesAndSideStoriesIncludeNewSignals();
+testStringChapterLogsNoNaN();
 testStoryPagingState();
 testBranchEchoes();
 

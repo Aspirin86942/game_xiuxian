@@ -21,6 +21,7 @@ module.exports = {
         mainButton: '#main-btn',
         hint: '#hint-text',
         rate: '#breakthrough-inline',
+        offlineSummary: '#offline-summary-text',
     },
     story: {
         title: '#story-title',
@@ -54,10 +55,16 @@ module.exports = {
         confirmResetButton: '#confirm-reset',
         cancelResetButton: '#cancel-reset',
     },
+    offline: {
+        modal: '#offline-modal',
+        duration: '#offline-duration-text',
+        gain: '#offline-gain-text',
+        current: '#offline-current-text',
+        closeButton: '#close-offline-modal',
+    },
     combat: {
         modal: '#combat-modal',
         title: '#combat-title',
         log: '#combat-log',
     },
 };
-

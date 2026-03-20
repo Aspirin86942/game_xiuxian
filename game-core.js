@@ -40,6 +40,65 @@
         };
     }
 
+    function createDefaultOfflineTrainingState() {
+        return {
+            lastSavedAt: null,
+            lastSettlementAt: null,
+            lastDurationMs: 0,
+            lastEffectiveDurationMs: 0,
+            lastGain: 0,
+            wasCapped: false,
+        };
+    }
+
+    function normalizeOfflineTrainingState(rawState) {
+        const nextState = createDefaultOfflineTrainingState();
+        if (!rawState || typeof rawState !== 'object') {
+            return nextState;
+        }
+
+        const numericFields = ['lastSavedAt', 'lastSettlementAt', 'lastDurationMs', 'lastEffectiveDurationMs', 'lastGain'];
+        numericFields.forEach((fieldName) => {
+            const rawValue = rawState[fieldName];
+            if (!Number.isFinite(rawValue)) {
+                return;
+            }
+            if (fieldName === 'lastSavedAt' || fieldName === 'lastSettlementAt') {
+                nextState[fieldName] = rawValue > 0 ? Math.floor(rawValue) : null;
+                return;
+            }
+            nextState[fieldName] = Math.max(0, Math.floor(rawValue));
+        });
+        nextState.wasCapped = Boolean(rawState.wasCapped);
+        return nextState;
+    }
+
+    function getOfflineTrainingCapMs() {
+        if (Number.isFinite(CONFIG.offlineCultivateMaxDurationMs) && CONFIG.offlineCultivateMaxDurationMs > 0) {
+            return CONFIG.offlineCultivateMaxDurationMs;
+        }
+        return 8 * 60 * 60 * 1000;
+    }
+
+    function getAverageAutoCultivationGain() {
+        const lowerBound = Math.min(CONFIG.clickGainMin, CONFIG.clickGainMax);
+        const upperBound = Math.max(CONFIG.clickGainMin, CONFIG.clickGainMax);
+        let totalGain = 0;
+        let outcomes = 0;
+        for (let baseGain = lowerBound; baseGain <= upperBound; baseGain += 1) {
+            totalGain += Math.max(1, Math.floor(baseGain * CONFIG.autoGainRatio));
+            outcomes += 1;
+        }
+        return outcomes > 0 ? (totalGain / outcomes) : 0;
+    }
+
+    function formatOfflineDuration(durationMs) {
+        const totalMinutes = Math.max(0, Math.floor(durationMs / 60000));
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${hours} 时 ${minutes} 分`;
+    }
+
     function normalizeStoryCursor(rawCursor) {
         if (!rawCursor || typeof rawCursor !== 'object') {
             return {
@@ -91,7 +150,7 @@
 
     function createInitialState() {
         const state = {
-            version: 3,
+            version: 4,
             playerName: '无名散修',
             realmIndex: 0,
             stageIndex: 0,
@@ -112,6 +171,7 @@
                 audioEnabled: true,
                 musicEnabled: true,
             },
+            offlineTraining: createDefaultOfflineTrainingState(),
             storyProgress: 0,
             chapterChoices: {},
             recentChoiceEcho: null,
@@ -157,6 +217,7 @@
 
         Object.assign(nextState, rawState);
         nextState.settings = { ...createInitialState().settings, ...(rawState.settings || {}) };
+        nextState.offlineTraining = normalizeOfflineTrainingState(rawState.offlineTraining);
         nextState.ui = { ...createInitialState().ui, ...(rawState.ui || {}) };
         nextState.storyCursor = normalizeStoryCursor(rawState.storyCursor);
         nextState.playerStats = { ...createInitialState().playerStats, ...(rawState.playerStats || {}) };
@@ -1216,6 +1277,72 @@
         return state.realmIndex >= 1;
     }
 
+    function touchSaveTimestamp(state, nowMs) {
+        const nextNowMs = Number.isFinite(nowMs) ? Math.floor(nowMs) : Date.now();
+        state.offlineTraining = normalizeOfflineTrainingState(state.offlineTraining);
+        state.offlineTraining.lastSavedAt = nextNowMs;
+        return nextNowMs;
+    }
+
+    function resolveOfflineCultivation(state, nowMs) {
+        const nextNowMs = Number.isFinite(nowMs) ? Math.floor(nowMs) : Date.now();
+        state.offlineTraining = normalizeOfflineTrainingState(state.offlineTraining);
+        const lastSavedAt = state.offlineTraining.lastSavedAt;
+        const emptyResult = {
+            applied: false,
+            gain: 0,
+            durationMs: 0,
+            effectiveDurationMs: 0,
+            wasCapped: false,
+        };
+
+        if (!state.autoCultivate || !canAutoCultivate(state) || !Number.isFinite(lastSavedAt)) {
+            return emptyResult;
+        }
+
+        const durationMs = Math.max(0, nextNowMs - lastSavedAt);
+        if (durationMs <= 0) {
+            return {
+                ...emptyResult,
+                durationMs,
+            };
+        }
+
+        const effectiveDurationMs = Math.min(durationMs, getOfflineTrainingCapMs());
+        const ticks = Math.floor(effectiveDurationMs / CONFIG.autoCultivateInterval);
+        const remainingCultivation = Math.max(0, state.maxCultivation - state.cultivation);
+        const gain = Math.min(remainingCultivation, Math.floor(ticks * getAverageAutoCultivationGain()));
+        const wasCapped = durationMs > effectiveDurationMs;
+
+        if (gain <= 0) {
+            return {
+                ...emptyResult,
+                durationMs,
+                effectiveDurationMs,
+                wasCapped,
+            };
+        }
+
+        state.cultivation = Math.min(state.maxCultivation, state.cultivation + gain);
+        state.offlineTraining.lastSettlementAt = nextNowMs;
+        state.offlineTraining.lastDurationMs = durationMs;
+        state.offlineTraining.lastEffectiveDurationMs = effectiveDurationMs;
+        state.offlineTraining.lastGain = gain;
+        state.offlineTraining.wasCapped = wasCapped;
+        pushLog(state, `闭关归来，离线吐纳 ${formatOfflineDuration(effectiveDurationMs)}，修为 +${gain}`, 'good');
+        if (wasCapped) {
+            pushLog(state, `离线收益按 ${Math.floor(getOfflineTrainingCapMs() / (60 * 60 * 1000))} 小时封顶结算。`, 'normal');
+        }
+
+        return {
+            applied: true,
+            gain,
+            durationMs,
+            effectiveDurationMs,
+            wasCapped,
+        };
+    }
+
     function useItem(state, itemId) {
         const item = ITEMS[itemId];
         if (!item || !item.usable) {
@@ -1342,6 +1469,8 @@
         canBreakthrough,
         attemptBreakthrough,
         canAutoCultivate,
+        touchSaveTimestamp,
+        resolveOfflineCultivation,
         useItem,
         beginCombat,
         resolveCombatRound,

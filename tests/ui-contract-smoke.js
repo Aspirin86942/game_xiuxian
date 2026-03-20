@@ -21,6 +21,8 @@ function testProfileAndStoryAnchors(indexHtml, gameJs, gameCoreJs, styleCss) {
     assert(!indexHtml.includes('id="breakthrough-rate"'), '突破率不应继续留在顶栏');
     assert(!indexHtml.includes('id="route-display"'), '路数不应继续留在顶栏');
     assert(indexHtml.includes('id="breakthrough-inline"'), '修炼区应存在新的突破率占位');
+    assert(indexHtml.includes('id="offline-summary-text"'), '修炼区应存在离线收益摘要占位');
+    assert(indexHtml.includes('id="offline-modal"'), '应存在离线收益弹层');
     assert(indexHtml.includes('id="story-progress"'), '剧情页码容器缺失');
     assert(!indexHtml.includes('id="story-history"'), '剧情历史列表应已移除');
 
@@ -28,12 +30,16 @@ function testProfileAndStoryAnchors(indexHtml, gameJs, gameCoreJs, styleCss) {
     assert(!gameJs.includes('is-collapsed'), 'game.js 不应再依赖 is-collapsed');
     assert(!gameJs.includes('toggleProfileBtn'), 'game.js 不应再绑定顶部折叠按钮');
     assert(gameJs.includes('breakthroughInline'), 'game.js 应更新修炼区突破率文案');
+    assert(gameJs.includes('pendingOfflineSettlement'), 'game.js 应维护离线收益结算状态');
+    assert(gameJs.includes("window.addEventListener('pagehide', saveGame)"), 'game.js 应在 pagehide 时刷新存档时间戳');
     assert(gameJs.includes("elements.storyProgress.textContent"), 'game.js 应更新剧情页码文案');
     assert(gameJs.includes('view.chapter.chapterLabel'), 'game.js 应优先使用 chapterLabel 显示插章标题');
     assert(gameJs.includes("'下一页'"), '剧情继续按钮应改为下一页');
     assert(gameJs.includes("'跳至抉择'"), '剧情跳过按钮应改为跳至抉择');
 
     assert(gameCoreJs.includes('profileCollapsed'), 'game-core.js 应继续兼容旧存档的 profileCollapsed 字段');
+    assert(gameCoreJs.includes('resolveOfflineCultivation'), 'game-core.js 应提供离线挂机结算接口');
+    assert(gameCoreJs.includes('touchSaveTimestamp'), 'game-core.js 应提供存档时间戳刷新接口');
 
     assert(!styleCss.includes('@media (min-width: 760px)'), '不应继续保留桌面端专用布局');
     assert(!styleCss.includes('.status-card.is-mobile-compact'), '样式中不应继续保留 is-mobile-compact 分支');

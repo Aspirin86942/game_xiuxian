@@ -14,6 +14,7 @@
         autoGainRatio: 0.6,
         failPenaltyRate: 0.3,
         autoCultivateInterval: 1000,
+        offlineCultivateMaxDurationMs: 8 * 60 * 60 * 1000,
         itemDropChance: 0.2,
     };
 

@@ -41,6 +41,29 @@ function formatRenderedStoryProgress(state) {
         : `第 ${currentPage} / ${totalPages} 页`;
 }
 
+function formatOfflineDuration(durationMs) {
+    const totalMinutes = Math.max(0, Math.floor(durationMs / 60000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours} 小时 ${minutes} 分`;
+}
+
+function getOfflineCapHours() {
+    return Math.floor(StoryData.CONFIG.offlineCultivateMaxDurationMs / (60 * 60 * 1000));
+}
+
+function formatOfflineSummary(state, autoUnlocked) {
+    const trainingState = state.offlineTraining || {};
+    if (!trainingState.lastGain || trainingState.lastGain <= 0) {
+        return autoUnlocked
+            ? `离线收益仅在开启自动吐纳后生效，最多累计 ${getOfflineCapHours()} 小时。`
+            : `筑基期后解锁自动吐纳与离线收益，最多累计 ${getOfflineCapHours()} 小时。`;
+    }
+
+    const cappedText = trainingState.wasCapped ? `，已按 ${getOfflineCapHours()} 小时封顶` : '';
+    return `上次离线吐纳 ${formatOfflineDuration(trainingState.lastEffectiveDurationMs)}，修为 +${trainingState.lastGain}${cappedText}`;
+}
+
 function createSerializedState(mutator) {
     const state = GameCore.createInitialState();
     if (mutator) {
@@ -186,6 +209,63 @@ function createCustomSaveScenario() {
     };
 }
 
+function createOfflineSettlementScenario(options = {}) {
+    const {
+        nowMs = 1_710_000_000_000,
+        offlineMs = 2 * 60 * 60 * 1000,
+        realmScore = 11,
+        cultivation = 500,
+        autoCultivate = true,
+    } = options;
+
+    const { state, serialized } = createSerializedState((draft) => {
+        setRealmScore(draft, realmScore);
+        draft.cultivation = cultivation;
+        draft.autoCultivate = autoCultivate;
+        draft.ui.activeTab = 'cultivation';
+        draft.offlineTraining = {
+            ...draft.offlineTraining,
+            lastSavedAt: nowMs - offlineMs,
+            lastSettlementAt: null,
+            lastDurationMs: 0,
+            lastEffectiveDurationMs: 0,
+            lastGain: 0,
+            wasCapped: false,
+        };
+    });
+
+    const previewState = cloneState(state);
+    const settlement = GameCore.resolveOfflineCultivation(previewState, nowMs);
+    const expectedDurationText = settlement.wasCapped
+        ? `离线 ${formatOfflineDuration(settlement.durationMs)}，按 ${formatOfflineDuration(settlement.effectiveDurationMs)} 结算`
+        : `离线 ${formatOfflineDuration(settlement.effectiveDurationMs)}`;
+
+    return {
+        serialized,
+        nowMs,
+        expectedState: {
+            applied: settlement.applied,
+            gain: settlement.gain,
+            durationText: expectedDurationText,
+            cultivationText: `${previewState.cultivation}/${previewState.maxCultivation}`,
+            cultivation: previewState.cultivation,
+            maxCultivation: previewState.maxCultivation,
+            realmLabel: GameCore.getRealmLabel(previewState),
+            realmIndex: previewState.realmIndex,
+            stageIndex: previewState.stageIndex,
+            wasCapped: settlement.wasCapped,
+            offlineSummaryText: formatOfflineSummary(previewState, GameCore.canAutoCultivate(previewState)),
+        },
+        initialState: {
+            cultivationText: `${state.cultivation}/${state.maxCultivation}`,
+            cultivation: state.cultivation,
+            realmLabel: GameCore.getRealmLabel(state),
+            realmIndex: state.realmIndex,
+            stageIndex: state.stageIndex,
+        },
+    };
+}
+
 module.exports = {
     STORAGE_KEY,
     createFreshScenario,
@@ -194,5 +274,5 @@ module.exports = {
     createCombatScenario,
     createConsumableScenario,
     createCustomSaveScenario,
+    createOfflineSettlementScenario,
 };
-

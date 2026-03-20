@@ -3,7 +3,7 @@ const selectors = require('./selectors');
 const { STORAGE_KEY } = require('./saveFactory');
 
 async function openGame(page, options = {}) {
-    const { serializedSave = null, randomValue, randomSequence } = options;
+    const { serializedSave = null, randomValue, randomSequence, nowMs } = options;
 
     if (randomValue !== undefined || randomSequence) {
         await page.addInitScript(({ fallback, sequence }) => {
@@ -23,17 +23,31 @@ async function openGame(page, options = {}) {
         });
     }
 
-    await page.goto('/');
-    await page.evaluate(({ key, value }) => {
-        window.localStorage.clear();
-        if (value) {
-            window.localStorage.setItem(key, value);
+    if (typeof nowMs === 'number') {
+        await page.addInitScript(({ fixedNow }) => {
+            const originalNow = Date.now;
+            Date.now = () => fixedNow;
+            Date.now.originalNow = originalNow;
+        }, {
+            fixedNow: nowMs,
+        });
+    }
+
+    await page.addInitScript(({ key, value }) => {
+        const seededFlag = '__codex_seeded_save__';
+        if (!window.sessionStorage.getItem(seededFlag)) {
+            window.localStorage.clear();
+            if (value) {
+                window.localStorage.setItem(key, value);
+            }
+            window.sessionStorage.setItem(seededFlag, '1');
         }
     }, {
         key: STORAGE_KEY,
         value: serializedSave,
     });
-    await page.reload();
+
+    await page.goto('/');
     await expect(page.locator(selectors.status.playerName)).toBeVisible();
     await expect(page.locator(selectors.status.activePage)).toBeVisible();
 }

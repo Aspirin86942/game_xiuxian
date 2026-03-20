@@ -31,3 +31,7 @@ def test_story_smoke() -> None:
 
 def test_ui_contract_smoke() -> None:
     run_node_script("ui-contract-smoke.js")
+
+
+def test_offline_smoke() -> None:
+    run_node_script("offline-smoke.js")

@@ -7,8 +7,45 @@
     let autoCultivateTimer = null;
     let combatTimer = null;
     let audioContext = null;
+    let pendingOfflineSettlement = null;
 
     const elements = {};
+
+    function getOfflineCapHours() {
+        const capMs = Number.isFinite(StoryData.CONFIG.offlineCultivateMaxDurationMs)
+            ? StoryData.CONFIG.offlineCultivateMaxDurationMs
+            : 8 * 60 * 60 * 1000;
+        return Math.max(1, Math.floor(capMs / (60 * 60 * 1000)));
+    }
+
+    function formatOfflineDuration(durationMs) {
+        const totalMinutes = Math.max(0, Math.floor(durationMs / 60000));
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${hours} 小时 ${minutes} 分`;
+    }
+
+    function getOfflineRuleText(autoUnlocked) {
+        const capHours = getOfflineCapHours();
+        return autoUnlocked
+            ? `离线收益仅在开启自动吐纳后生效，最多累计 ${capHours} 小时。`
+            : `筑基期后解锁自动吐纳与离线收益，最多累计 ${capHours} 小时。`;
+    }
+
+    function getOfflineSummaryText(autoUnlocked) {
+        const trainingState = gameState.offlineTraining || {};
+        if (!trainingState.lastGain || trainingState.lastGain <= 0) {
+            return getOfflineRuleText(autoUnlocked);
+        }
+
+        const cappedText = trainingState.wasCapped ? `，已按 ${getOfflineCapHours()} 小时封顶` : '';
+        return `上次离线吐纳 ${formatOfflineDuration(trainingState.lastEffectiveDurationMs)}，修为 +${trainingState.lastGain}${cappedText}`;
+    }
+
+    function dismissOfflineSettlement() {
+        pendingOfflineSettlement = null;
+        hideModal(elements.offlineModal);
+    }
 
     function cacheElements() {
         [
@@ -22,6 +59,7 @@
             'auto-status-text',
             'auto-toggle-btn',
             'auto-toggle-text',
+            'offline-summary-text',
             'floating-container',
             'toggle-log-btn',
             'log-container',
@@ -54,6 +92,11 @@
             'export-btn',
             'import-btn',
             'reset-btn',
+            'offline-modal',
+            'offline-duration-text',
+            'offline-gain-text',
+            'offline-current-text',
+            'close-offline-modal',
             'dialogue-modal',
             'dialogue-name',
             'dialogue-avatar',
@@ -125,7 +168,26 @@
     }
 
     function saveGame() {
+        GameCore.touchSaveTimestamp(gameState, Date.now());
         localStorage.setItem(STORAGE_KEY, GameCore.serializeState(gameState));
+    }
+
+    function restoreGameState(parsedState, shouldResolveOffline) {
+        gameState = GameCore.mergeSave(parsedState);
+        GameCore.ensureStoryCursor(gameState);
+        pendingOfflineSettlement = null;
+
+        if (!shouldResolveOffline) {
+            return;
+        }
+
+        try {
+            const settlement = GameCore.resolveOfflineCultivation(gameState, Date.now());
+            pendingOfflineSettlement = settlement.applied ? settlement : null;
+        } catch (error) {
+            console.error('离线挂机结算失败', error);
+            pendingOfflineSettlement = null;
+        }
     }
 
     function loadGame() {
@@ -133,17 +195,18 @@
         if (!raw) {
             gameState = GameCore.createInitialState();
             GameCore.ensureStoryCursor(gameState);
+            pendingOfflineSettlement = null;
             return;
         }
 
         try {
             const parsed = JSON.parse(raw);
-            gameState = GameCore.mergeSave(parsed);
-            GameCore.ensureStoryCursor(gameState);
+            restoreGameState(parsed, true);
         } catch (error) {
             console.error('存档读取失败', error);
             gameState = GameCore.createInitialState();
             GameCore.ensureStoryCursor(gameState);
+            pendingOfflineSettlement = null;
         }
     }
 
@@ -153,8 +216,10 @@
         localStorage.removeItem(STORAGE_KEY);
         gameState = GameCore.createInitialState();
         GameCore.ensureStoryCursor(gameState);
+        pendingOfflineSettlement = null;
         hideModal(elements.confirmModal);
         hideModal(elements.settingsModal);
+        hideModal(elements.offlineModal);
         render();
         saveGame();
     }
@@ -215,12 +280,16 @@
         }
 
         const autoUnlocked = GameCore.canAutoCultivate(gameState);
-        elements.autoPanel.style.display = autoUnlocked ? 'flex' : 'none';
+        elements.autoPanel.style.display = 'grid';
         elements.autoStatusText.textContent = autoUnlocked
-            ? '筑基之后可持续吐纳，适合慢慢攒境界。'
+            ? '离线期间会按自动吐纳速度继续积累修为。'
             : '筑基期后解锁自动吐纳。';
-        elements.autoToggleBtn.classList.toggle('active', gameState.autoCultivate);
-        elements.autoToggleText.textContent = `自动吐纳：${gameState.autoCultivate ? '开' : '关'}`;
+        elements.autoToggleBtn.disabled = !autoUnlocked;
+        elements.autoToggleBtn.classList.toggle('active', autoUnlocked && gameState.autoCultivate);
+        elements.autoToggleText.textContent = autoUnlocked
+            ? `自动吐纳：${gameState.autoCultivate ? '开' : '关'}`
+            : '尚未解锁';
+        elements.offlineSummaryText.textContent = getOfflineSummaryText(autoUnlocked);
 
         const routeItems = GameCore.getRouteSummary(gameState);
         elements.routeSummary.innerHTML = routeItems.map((item) => `
@@ -399,6 +468,20 @@
         elements.monsterHpText.textContent = `${combatState.monster.hp} / ${combatState.monster.maxHp}`;
     }
 
+    function renderOfflineSettlement() {
+        if (!pendingOfflineSettlement || !pendingOfflineSettlement.applied) {
+            hideModal(elements.offlineModal);
+            return;
+        }
+
+        elements.offlineDurationText.textContent = pendingOfflineSettlement.wasCapped
+            ? `离线 ${formatOfflineDuration(pendingOfflineSettlement.durationMs)}，按 ${formatOfflineDuration(pendingOfflineSettlement.effectiveDurationMs)} 结算`
+            : `离线 ${formatOfflineDuration(pendingOfflineSettlement.effectiveDurationMs)}`;
+        elements.offlineGainText.textContent = `修为 +${pendingOfflineSettlement.gain}`;
+        elements.offlineCurrentText.textContent = `${gameState.cultivation}/${gameState.maxCultivation}`;
+        showModal(elements.offlineModal);
+    }
+
     function render() {
         renderStatus();
         renderTabs();
@@ -408,6 +491,7 @@
         renderInventory();
         renderSettings();
         renderCombat();
+        renderOfflineSettlement();
     }
 
     function showFloatingText(text, type) {
@@ -531,6 +615,7 @@
     }
 
     function exportSave() {
+        saveGame();
         const blob = new Blob([GameCore.serializeState(gameState)], { type: 'application/json;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
@@ -555,8 +640,7 @@
                     const parsed = JSON.parse(loadEvent.target.result);
                     stopAutoCultivate();
                     stopCombatLoop();
-                    gameState = GameCore.mergeSave(parsed);
-                    GameCore.ensureStoryCursor(gameState);
+                    restoreGameState(parsed, true);
                     if (gameState.autoCultivate) {
                         startAutoCultivate();
                     }
@@ -679,6 +763,7 @@
         elements.closeInventory.addEventListener('click', () => hideModal(elements.inventoryModal));
         elements.closeSettings.addEventListener('click', () => hideModal(elements.settingsModal));
         elements.closeDialogue.addEventListener('click', () => hideModal(elements.dialogueModal));
+        elements.closeOfflineModal.addEventListener('click', dismissOfflineSettlement);
 
         elements.audioToggle.addEventListener('change', () => {
             gameState.settings.audioEnabled = elements.audioToggle.checked;
@@ -701,12 +786,19 @@
                 }
             });
         });
+
+        elements.offlineModal.addEventListener('click', (event) => {
+            if (event.target === elements.offlineModal) {
+                dismissOfflineSettlement();
+            }
+        });
     }
 
     function init() {
         cacheElements();
         loadGame();
         bindEvents();
+        window.addEventListener('pagehide', saveGame);
         if (gameState.autoCultivate) {
             startAutoCultivate();
         }

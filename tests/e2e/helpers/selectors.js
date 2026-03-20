@@ -1,0 +1,63 @@
+module.exports = {
+    status: {
+        playerName: '#player-name',
+        realm: '#summary-realm-display',
+        cultivation: '#summary-cultivation-display',
+        activePage: '.page.active',
+    },
+    tabs: {
+        cultivation: '[data-tab="cultivation"]',
+        story: '[data-tab="story"]',
+        adventure: '[data-tab="adventure"]',
+        inventory: '[data-action="inventory"]',
+        settings: '[data-action="settings"]',
+    },
+    pages: {
+        cultivation: '.page[data-page="cultivation"]',
+        story: '.page[data-page="story"]',
+        adventure: '.page[data-page="adventure"]',
+    },
+    cultivation: {
+        mainButton: '#main-btn',
+        hint: '#hint-text',
+        rate: '#breakthrough-inline',
+    },
+    story: {
+        title: '#story-title',
+        line: '#story-line',
+        progress: '#story-progress',
+        continueButton: '#story-continue-btn',
+        skipButton: '#story-skip-btn',
+        choices: '#story-choices',
+        goal: '#story-goal',
+        echoList: '#echo-list',
+    },
+    adventure: {
+        button: '#adventure-btn',
+        preview: '#combat-preview',
+        npcs: '#location-npcs',
+    },
+    inventory: {
+        modal: '#inventory-modal',
+        closeButton: '#close-inventory',
+        list: '#inventory-list',
+        useButton: (itemId) => `[data-use-item="${itemId}"]`,
+    },
+    settings: {
+        modal: '#settings-modal',
+        closeButton: '#close-settings',
+        audioToggle: '#audio-toggle',
+        musicToggle: '#music-toggle',
+        exportButton: '#export-btn',
+        importButton: '#import-btn',
+        resetButton: '#reset-btn',
+        confirmResetButton: '#confirm-reset',
+        cancelResetButton: '#cancel-reset',
+    },
+    combat: {
+        modal: '#combat-modal',
+        title: '#combat-title',
+        log: '#combat-log',
+    },
+};
+

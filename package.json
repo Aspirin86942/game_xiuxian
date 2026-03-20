@@ -1,0 +1,16 @@
+{
+  "name": "game-xiuxian",
+  "version": "1.0.0",
+  "private": true,
+  "description": "《灵光修仙传》自动化审查与回归测试",
+  "scripts": {
+    "postinstall": "playwright install chromium",
+    "test:smoke": "node tests/story-smoke.js && node tests/ui-contract-smoke.js",
+    "test:e2e": "playwright test",
+    "test": "npm run test:smoke && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2"
+  }
+}
+

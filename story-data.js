@@ -339,16 +339,110 @@
         return '';
     }
 
+    function getStoryProgressNumber(state) {
+        const raw = state?.storyProgress;
+        if (typeof raw === 'number' && Number.isFinite(raw)) {
+            return raw;
+        }
+        const matched = String(raw || '').match(/^(\d+)/);
+        return matched ? Number.parseInt(matched[1], 10) : 0;
+    }
+
+    function pickSeededLine(lines, seed) {
+        if (!Array.isArray(lines) || lines.length === 0) {
+            return '';
+        }
+        const normalizedSeed = Math.abs(Number(seed) || 0) % lines.length;
+        return lines[normalizedSeed];
+    }
+
+    // 这里用确定性选句，保证同一存档下 NPC 口风稳定，不会因为刷新界面来回跳变。
+    function pickNpcLine(state, npcName, groups, offset = 0) {
+        const relation = state?.npcRelations?.[npcName] || 0;
+        const bucket = relation >= 50 ? 'high' : relation <= 0 ? 'low' : 'neutral';
+        const lines = groups[bucket] || groups.neutral || groups.high || groups.low || [];
+        const routes = state?.routeScores || {};
+        const seed = getStoryProgressNumber(state)
+            + relation
+            + (routes.orthodox || 0)
+            + (routes.demonic || 0)
+            + (routes.secluded || 0)
+            + offset;
+        return pickSeededLine(lines, seed);
+    }
+
+    function hasAnyFlag(state, flagNames) {
+        const flags = state?.flags || {};
+        return flagNames.some((flagName) => Boolean(flags[flagName]));
+    }
+
     const NPCS = {
         '墨大夫': {
             name: '墨大夫',
             title: '神手谷主人',
             avatar: '墨',
             dialogueByStage(state) {
-                const relation = state.npcRelations['墨大夫'] || 0;
-                if (relation <= -20) return '你既已看清我，就该明白修仙界从不是讲仁义的地方。';
-                if (state.flags.startPath === 'disciple') return '好生炼药，别让旁人看出你手上这点灵性。';
-                return '好奇心太重的人，往往活不长。';
+                const highIntensityEcho = [
+                    '我早说过，你这种人不是心狠，是太早知道心不狠活不下来。',
+                    '你如今看人时那一眼，倒比我年轻时还稳。',
+                    '别急着否认。你越想和我划清界限，就越说明你知道自己学到了什么。',
+                    '我教你的从来不是医术，是怎么把别人的命看成一种可计算的东西。',
+                    '你比我走得远，只因你比我更懂什么时候该装得像个人。',
+                ];
+                const neutralFragments = [
+                    '若你看到这里，说明你终究还是活下来了。',
+                    '我一生不信善恶，只信能不能成事。如今想来，也未必全对。',
+                    '你若肯认我半分授业之实，便替我把该了的债了几笔。',
+                    '人一旦尝过掌控他人生死的滋味，便很难再甘于只做棋子。',
+                    '你以后若收弟子，迟早会懂：真正难教的不是蠢人，是像你我这样太会算的人。',
+                ];
+                const resist = [
+                    '我不是你。',
+                    '可每次说这话时，你都比平时更像在说服自己。',
+                    '我学的是活命，不是学你。',
+                    '但活命这两个字，本就是你最先教会我的。',
+                    '若我真成了你，那我这一生也太可笑了。',
+                ];
+                const seed = getStoryProgressNumber(state);
+                if (state.flags.firstSilencingKill) {
+                    return pickSeededLine([
+                        '你看，第一次最难，后面就顺了。',
+                        '别怕承认，干净利落本就是一种天赋。',
+                    ], seed);
+                }
+                if (state.flags.quhunReleased) {
+                    return pickSeededLine([
+                        '你居然舍得放。倒比我想的还多留了一点人味。',
+                        '可记住，仁慈这种东西，通常都很贵。',
+                    ], seed + 1);
+                }
+                if (state.flags.executedDisabledEnemy) {
+                    return pickSeededLine([
+                        '这一步你终究还是走到了。',
+                        '现在你该懂，为何我从不信所谓留一线。',
+                    ], seed + 2);
+                }
+                if (state.flags.postponedAscension || state.ending?.id === 'fanxin_weisi') {
+                    return pickSeededLine([
+                        '你走到这里，竟还没把那点凡心磨光。',
+                        '也罢。也许正因如此，你才没彻底像我。',
+                    ], seed + 3);
+                }
+                if (hasAnyFlag(state, ['executedDisabledEnemy', 'demonicPathSeed', 'betrayedSect'])
+                    || (state.routeScores.demonic || 0) > ((state.routeScores.orthodox || 0) + (state.routeScores.secluded || 0))) {
+                    return pickSeededLine(highIntensityEcho, seed + 4);
+                }
+                if ((state.npcRelations['墨大夫'] || 0) <= -20) {
+                    return pickSeededLine(resist, seed + 5);
+                }
+                if (state.flags.startPath === 'disciple') {
+                    return '好生炼药，别让旁人看出你手上这点灵性。';
+                }
+                return pickNpcLine(state, '墨大夫', {
+                    high: highIntensityEcho,
+                    neutral: neutralFragments,
+                    low: resist,
+                }, 6);
             },
         },
         '厉飞雨': {
@@ -356,12 +450,50 @@
             title: '七玄门内门弟子',
             avatar: '厉',
             dialogueByStage(state) {
-                const relation = state.npcRelations['厉飞雨'] || 0;
-                if (state.flags.helpedOldFriendAgain) return '你还肯为旧人伸手，这说明你到底没把自己修成一块只会算账的石头。';
-                if (state.flags.keptDistanceFromOldFriend) return '你如今和谁都留着半步，我能理解，只是有时候看着也怪不像你。';
-                if (relation >= 50) return '贤弟，你若开口，厉某这条命都可以借你一半。';
-                if (relation <= -10) return '各走各路吧，我不欠你，你也不欠我。';
-                return '门里风声越来越紧，道友最近最好别单独乱走。';
+                const high = [
+                    '你现在看着厉害，可我还是更记得你当年那副不服输的穷酸样。',
+                    '别人怕你，我不怕。你再怎么变，骨子里也还是那个不肯认命的家伙。',
+                    '你若真哪天混到天上去了，也别把青牛镇忘得太干净。',
+                    '你这人命硬，我一直知道。就是没想到会硬到今天这份上。',
+                    '我不懂你们修仙那些大道理，但我看得出，你活得越来越累了。',
+                ];
+                const neutral = [
+                    '你变了，这不奇怪。换我走你那条路，也未必还像现在这样说话。',
+                    '你如今说一句话，要想三层。我听着都替你费劲。',
+                    '能活到今天，总得丢点什么。你丢得算少还是算多，我看不清。',
+                    '你现在回来看一眼，也算没把旧地方全忘了。',
+                    '我帮不了你什么，顶多提醒你一句：别把自己活得连自己都不认了。',
+                ];
+                const low = [
+                    '你是回来看看，还是回来确认自己早就不属于这儿了？',
+                    '你现在站得高，说话也轻了。可轻不代表别人听不出来你在算。',
+                    '有些人走出去是为了回来，有些人走出去就真不打算再认旧人了。',
+                    '我以前觉得你只是谨慎，现在看，你是越来越会跟过去撇清。',
+                    '你若只是想顺路看看我还活没活着，那看完也可以走了。',
+                ];
+                const seed = getStoryProgressNumber(state);
+                if (state.flags.helpedOldFriendAgain) {
+                    return pickSeededLine([
+                        '你还肯回头帮这一把，我记下了。',
+                        '行，我不和你说谢。咱们之间说这个太生分。',
+                    ], seed);
+                }
+                if (state.flags.returnedTiannanButRemainedHidden || state.flags.returnedToSeclusion) {
+                    return pickSeededLine([
+                        '你都回来了，还藏着做什么？怕旧人认出你，还是怕自己认出旧日子？',
+                        '你这活法，真像一阵风，谁都摸不住。',
+                    ], seed + 1);
+                }
+                if (state.flags.battlefieldReputationFearsome) {
+                    return pickSeededLine([
+                        '外面都说你狠。我信一半。',
+                        '你真狠了，才活得到今天；可你要是全狠了，也不会回来见我。',
+                    ], seed + 2);
+                }
+                if (state.flags.keptDistanceFromOldFriend) {
+                    return pickSeededLine(low, seed + 3);
+                }
+                return pickNpcLine(state, '厉飞雨', { high, neutral, low }, 7);
             },
         },
         '墨彩环': {
@@ -369,17 +501,59 @@
             title: '墨府小姐',
             avatar: '彩',
             dialogueByStage(state) {
-                const relation = state.npcRelations['墨彩环'] || 0;
-                const chapterComment = getChapterChoiceComment(state, '墨彩环');
-                if (chapterComment) return chapterComment;
-                if (state.flags.madeAmendsToMocaihuan) return '你这次没有只留一句“以后再说”。我记得的，也不只是你来迟了。';
-                if (state.flags.admittedOldWrongToMocaihuan) return '人肯认错不算容易。只是有些日子已经过去，终究回不到原样。';
-                if (state.flags.checkedOnMocaihuanThenLeft) return '你来确认我安好，这就够了。剩下的日子，我会自己过。';
-                if (state.flags.returnedToMoHouse) return '你总算回来把旧约说完了。这一次，我听见的不是告别。';
-                if (state.flags.mendedMoHouseDebt) return '你不是没有做错过，只是到底还是回头把这笔账补上了。';
-                if (state.flags.daoLvPromise) return '你当日那句承诺，我一直记着，只是不知你还记不记得。';
-                if (relation >= 60) return '道友每回来一次，墨府便像多了一盏灯。';
-                return '父亲的旧事，我想问，却又怕听见答案。';
+                const high = [
+                    '你回来得晚，但总算不是没有回来。',
+                    '我后来不再等你，只是记着你说过的话。你今日来了，那便算你没全失信。',
+                    '你们修仙的人总说尘缘易断，可真断不断，不在嘴上。',
+                    '我如今过得不算多好，但至少不是靠等谁活着。',
+                    '你若真想补，就别只补给自己安心。',
+                ];
+                const neutral = [
+                    '人总要往前过。你是修仙，我是过日子，本就不是一条路。',
+                    '你欠不欠，我记得；你还不还，那是你的事。',
+                    '当年那点事，我早就不日日想了。只是有些话，现在说出来也不再疼了。',
+                    '你若只是来看看我过得如何，那你看到了。我没死，也没等。',
+                    '凡人的日子很短，等太久，很多心思自己就熄了。',
+                ];
+                const low = [
+                    '你回来做什么？收尾，还是确认当年那笔账终究没人追到你头上？',
+                    '我最怕的不是你走，是你走的时候还说那是为了我好。',
+                    '你们修仙的人最擅长的，就是把离开说成无可奈何。',
+                    '我后来想明白了。指望一个修仙的人回来，和指望风别吹散灯一样，都不可靠。',
+                    '你若想求我原谅，大可不必。我不是不恨，是恨久了也要活。',
+                ];
+                const seed = getStoryProgressNumber(state);
+                if (state.flags.protectedMoHouse) {
+                    return pickSeededLine([
+                        '那次若不是你，墨府那点根怕是真保不住。',
+                        '我不说感激，可这笔情，我知道该怎么记。',
+                    ], seed);
+                }
+                if (state.flags.lootedMoHouse || state.flags.tookTreasure) {
+                    return pickSeededLine([
+                        '我后来最难受的不是你拿了什么，是你拿的时候，居然真能不回头。',
+                        '那天我才知道，原来旧情在你眼里也可以折成价。',
+                    ], seed + 1);
+                }
+                if (state.flags.promisedMoReturn || state.flags.daoLvPromise) {
+                    return pickSeededLine([
+                        '你这句我会回来，我记了很多年。',
+                        '你若今日不来，这话往后也就不必再提了。',
+                    ], seed + 2);
+                }
+                if (state.flags.madeAmendsToMocaihuan || state.flags.mendedMoHouseDebt) {
+                    return pickSeededLine([
+                        '迟来的补偿不是没用，只是它补不回那几年。',
+                        '但人总不能一辈子只盯着没补回来的地方活。',
+                    ], seed + 3);
+                }
+                if (state.flags.admittedOldWrongToMocaihuan) {
+                    return '人肯认错不算容易。只是有些日子已经过去，终究回不到原样。';
+                }
+                if (state.flags.checkedOnMocaihuanThenLeft) {
+                    return '你来确认我安好，这就够了。剩下的日子，我会自己过。';
+                }
+                return pickNpcLine(state, '墨彩环', { high, neutral, low }, 9);
             },
         },
         '南宫婉': {
@@ -387,22 +561,71 @@
             title: '掩月宗仙子',
             avatar: '婉',
             dialogueByStage(state) {
-                const relation = state.npcRelations['南宫婉'] || 0;
-                const chapterComment = getChapterChoiceComment(state, '南宫婉');
-                if (chapterComment) return chapterComment;
-                if (state.flags.openlyAcknowledgedNangongImportance) return '你既然已经承认我重要，往后很多路就不能再只按你一个人的活法去走。';
-                if (state.flags.continuedToOweNangongSilently) return '你总说记得，可若一直只记在心里，这笔账和没还也没什么两样。';
-                if (state.flags.avoidedNangongAgain) return '你躲得开我，却躲不开自己为什么总在真正重要的时候往后退。';
-                if (state.flags.acceptedNangongPath) return '你既肯把路走得不那么冷，我也不会再让你独自扛完后半程。';
-                if (state.flags.cutEmotion) return '你嘴上说只认资源不认人，可真到了回头的时候，还是来了。';
-                if (state.flags.cooperatedAtXuTian) return '虚天殿那次你没先翻脸，这种事在乱星海比情话更值钱。';
-                if (state.flags.rescuedFromXuTianEdge) return '你既然都在殿外回过头，就别再装作自己什么人都不想认。';
-                if (state.flags.grabbedTreasure) return '你先伸手夺宝那一下，倒比你平日的推托更诚实。';
-                if (state.flags.watchedXuTianFight) return '你总爱等别人先露底。只是虚天殿那次，旁人也把你的冷眼一起记住了。';
-                if (state.flags.slippedPastXuTian) return '你绕殿而走那一步很稳，也让人更难看清你心里究竟还留没留别人。';
-                if (state.routeScores.demonic > state.routeScores.orthodox) return '你眼里那股狠意，比当年禁地里的血色还重。';
-                if (relation >= 80) return '大道再远，只要你还回头，我便还在。';
-                return '你总把话说得很轻，可你的选择从来不轻。';
+                const high = [
+                    '你还是老样子，越在意，越装得像没事。',
+                    '你从来不是无情，只是太习惯先保住自己。',
+                    '我见过你最狼狈的时候，所以你不必在我面前装得太稳。',
+                    '你若记得，就不必总挂在嘴上。真记得的人，做事会变。',
+                    '你一路走到今天，最难得的不是活着，是还没把该记的人全忘了。',
+                ];
+                const neutral = [
+                    '你比以前更会藏了。',
+                    '你总算学会先看局势再动，可有时也太会把自己藏进退路里。',
+                    '禁地那件事我记得，但我不靠回忆活。',
+                    '你若要还账，就别只会说以后。',
+                    '你站得越高，越像谁也不欠。可真不欠的人，不会老避着不谈。',
+                ];
+                const low = [
+                    '你不是断得干净，你只是怕。',
+                    '你最会做的，不是拒绝，是把所有话都拖到谁也追不上的以后。',
+                    '我不怪你选活路。只是你若连那也不敢认，便太难看。',
+                    '你当年若真不在乎，也不必每次见我都像什么都没发生过。',
+                    '你把自己护得很好。只是护久了，谁也进不来。',
+                ];
+                const seed = getStoryProgressNumber(state);
+                if (state.flags.nangongTrustSeed || state.flags.savedNangong) {
+                    return pickSeededLine([
+                        '那时我敢把后背给你半息，已算难得。',
+                        '你若连那半息都忘了，往后很多话也不必再说。',
+                    ], seed);
+                }
+                if (state.flags.acceptedNangongDebt || state.flags.acceptedNangongPath) {
+                    return pickSeededLine([
+                        '你既认了，就别总拿修行为借口。',
+                        '人情不是锁，可你既欠了，最好别装作没欠。',
+                    ], seed + 1);
+                }
+                if (state.flags.suppressedNangongFeelings) {
+                    return pickSeededLine([
+                        '你压得住心，不代表压得住记忆。',
+                        '越是刻意无事，越说明并非真无事。',
+                    ], seed + 2);
+                }
+                if (hasAnyFlag(state, ['cutNangongTies', 'cutEmotion'])) {
+                    return pickSeededLine([
+                        '你切得倒快。只是很多事不是切断了就算过去。',
+                        '你若真能全忘，今日看我时就不会停那一下。',
+                    ], seed + 3);
+                }
+                if (state.flags.openlyAcknowledgedNangongImportance) {
+                    return pickSeededLine([
+                        '你终于肯不把一切都算成利弊了。',
+                        '这一步比你破境还难，我知道。',
+                    ], seed + 4);
+                }
+                if (state.flags.cooperatedAtXuTian) {
+                    return '虚天殿那次你没先翻脸，这种事在乱星海比情话更值钱。';
+                }
+                if (state.flags.rescuedFromXuTianEdge) {
+                    return '你既然都在殿外回过头，就别再装作自己什么人都不想认。';
+                }
+                if (state.flags.grabbedTreasure) {
+                    return '你先伸手夺宝那一下，倒比你平日的推托更诚实。';
+                }
+                if (state.flags.watchedXuTianFight || state.flags.slippedPastXuTian) {
+                    return pickNpcLine(state, '南宫婉', { high, neutral, low }, 11);
+                }
+                return pickNpcLine(state, '南宫婉', { high, neutral, low }, 10);
             },
         },
         '李化元': {
@@ -410,23 +633,59 @@
             title: '黄枫谷长老',
             avatar: '李',
             dialogueByStage(state) {
-                const relation = state.npcRelations['李化元'] || 0;
-                const chapterComment = getChapterChoiceComment(state, '李化元');
-                if (chapterComment) return chapterComment;
-                if (state.flags.answeredLiSummons) return '门墙不只记名分，也记得谁肯在最后回来把话说清。';
-                if (state.flags.enteredLihuayuanLineage) return '接了令牌，就别再把自己只当成借屋檐避雨的人。门里会护你，也会记着你该替谁扛事。';
-                if (state.flags.usedLihuayuanInfluencePragmatically) return '你很会算借势的分寸，可门墙这种东西，借久了也会反过来看你。';
-                if (state.flags.respectedLihuayuanButStayedIndependent) return '给自己留退路没有错，只是退路多了，别人也难把真正的背后交给你。';
-                if (state.flags.mineChoice === 'rearGuard') return '灵矿那次你肯回头接人，这才像真正懂了“门里为什么要筑基修士”。';
-                if (state.flags.mineChoice === 'hold') return '矿脉死局里你没先跑，这比平日说多少漂亮话都更像门内弟子。';
-                if (state.flags.mineChoice === 'betrayGate') return '门墙可以容你借势，容不了你拿同门去换自己的位子。';
-                if (state.flags.yanFortObservedQuietly || state.flags.lowProfileBanquet) return '燕家堡那一夜你没急着站队，说明你终于开始看懂局，不只是看懂人。';
-                if (state.flags.yanFortNetworkBuilt || state.flags.builtBanquetNetwork) return '酒席上铺线不难，难的是别把自己也铺进别人的账里。';
-                if (state.flags.yanFortEstablishedPresence || state.flags.showedStrength) return '燕家堡那次你敢把场面压住，别人以后看你，便不会再只看修为。';
-                if (state.flags.learnsSecretively) return '你藏了不少心思，但能走回来，就说明还没把门里全忘。';
-                if (relation >= 50) return '你这人不爱说话，但心里有数，为师放心。';
-                if (relation <= -20) return '你若只想借宗门遮风，迟早也会被风刮走。';
-                return '门内不缺天才，缺的是知道什么时候该忍的人。';
+                const high = [
+                    '你总算不只是会替自己活。',
+                    '修为高的人不缺，真正知道什么时候该上、什么时候该退的人才值钱。',
+                    '你这一路没白走，至少没把谨慎活成怯懦。',
+                    '你若真能把心性立住，往后不比任何资质更好的人差。',
+                    '我看重你，不是因为你听话，是因为你知道代价。',
+                ];
+                const neutral = [
+                    '你脑子够用，只是心还不够稳。',
+                    '会留退路没错，可太会留退路，也会让人不敢全信。',
+                    '你不是没有担当，只是总要先算到自己吃不吃亏。',
+                    '宗门给你的，不是白给。你若用过，日后就得认。',
+                    '别把独立当成什么都不背。真正的独立，是代价全自己扛。',
+                ];
+                const low = [
+                    '你太会算，算到最后容易把自己也算轻了。',
+                    '一个只肯借势、不肯认责的人，走不远。',
+                    '你若总想着谁都不欠，迟早会发现谁也不愿替你担。',
+                    '聪明人我见得多，真正可用的没有几个。',
+                    '你最像的不是我年轻时，是那些以为永远能站在门外看局的人。',
+                ];
+                const seed = getStoryProgressNumber(state);
+                if (state.flags.enteredLihuayuanLineage) {
+                    return pickSeededLine([
+                        '既入我门下，往后很多事便不能只按你一个人的活法来办。',
+                        '我给你门路，也要看你能不能担得起门内的分量。',
+                    ], seed);
+                }
+                if (state.flags.respectedLihuayuanButStayedIndependent) {
+                    return pickSeededLine([
+                        '你敬我，却不肯全信我。我能理解，也不会白白信你。',
+                        '这样活下去不容易，但你既然选了，就别抱怨没人替你兜底。',
+                    ], seed + 1);
+                }
+                if (state.flags.stoodTheLine || state.flags.mineChoice === 'hold') {
+                    return pickSeededLine([
+                        '那次你站住了，我记下了。',
+                        '很多弟子会死，你若想活得有些不一样，便记住自己为何没退。',
+                    ], seed + 2);
+                }
+                if (state.flags.rescuedSmallGroup || state.flags.mineChoice === 'rearGuard' || state.flags.warChoice === 'secluded') {
+                    return pickSeededLine([
+                        '你救下了人，也丢了阵线。宗门未必满意，我却不觉得那全是错。',
+                        '会带人活，是本事；敢背因此来的非议，更是本事。',
+                    ], seed + 3);
+                }
+                if (state.flags.usedLihuayuanInfluencePragmatically || state.flags.learnsSecretively) {
+                    return pickSeededLine(low, seed + 4);
+                }
+                if (state.flags.answeredLiSummons) {
+                    return '门墙不只记名分，也记得谁肯在最后回来把话说清。';
+                }
+                return pickNpcLine(state, '李化元', { high, neutral, low }, 12);
             },
         },
         '万小山': {
@@ -482,302 +741,302 @@
         levelEvent({
             id: 'qi_0',
             realmScore: 0,
-            title: '炼气初期：吐纳识气',
-            summary: '第一口灵气入体，真正意义上的修仙开始了。',
+            title: '炼气初期：第一缕灵气',
+            summary: '修仙的开端不是神圣感，而是一个凡人第一次意识到自己再也不能只按凡人的方式活。',
             requirements: { realmScoreAtLeast: 0 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '你第一次清晰分辨出体内灵气的流向，呼吸也跟着沉下来。'),
-                    beat('旁白', state.flags.preparedWell ? '你想起出门前带上的干粮和柴米，心神也稳了几分。' : '没有人提醒你如何稳住气机，只能靠一次次吐纳试出来。'),
+                    beat('旁白', '第一次感到灵气入体时，你没有欣喜，只有惊惧。那感觉像有一丝冰凉的水顺着经脉最细处缓缓流过，把原本属于凡人的身体轻轻拨开了一条缝。'),
+                    beat('旁白', '修仙的开端并不神圣，它只是让一个凡人第一次意识到，自己可能再也不能只按凡人的方式活了。'),
                 ];
             },
-            choices(state) {
+            choices() {
                 return [
-                    { text: '继续稳固根基', effects: { cultivation: 18, routeScores: { orthodox: 1 } } },
-                    { text: '趁机多试几次引气诀', effects: { cultivation: 10, routeScores: { secluded: 1 } } },
+                    { id: 'stabilize_fast', text: '强行继续运转周天', effects: { cultivation: 10, routeScores: { orthodox: 1 } } },
+                    { id: 'observe_change', text: '停下体悟，先记住这种变化', effects: { cultivation: 6, routeScores: { secluded: 2 } } },
+                    { id: 'suppress_instinctively', text: '下意识压住气感', effects: { cultivation: 4, flags: { fanxinAnchorLight: true } } },
                 ];
             },
-            effects: { cultivation: 15 },
         }),
         levelEvent({
             id: 'qi_1',
             realmScore: 1,
-            title: '炼气中期：经脉初通',
-            summary: '经脉开始顺畅，但心浮气躁也会更容易反噬。',
+            title: '炼气中期：药火第一次失控',
+            summary: '修仙不是空想，它会很具体地烧掉你的钱、时间与希望。',
             requirements: { realmScoreAtLeast: 1 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '你开始能感觉到经脉中的细小阻滞，那不是疼，而是界限。'),
-                    beat('旁白', state.flags.lowProfile ? '你明白低调不是退缩，而是先保住经脉里这点火种。' : '你总想在更短时间里看到结果，反而更需要压住躁意。'),
+                    beat('旁白', '你照着残缺丹方试着温养药液，火候只差一丝便全盘皆坏。焦苦的药气冲上来时，你第一次真正感到：修仙不是空想，它会很具体地烧掉你的钱、时间与希望。'),
+                    beat('旁白', '很多人后来只看见你会炼、会算、会省，没人知道你最早学会的，是失败也得自己买单。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '养气半日', effects: { cultivation: 22, routeScores: { secluded: 1 } } },
-                    { text: '强行多吐纳一轮', effects: { cultivation: 8, routeScores: { demonic: 1 } } },
+                    { id: 'retry', text: '继续试，不计成本摸透', effects: { cultivation: 8, flags: { alchemyProgress1: true } } },
+                    { id: 'record_mistake', text: '记下失误，暂缓炼药', effects: { cultivation: 6, routeScores: { secluded: 1 } } },
+                    { id: 'grow_irritable', text: '迁怒于自己资质不够', effects: { cultivation: 4, routeScores: { demonic: 1 } } },
                 ];
             },
-            effects: { cultivation: 12 },
         }),
         levelEvent({
             id: 'qi_2',
             realmScore: 2,
-            title: '炼气后期：药火微成',
-            summary: '你开始能借外物补内息，但代价和风险也开始出现。',
+            title: '炼气后期：经脉如针',
+            summary: '你后来追境界时，有一半其实不是为了更高，而是为了不再回到无能为力的时候。',
             requirements: { realmScoreAtLeast: 2 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '灵草、丹药和你体内的气开始彼此勾连，像是试探，也像是协商。'),
-                    beat('旁白', state.flags.startPath === 'disciple' ? '墨大夫教你的不只是功法，还有怎么不让别人看出你在意什么。' : '你越来越清楚，修行最先改变的往往不是力量，而是耐心。'),
+                    beat('旁白', '夜里运功时，经脉忽如针扎。你强撑着没停，恍惚间想起家中长辈劳作后的手。那一刻你忽然把修行和“再也不要无能为力”绑在了一起。'),
+                    beat('旁白', '你后来追境界时，有一半其实不是为了更高，而是为了不再回到那种只能咬牙忍着、却什么都改变不了的状态。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '守住药性，不贪快', effects: { cultivation: 26, routeScores: { orthodox: 1 } } },
-                    { text: '借绿瓶试一次催熟', effects: { cultivation: 16, routeScores: { secluded: 1 } } },
+                    { id: 'vow_not_to_be_weak', text: '咬牙撑过，立下绝不再弱之念', effects: { cultivation: 8, flags: { fanxinAnchor1: true } } },
+                    { id: 'stop_and_breathe', text: '停功调息，接受自己还不够强', effects: { cultivation: 6, routeScores: { secluded: 1 } } },
+                    { id: 'feel_retreat', text: '想起凡人日子，生出一点退意', effects: { cultivation: 4, flags: { homesickSeed: true } } },
                 ];
             },
-            effects: { cultivation: 18 },
         }),
         levelEvent({
             id: 'ji_3',
             realmScore: 3,
-            title: '筑基初期：骨脉重铸',
-            summary: '从这里开始，修行不再只是堆修为，而是重塑身体。',
+            title: '筑基初期：脱胎',
+            summary: '破境不是多了一层修为，而是你第一次清楚感觉到，自己真的在离过去那个凡人越来越远。',
             requirements: { realmScoreAtLeast: 3 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '筑基之后，你能明显感觉到筋骨比从前沉稳，连打坐都更像在扎根。'),
-                    beat('旁白', state.flags.hasGreenBottle ? '你知道那只绿瓶以后会越来越危险，也越来越值钱。' : '你第一次真切意识到，资源不足会比敌人更早把人逼到墙角。'),
+                    beat('旁白', '筑基之后第一次照见自身时，你竟有一瞬陌生。骨肉更凝，气机更稳，像是旧的自己死了一次，而新的自己正踩着旧骨头站起来。'),
+                    beat('旁白', '破境不是多了一层修为，而是你第一次清楚感觉到，自己真的在离过去那个凡人越来越远。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '趁稳重夯实根基', effects: { cultivation: 34, routeScores: { orthodox: 1 } } },
-                    { text: '试着提速冲境', effects: { cultivation: 20, routeScores: { demonic: 1 } } },
+                    { id: 'accept_change', text: '接受这种变化', effects: { cultivation: 15 } },
+                    { id: 'feel_unsettled', text: '对旧我已去生出惶然', effects: { cultivation: 8, flags: { fanxinAnchor2: true } } },
+                    { id: 'treat_as_upgrade', text: '把这当成理所当然的晋升', effects: { cultivation: 10, routeScores: { demonic: 1 } } },
                 ];
             },
-            effects: { cultivation: 22 },
         }),
         levelEvent({
             id: 'ji_4',
             realmScore: 4,
             title: '筑基中期：人情入局',
-            summary: '你开始发现，修仙界里最难躲开的不是劫，而是关系。',
+            summary: '你第一次发现，修为一高，连别人对你好都不再那么单纯。',
             requirements: { realmScoreAtLeast: 4 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '当你能稳住筑基中期的气机时，很多人对你的态度也开始变化。'),
-                    beat('旁白', state.npcRelations['厉飞雨'] >= 30 ? '厉飞雨这条线还没断，他的信任会在后面不断回来找你。' : '有些人对你的态度开始模糊，恰恰说明你已不再是可以随便忽略的人。'),
+                    beat('旁白', '筑基后第一次，有人带着礼物与试探来接近你。对方说得很客气，像只是来道贺，可你听得分明：他们不是来认识你，是来确认你值不值得先结一层情。'),
+                    beat('旁白', '你第一次发现，修为一高，连别人对你好都不再那么单纯。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '先处理好旧人情', effects: { relations: { '厉飞雨': 10 }, routeScores: { orthodox: 1 } } },
-                    { text: '把人情先记账', effects: { routeScores: { secluded: 1 } } },
+                    { id: 'accept_and_remember', text: '收下善意，也记住其用意', effects: { cultivation: 10, flags: { socialCapital1: true } } },
+                    { id: 'decline_all', text: '婉拒一切，不愿卷入', effects: { cultivation: 6, routeScores: { secluded: 2 } } },
+                    { id: 'reverse_observe', text: '借势反过来观察对方', effects: { cultivation: 8, routeScores: { demonic: 1 } } },
                 ];
             },
-            effects: { cultivation: 18 },
         }),
         levelEvent({
             id: 'ji_5',
             realmScore: 5,
             title: '筑基后期：瓶颈见锋',
-            summary: '瓶颈开始显形，推进的代价也更明确。',
+            summary: '很多瓶颈并不长在经脉里，它们长在你不愿承认却始终绕不开的那一点心思上。',
             requirements: { realmScoreAtLeast: 5 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '你在瓶颈边缘来回试探，像站在门槛上判断该不该抬脚。'),
-                    beat('旁白', state.routeScores.demonic > state.routeScores.orthodox ? '你越来越熟悉“先取再说”的习惯。' : '你更常想的是怎样把风险留在自己能承受的范围里。'),
+                    beat('旁白', '修为停住的那段时间，你试了很多法子，都差一点。最后你才隐约明白，不是灵力不够，而是心里有一件事一直没放平。'),
+                    beat('旁白', '很多瓶颈并不长在经脉里，它们长在你不愿承认却始终绕不开的那一点心思上。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '压住气机，等下一轮', effects: { cultivation: 28, routeScores: { secluded: 1 } } },
-                    { text: '借丹药强推一把', costs: { lingshi: 2 }, effects: { cultivation: 14, routeScores: { demonic: 1 } } },
+                    { id: 'face_the_thorn', text: '正视那根刺', effects: { cultivation: 12, flags: { heartStability1: true } } },
+                    { id: 'force_break', text: '继续硬冲，不理心障', effects: { cultivation: 10, routeScores: { demonic: 2 } } },
+                    { id: 'wait_it_out', text: '暂退半步，等它自己淡', effects: { cultivation: 8, routeScores: { secluded: 2 } } },
                 ];
             },
-            effects: { cultivation: 22 },
         }),
         levelEvent({
             id: 'jin_6',
             realmScore: 6,
-            title: '金丹初期：丹成一线',
-            summary: '金丹不是结束，而是你能否守住自己的开始。',
+            title: '金丹初期：丹成孤意',
+            summary: '强并不会自动让人更圆满，很多时候，它只是让你更难把心里那点空说给谁听。',
             requirements: { realmScoreAtLeast: 6 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '丹海中有了一点真正成形的东西，你对灵气的掌控也开始变得凌厉。'),
-                    beat('旁白', state.flags.savedNangong ? '南宫婉的名字不再只是禁地里的惊鸿一瞥，而会变成一条持续的线。' : '有些旧人你虽然暂时没再见，却仍在关键时刻影响你的判断。'),
+                    beat('旁白', '金丹既成，气象自不同。可真正破境那一刻，你最先感到的不是喜，而是一种说不出的空：这么大的事，身边竟没有一个真正适合开口的人。'),
+                    beat('旁白', '强并不会自动让人更圆满，很多时候，它只是让你更难把心里那点空说给谁听。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '稳住丹心', effects: { cultivation: 40, routeScores: { orthodox: 1 } } },
-                    { text: '借斗法磨丹', effects: { cultivation: 26, routeScores: { demonic: 1 } } },
+                    { id: 'accept_loneliness', text: '接受强者本就更孤', effects: { cultivation: 10, routeScores: { secluded: 2 } } },
+                    { id: 'think_of_old_people', text: '想起旧人，生出回望之意', effects: { cultivation: 8, relations: { '南宫婉': 2, '厉飞雨': 2, '墨彩环': 2 } } },
+                    { id: 'press_down_emptiness', text: '用修为压住这点空意', effects: { cultivation: 6, routeScores: { demonic: 1 } } },
                 ];
             },
-            effects: { cultivation: 24 },
         }),
         levelEvent({
             id: 'jin_7',
             realmScore: 7,
-            title: '金丹中期：宗门旧账',
-            summary: '你开始真正有资格参与宗门里的分量计算。',
+            title: '金丹中期：旧账倒灌',
+            summary: '旧账不会因为你变强就自动消失，它们只是等你有能力面对了，才回来。',
             requirements: { realmScoreAtLeast: 7 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '进入金丹中期后，宗门、盟友、旧债全开始拿你当一个能被算进账本的人。'),
-                    beat('旁白', state.flags.liDisciple ? '李化元那一边的态度，开始从“照看”变成“期待”或“约束”。' : '你知道自己还没有完全站稳，所以每次抉择都更像押注。'),
+                    beat('旁白', '名声渐起之后，一些旧人旧事忽然又浮了上来。你原以为早年那些已经翻过去的决定，如今才知道，它们不过是一直压在水下，等你走高了再一起浮出。'),
+                    beat('旁白', '旧账不会因为你变强就自动消失，它们只是等你有能力面对了，才回来。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '先回宗门压局势', effects: { routeScores: { orthodox: 2 } } },
-                    { text: '把旧账留给以后', effects: { routeScores: { secluded: 1 } } },
+                    { id: 'clear_old_debts', text: '主动清账', effects: { cultivation: 12, flags: { oldDebtProgress1: true } } },
+                    { id: 'delay', text: '暂不理会', effects: { cultivation: 6, routeScores: { secluded: 1 } } },
+                    { id: 'sort_by_value', text: '先看谁更值得处理', effects: { cultivation: 8, routeScores: { demonic: 1 } } },
                 ];
             },
-            effects: { cultivation: 28 },
         }),
         levelEvent({
             id: 'jin_8',
             realmScore: 8,
-            title: '金丹后期：禁地余波',
-            summary: '血色禁地的后果开始倒灌回你的日常。',
+            title: '金丹后期：名声先于你到场',
+            summary: '名声最可怕的地方，不是别人怎么看你，而是它会反过来逼你活成某种样子。',
             requirements: { realmScoreAtLeast: 8 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '你已经能明显感觉到，禁地那次选择并没有结束，它只是换了一个更慢的方式发作。'),
-                    beat('旁白', state.flags.daoLvPromise ? '墨彩环的等待、南宫婉的态度、李化元的目光，这三条线开始一起压向你。' : '你知道自己越往后走，旧选择越会变成未来的路标。'),
+                    beat('旁白', '第一次，你还未进门，旁人便先低声提起了你的名字。有人敬，有人惧，也有人已经在心里替你安了一个位置。'),
+                    beat('旁白', '名声最可怕的地方，不是别人怎么看你，而是它会反过来逼你活成某种样子。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '先清理旧债', effects: { cultivation: 30, routeScores: { orthodox: 1 } } },
-                    { text: '把余波当资源', effects: { cultivation: 22, routeScores: { demonic: 1 } } },
+                    { id: 'accept_reputation', text: '接受名声带来的便利', effects: { cultivation: 10, flags: { reputation1: true } } },
+                    { id: 'fear_reputation', text: '对名声本能防备', effects: { cultivation: 6, routeScores: { secluded: 2 } } },
+                    { id: 'use_reputation', text: '主动利用名声压场', effects: { cultivation: 8, routeScores: { demonic: 2 } } },
                 ];
             },
-            effects: { cultivation: 24 },
         }),
         levelEvent({
             id: 'yu_9',
             realmScore: 9,
-            title: '元婴初期：神识初开',
-            summary: '当神识真正展开，很多藏起来的东西也会被你看见。',
+            title: '元婴初期：神识外放',
+            summary: '强者之所以危险，不只是因为能杀，更因为他开始太容易看见别人，而别人看不见他。',
             requirements: { realmScoreAtLeast: 9 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '你的神识开始能跨越更远的距离，很多过去看不见的因果也在此时浮现。'),
-                    beat('旁白', state.routeScores.secluded >= state.routeScores.orthodox ? '你越来越懂得如何把自己藏进安全范围里。' : '你开始更频繁地把“能不能帮别人”放进思考里。'),
+                    beat('旁白', '神识扩张之后，你第一次能轻易感知许多从前触不到的细节。墙后之人、远处气机、旁人的一丝犹豫与心乱，都像摆到眼前。'),
+                    beat('旁白', '强者之所以危险，不只是因为能杀，更因为他开始太容易看见别人，而别人看不见他。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '谨慎扩展神识', effects: { cultivation: 38, routeScores: { secluded: 1 } } },
-                    { text: '直接探查旧地', effects: { cultivation: 26, routeScores: { orthodox: 1 } } },
+                    { id: 'adapt', text: '适应这种变化', effects: { cultivation: 20 } },
+                    { id: 'restrain', text: '刻意收束，不愿滥用', effects: { cultivation: 8, routeScores: { orthodox: 1 } } },
+                    { id: 'enjoy_control', text: '享受掌控全局的快感', effects: { cultivation: 10, routeScores: { demonic: 2 } } },
                 ];
             },
-            effects: { cultivation: 30 },
         }),
         levelEvent({
             id: 'yu_10',
             realmScore: 10,
-            title: '元婴中期：海路与旧人',
-            summary: '海上势力让你意识到，旧人和新路会一起逼你表态。',
+            title: '元婴中期：海路长夜',
+            summary: '人越往后走，越容易把“我习惯了”错当成“我喜欢这样”。',
             requirements: { realmScoreAtLeast: 10 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '海路、商路、门路在你眼里开始有了差别，很多人也不再只看你是不是能打。'),
-                    beat('旁白', state.flags.enteredStarSea ? '乱星海那边的动静，开始透过风声影响你在天南的判断。' : '你还没真正走远，但你已经知道远方的势力迟早会来找你。'),
+                    beat('旁白', '孤舟夜渡时，四野无声，只有潮声不断。你忽然发现，自己已经很久没有真正相信过谁了。'),
+                    beat('旁白', '人越往后走，越容易把“我习惯了”错当成“我喜欢这样”。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '先看海上态势', effects: { routeScores: { secluded: 1 } } },
-                    { text: '直接抢商机', effects: { routeScores: { demonic: 1 }, cultivation: 18 } },
+                    { id: 'accept_solitude', text: '接受这份孤独', effects: { cultivation: 8, routeScores: { secluded: 2 } } },
+                    { id: 'remember_someone', text: '想起某个仍能信半分的人', effects: { cultivation: 6, relations: { '南宫婉': 3, '厉飞雨': 3 } } },
+                    { id: 'prefer_it', text: '觉得这样最好', effects: { cultivation: 4, routeScores: { demonic: 1 } } },
                 ];
             },
-            effects: { cultivation: 26 },
         }),
         levelEvent({
             id: 'yu_11',
             realmScore: 11,
-            title: '元婴后期：心魔回响',
-            summary: '你越强，心里那些没有解决的东西就越容易回头。',
+            title: '元婴后期：心魔借形',
+            summary: '真正难过的心魔，从来不是它多强，而是它偏偏知道该问你哪一句话。',
             requirements: { realmScoreAtLeast: 11 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '元婴后期的修为让你更接近答案，也更容易听见自己心里的杂音。'),
-                    beat('旁白', state.routeScores.demonic > state.routeScores.orthodox ? '你已经习惯把“代价”放到后面算。' : '你开始更在意什么才算值得。'),
+                    beat('旁白', '心魔出现时，不是敌人的脸，也不是旧仇的影子。它竟是你自己年少时的样子，轻轻问：你现在活成你当初想变成的人了吗？'),
+                    beat('旁白', '真正难过的心魔，从来不是它多强，而是它偏偏知道该问你哪一句话。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '静坐压心魔', effects: { cultivation: 34, routeScores: { orthodox: 1 } } },
-                    { text: '借杀意斩念', effects: { cultivation: 20, routeScores: { demonic: 1 } } },
+                    { id: 'answer_it', text: '正面回答', effects: { cultivation: 12, flags: { heartStability2: true } } },
+                    { id: 'crush_it', text: '强行压碎心魔', effects: { cultivation: 10, routeScores: { demonic: 2 } } },
+                    { id: 'stay_silent', text: '沉默不语', effects: { cultivation: 8, routeScores: { secluded: 1 } } },
                 ];
             },
-            effects: { cultivation: 26 },
         }),
         levelEvent({
             id: 'hs_12',
             realmScore: 12,
-            title: '化神初期：一线天光',
-            summary: '化神之后，天地间的差距会变得格外清晰。',
+            title: '化神初期：天光破境',
+            summary: '修为越高，越难再靠“等我更强了就好了”来骗自己。',
             requirements: { realmScoreAtLeast: 12 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '当你踏进化神初期，很多曾经以为跨不过去的事都变成了可处理的问题。'),
-                    beat('旁白', state.flags.acceptedNangongPath ? '南宫婉的那条线，已经不只是情感，而是一种终局选择。' : '你开始意识到自己已经走到离飞升不远的位置。'),
+                    beat('旁白', '破境成功那一瞬，天地像忽然静了一层。你本该欢喜，却只感到空。那些曾经拼命想得到的东西，如今真到了手边，反倒没能填上心里任何缺口。'),
+                    beat('旁白', '修为越高，越难再靠“等我更强了就好了”来骗自己。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '稳住天光', effects: { cultivation: 44, routeScores: { orthodox: 1 } } },
-                    { text: '借外力冲关', effects: { cultivation: 28, routeScores: { demonic: 1 } } },
+                    { id: 'accept_high_not_full', text: '接受更高未必更满', effects: { cultivation: 12, flags: { heartStability3: true } } },
+                    { id: 'seek_next_goal', text: '立刻寻找下一层目标', effects: { cultivation: 10, routeScores: { demonic: 1 } } },
+                    { id: 'stay_alert', text: '对这份空意生出警惕', effects: { cultivation: 8, routeScores: { secluded: 1 } } },
                 ];
             },
-            effects: { cultivation: 32 },
         }),
         levelEvent({
             id: 'hs_13',
             realmScore: 13,
             title: '化神中期：旧人来信',
-            summary: '旧人的消息开始变成你必须回应的事。',
+            summary: '有些信最重，不是字多，而是你知道它不会再有第二封。',
             requirements: { realmScoreAtLeast: 13 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '你不再轻易被境界压住，但信件、传闻和旧人还是能让你停一停。'),
-                    beat('旁白', state.npcRelations['墨彩环'] >= 50 ? '墨府那边的牵挂仍在，说明你当初没把所有路都走死。' : '你知道自己有些关系没有彻底处理完。'),
+                    beat('旁白', '这时再收到旧人来信，已经不是普通问候。有人将死，有人在等，有人只是平静告诉你：许多事若再不回来认，便真的不用认了。'),
+                    beat('旁白', '有些信最重，不是字多，而是你知道它不会再有第二封。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '回信安人心', effects: { relations: { '墨彩环': 20 }, routeScores: { orthodox: 1 } } },
-                    { text: '断信专修行', effects: { routeScores: { secluded: 1 }, cultivation: 16 } },
+                    { id: 'return_now', text: '立刻回去', effects: { cultivation: 10, flags: { oldDebtProgress2: true } } },
+                    { id: 'stabilize_first', text: '先稳局势，再说', effects: { cultivation: 8, routeScores: { secluded: 1 } } },
+                    { id: 'put_away', text: '把信收起，不立刻回应', effects: { cultivation: 6, routeScores: { demonic: 1 } } },
                 ];
             },
-            effects: { cultivation: 24 },
         }),
         levelEvent({
             id: 'hs_14',
             realmScore: 14,
             title: '化神后期：飞升前夜',
-            summary: '最后一层窗纸已经很薄，飞升、留世、散道都近在眼前。',
+            summary: '门真正开之前，最难过的那一关，从来不在天上，而在你敢不敢把这一生原样看一遍。',
             requirements: { realmScoreAtLeast: 14 },
-            beats(state) {
+            beats() {
                 return [
-                    beat('旁白', '到了化神后期，你反而越能感觉到自己距离最后选择有多近。'),
-                    beat('旁白', state.routeScores.secluded >= state.routeScores.demonic ? '若你此时收手，你更像一个知道如何活下去的人。' : '若你此时再进一步，就意味着你愿意承担更大的因果。'),
+                    beat('旁白', '临近终局，你把最早带出来的旧物放在案上。它们都不值钱，却比任何重宝都更像真正陪你走到这里的东西。'),
+                    beat('旁白', '门真正开之前，最难过的那一关，从来不在天上，而在你敢不敢把这一生原样看一遍。'),
                 ];
             },
             choices() {
                 return [
-                    { text: '准备飞升', effects: { routeScores: { orthodox: 1 }, cultivation: 56 } },
-                    { text: '继续压境', effects: { routeScores: { secluded: 1 }, cultivation: 30 } },
+                    { id: 'carry_all_forward', text: '承认来路，带着一切继续往前', effects: { cultivation: 12, flags: { endingBiasCarryOrigin: true } } },
+                    { id: 'higher_above_all', text: '觉得只要更高，一切都可放下', effects: { cultivation: 10, flags: { endingBiasForget: true } } },
+                    { id: 'consider_staying', text: '第一次认真考虑留下', effects: { cultivation: 8, flags: { endingBiasStay: true } } },
                 ];
             },
-            effects: { cultivation: 40 },
         }),
     ];
 
@@ -1131,45 +1390,45 @@
             requirements: { storyProgress: 8 },
             beats(state) {
                 return [
-                    beat('旁白', '嘉元城还是老样子，只有墨府门口的白灯笼格外刺眼。'),
-                    beat('墨彩环', state.flags.hasMoLetter ? '父亲最后可曾提过我们？' : '家父死了，城里却还有许多人盯着墨府。'),
-                    beat('旁白', state.flags.burnedLetter ? '你没有把全部真相说出来，只把最能保她活下去的部分留给她。' : '你把遗书掐头去尾地念给她听，既保了墨府，也保了自己。'),
-                    beat('旁白', '墨彩环看你的眼神，从防备慢慢变成了倚赖。'),
+                    beat('旁白', '黄昏时分，你站在墨府外墙的阴影里，没有立刻现身。门外石狮残破，院里隐约传来争吵与催债声。你原以为自己只是回来收拾墨居仁死后留下的尾巴，如今才发现，修士之间的恶意并不会跟着尸体一起埋掉，它会顺着账册、人情和恐惧，一层层压到凡人头上。'),
+                    beat('墨彩环', '你这时回来，不只是回来，也是在把新的风声带回这座宅子。'),
+                    beat('旁白', '墨彩环开门见你时，眼里先是一怔，继而迅速冷了下来。她并没有求你救场，只平静地把现实摊开：有人在盯着墨府，有人要药方，有人要钱，有人要从死人身上再刮一层油。'),
+                    beat('旁白', '夜里你在墨居仁旧书房的暗格中找到一份名单。那上面不是普通病人，而是一批被他拿来试药、却不方便留下痕迹的人。墨居仁死了，但这份因果并没死。你第一次真正意识到，所谓修士的因果，并不是玄而又玄的天道账本，而是总会有一个活人站在原地，替死人记得。'),
                 ];
             },
             choices() {
                 return [
                     {
                         id: 'protect_mo_house',
-                        text: '留下来帮墨府稳住局面',
+                        text: '护住墨府，先断外患',
                         effects: {
                             cultivation: 120,
                             relations: { '墨彩环': 60 },
                             routeScores: { orthodox: 1 },
-                            flags: { fulfilledMoWill: true },
+                            flags: { fulfilledMoWill: true, protectedMoHouse: true, tookMoKarmicList: true },
                         },
                         nextChapterId: 9,
                     },
                     {
                         id: 'take_treasure_leave',
-                        text: '只拿能用上的金银法器，尽快离城',
+                        text: '卷走遗财，斩断旧事',
                         effects: {
                             cultivation: 140,
                             items: { lingshi: 8 },
                             relations: { '墨彩环': -20 },
                             routeScores: { demonic: 1 },
-                            flags: { tookTreasure: true },
+                            flags: { tookTreasure: true, lootedMoHouse: true, tookMoKarmicList: true },
                         },
                         nextChapterId: 9,
                     },
                     {
                         id: 'promise_caihuan',
-                        text: '安顿墨府后，对墨彩环留下一句承诺',
+                        text: '留下承诺，不立刻出手',
                         effects: {
                             cultivation: 130,
                             relations: { '墨彩环': 80 },
                             routeScores: { secluded: 1 },
-                            flags: { daoLvPromise: true, fulfilledMoWill: true },
+                            flags: { daoLvPromise: true, fulfilledMoWill: true, promisedMoReturn: true, tookMoKarmicList: true },
                         },
                         nextChapterId: 9,
                     },
@@ -1185,18 +1444,14 @@
             beats(state) {
                 const lowTrust = (state.npcRelations['墨彩环'] || 0) < 20;
                 return [
-                    beat('旁白', '墨府地窖深处，你见到了半人半傀的曲魂。'),
+                    beat('旁白', '第三个夜里，那具本该只是承载禁制的躯体忽然极轻地动了一下。你原以为是残余灵力牵引，可当你把屋内杂物尽数移开、只留下旧药杵时，它的指尖竟真的朝那方向挪了半寸。那不是普通傀儡反应，而是一点还没散尽的习惯。'),
                     beat('墨彩环', lowTrust
-                        ? '你若还想从墨府带走什么，就先想清楚要不要把最后一点体面也一并拿走。'
-                        : state.flags.daoLvPromise
-                            ? '若你愿带他走，墨府便少一件旧日噩梦。'
-                            : '我怕他，也怕旁人拿他来做文章。'),
+                        ? '你若还想从墨府带走什么，就先想清楚，要不要把最后一点体面也一并拿走。'
+                        : '以前父亲抓药时，若我站在门口看，他总会先回头确认我没碰乱药柜。'),
+                    beat('旁白', '你以神识试探，识海里浮出断裂画面：药房、药渍、站在门口的小姑娘，以及一句极轻的“别过来”。你第一次清楚面对这个问题：若死人还能留下习惯与执念，那把它炼成工具，究竟是在利用器物，还是在继续伤害一个已经无从归还的人？'),
                     beat('旁白', lowTrust
-                        ? '账册、库银和旧怨都被摊在你面前。此刻你若伸手，拿走的就不只是曲魂。'
-                        : '曲魂眼里只剩残存意志，却还认得“守门”两个字。'),
-                    beat('旁白', lowTrust
-                        ? '你可以强行带走这个半傀，也可以留下一笔代价，勉强把人情续回一截。'
-                        : '你可以把他当兵器，也可以把他当一个还没完全碎掉的人。'),
+                        ? '你若此刻伸手，拿走的就不只是曲魂，还会把墨府最后一点能信你的理由一起扯走。'
+                        : '账册、旧怨和还没散尽的人味被一起摊到你面前。你可以收下它，也可以替它做一个更难的了断。'),
                 ];
             },
             choices(state) {
@@ -1210,19 +1465,19 @@
                                 cultivation: 170,
                                 items: { quhun: 1 },
                                 relations: { '墨彩环': -10 },
-                                flags: { hasQuhun: true, tookQuhunByForce: true },
+                                flags: { hasQuhun: true, tookQuhunByForce: true, keptQuhun: true, quhunIdentityMystery: true },
                                 routeScores: { demonic: 1 },
                             },
                             nextChapterId: 10,
                         },
                         {
                             id: 'buy_back_trust',
-                            text: '留下灵石与善后安排，把这笔债补回一半',
+                            text: '封存曲魂，先把这笔债压住',
                             costs: { lingshi: 6 },
                             effects: {
                                 cultivation: 135,
                                 relations: { '墨彩环': 45 },
-                                flags: { mendedMoHouseDebt: true },
+                                flags: { mendedMoHouseDebt: true, sealedQuhun: true, quhunIdentityMystery: true },
                                 routeScores: { secluded: 1 },
                             },
                             nextChapterId: 10,
@@ -1233,7 +1488,7 @@
                             effects: {
                                 cultivation: 155,
                                 relations: { '墨彩环': 25 },
-                                flags: { quhunReleased: true, hasQuhun: false, atonedToMoHouse: true },
+                                flags: { quhunReleased: true, hasQuhun: false, atonedToMoHouse: true, learnedQuhunIdentityFragment: true },
                                 routeScores: { orthodox: 1 },
                             },
                             nextChapterId: 10,
@@ -1244,23 +1499,23 @@
                 return [
                     {
                         id: 'take_quhun',
-                        text: '收下曲魂，让他做护卫',
+                        text: '收下曲魂，继续修复',
                         effects: {
                             cultivation: 140,
                             items: { quhun: 1 },
-                            flags: { hasQuhun: true },
+                            flags: { hasQuhun: true, keptQuhun: true, quhunIdentityMystery: true },
                             routeScores: { orthodox: 1 },
                         },
                         nextChapterId: 10,
                     },
                     {
                         id: 'repair_quhun',
-                        text: '花心思修补禁制，让他少些痛苦',
+                        text: '留下曲魂，但不把它只当工具',
                         effects: {
                             cultivation: 150,
                             items: { quhun: 1 },
                             relations: { '墨彩环': 30 },
-                            flags: { hasQuhun: true, curedQuhun: true },
+                            flags: { hasQuhun: true, curedQuhun: true, keptQuhun: true, quhunIdentityMystery: true },
                             routeScores: { orthodox: 1 },
                         },
                         nextChapterId: 10,
@@ -1271,7 +1526,7 @@
                         effects: {
                             cultivation: 160,
                             relations: { '墨彩环': 20 },
-                            flags: { quhunReleased: true, hasQuhun: false },
+                            flags: { quhunReleased: true, hasQuhun: false, learnedQuhunIdentityFragment: true },
                             routeScores: { secluded: 1 },
                         },
                         nextChapterId: 10,
@@ -1493,58 +1748,58 @@
             requirements: { storyProgress: 14 },
             beats(state) {
                 return [
-                    beat('旁白', '禁地里尸骨压着灵草，活人踩着活人。'),
-                    beat('旁白', '你在谷底听见斗法声，也看见了重伤的南宫婉。'),
-                    beat('南宫婉', '若你现在离开，我未必会记恨你。'),
-                    beat('旁白', state.flags.soloIntoForbidden ? '独行让你更快赶到这处谷底，也让你更像一个只对自己负责的人。' : '与你同行的人都在等你做决定，你知道自己不能只替自己选。'),
+                    beat('旁白', '入口开启时，灵气像被刀劈开一道口子。队伍只一个呼吸便散了：有人先冲，有人后退，有人假装同路，也有人从一开始便盯着同伴的后背。禁地里最先开始猎杀的，从来不是妖兽。'),
+                    beat('旁白', '你沿林雾前行，不久便看见一具同门尸体斜挂树根，储物袋已空，喉间伤口薄而整齐，明显出自人手。越往深处，局势越乱。主药附近早有人埋伏，几拨修士表面结盟，实则人人都留着后手。'),
+                    beat('旁白', '就在你准备绕开毒藤谷时，南宫婉自乱石后掠出，气息紊乱却仍极快。追兵在后，异兽在更远处闻声蠢动。你们被迫并肩而战，彼此都知道，一旦活着脱身，转头仍可能为了主药翻脸。'),
+                    beat('旁白', '黎明前，禁制松动，争夺骤起。一名重伤修士倒在灵草旁奄奄一息，另一边主药已近在咫尺，后方还有最稳妥的退路。救人、夺药、保命，三条路终于同时摆在你眼前。'),
                 ];
             },
             choices() {
                 return [
                     {
                         id: 'save_nangong',
-                        text: '冒险出手，救下南宫婉',
+                        text: '先救人，再争药',
                         effects: {
                             cultivation: 280,
                             items: { zhujidanMaterial: 2 },
                             relations: { '南宫婉': 80 },
                             routeScores: { orthodox: 2 },
-                            flags: { savedNangong: true },
+                            flags: { savedNangong: true, forbiddenGroundSavedSomeone: true, nangongTrustSeed: true },
                         },
                         nextChapterId: 15,
                     },
                     {
                         id: 'watch_and_wait',
-                        text: '先观局势，捡最稳的一段因果',
+                        text: '避开核心杀圈，只取次级灵物',
                         effects: {
                             cultivation: 250,
                             items: { zhujidanMaterial: 2 },
                             relations: { '南宫婉': -20 },
                             routeScores: { secluded: 1 },
-                            flags: { savedNangong: false, watchedBattle: true },
+                            flags: { savedNangong: false, watchedBattle: true, forbiddenGroundSurvivalFirst: true },
                         },
                         nextChapterId: 15,
                     },
                     {
                         id: 'loot_in_chaos',
-                        text: '趁乱收药夺宝，把活路握在自己手里',
+                        text: '先夺主药，必要时灭口',
                         effects: {
                             cultivation: 270,
                             items: { zhujidanMaterial: 3, yaodan: 2 },
                             routeScores: { secluded: 1, demonic: 1 },
-                            flags: { savedNangong: false, treasureHunter: true },
+                            flags: { savedNangong: false, treasureHunter: true, forbiddenGroundTookMainHerb: true },
                         },
                         nextChapterId: 15,
                     },
                     {
                         id: 'kill_for_gain',
-                        text: '顺势杀人夺宝，彻底转向狠路',
+                        text: '先夺主药，再把知道的人一并处理',
                         effects: {
                             cultivation: 320,
                             items: { zhujidanMaterial: 3, yaodan: 3 },
                             relations: { '南宫婉': -100 },
                             routeScores: { demonic: 3 },
-                            flags: { savedNangong: false, demonicPathSeed: true },
+                            flags: { savedNangong: false, demonicPathSeed: true, forbiddenGroundTookMainHerb: true, firstSilencingKill: true },
                         },
                         nextChapterId: 15,
                     },
@@ -1817,46 +2072,45 @@
             location: '越国边境',
             requirements: { storyProgress: 18, realmScoreAtLeast: 6 },
             beats(state) {
-                const dominant = state.routeScores.demonic > state.routeScores.orthodox
-                    ? '你已经习惯先算收益，再想代价。'
-                    : state.routeScores.secluded > state.routeScores.orthodox
-                        ? '你更关心退路，而不是旗号。'
-                        : '你还愿意相信宗门和盟友至少值得托一次底。';
                 return [
-                    beat('旁白', '正魔大战逼近，黄枫谷与边境诸宗全部被推上前线。'),
-                    beat('旁白', dominant),
-                    beat('旁白', '站在哪一边、以什么方式站，这次不会只影响名声。'),
+                    beat('旁白', '大战前夜，营地里安静得出奇。所有人都在整备法器、丹药、阵位，表面有条不紊，实则没人真正相信自己明天还能完整回来。大战未起，人的心先散了一半。'),
+                    beat('旁白', '半路上，你遇见一名重伤敌修。对方丹田已毁，几乎没有反抗之力。只要一抬手，你便能干净利落地解决一个后患；可你也清楚，这不只是杀不杀一个敌人的问题，而是自己会不会开始习惯这种事。'),
+                    beat('旁白', '赶到断后战场时，局势已近崩溃。几名同门死守阵位，灵力枯竭，另一边却有更稳妥的退路可走。你忽然发现，所有前面累积下来的路线与判断，在这一刻都必须真的落到动作上。'),
+                    beat('旁白', '正道、魔道、苟修，不再只是文字标签，而是你准备以怎样的方式承认自己。'),
                 ];
             },
             choices() {
                 return [
                     {
                         id: 'fight_for_sect',
-                        text: '随宗门迎敌，先守住越国这条线',
+                        text: '顶上断后，护住阵线',
                         effects: {
                             cultivation: 520,
+                            relations: { '李化元': 12, '南宫婉': 8 },
                             routeScores: { orthodox: 2 },
-                            flags: { warChoice: 'orthodox' },
+                            flags: { warChoice: 'orthodox', stoodTheLine: true, didNotExecuteDisabledEnemy: true, battlefieldReputationRighteous: true },
                         },
                         nextChapterId: '18_nangong_return',
                     },
                     {
                         id: 'fake_fight',
-                        text: '表面参战，暗里只保自己和近身人',
+                        text: '不卷死战，带少数人撤离',
                         effects: {
                             cultivation: 500,
+                            relations: { '李化元': -5 },
                             routeScores: { secluded: 2 },
-                            flags: { warChoice: 'secluded' },
+                            flags: { warChoice: 'secluded', rescuedSmallGroup: true, leftMainLine: true, battlefieldReputationPragmatic: true },
                         },
                         nextChapterId: '18_nangong_return',
                     },
                     {
                         id: 'defect_demonic',
-                        text: '借乱投向魔道，以更狠的路换更快的位子',
+                        text: '先斩失战力敌修，再借乱夺势',
                         effects: {
                             cultivation: 560,
+                            relations: { '李化元': 4 },
                             routeScores: { demonic: 3 },
-                            flags: { warChoice: 'demonic', demonicPath: true },
+                            flags: { warChoice: 'demonic', demonicPath: true, executedDisabledEnemy: true, roseInChaos: true, battlefieldReputationFearsome: true },
                         },
                         nextChapterId: '18_nangong_return',
                     },
@@ -2574,25 +2828,15 @@
             summary: '飞升前最后要认的，不是自己够不够强，而是这一生的关系、旧账与路数你究竟肯不肯承认。',
             location: '大晋',
             requirements: { storyProgress: 25, realmScoreAtLeast: 12 },
-            beats(state) {
-                const causalLine = state.flags.returnedTiannanForSettlement || state.flags.oldDebtsCleared || state.flags.settledScores
-                    ? '你已回头清过一轮旧账，所以此刻站在门前，最重的并不是悔，而是你准备把怎样的自己继续带上去。'
-                    : '你还记得那些被你拖进“以后再说”的人和事。门越近，这些没清完的旧账反而越像细线一样缠回神魂。';
-                const relationLine = (state.flags.acceptedNangongPath || state.flags.acceptedNangongDebt || state.flags.returnedTiannanForBonds)
-                    ? '你一路遇见的人，不只是支线。他们是见过你、逼过你、成全过你，也让你没法再轻易骗过自己的人。'
-                    : '你回看一路同行的人时才发现，真正难丢的不是法宝和名声，而是那些你曾欠过、避过、也辜负过的目光。';
-                const routeLine = state.routeScores.demonic >= state.routeScores.orthodox && state.routeScores.demonic >= state.routeScores.secluded
-                    ? '正道、魔道、苟修从来都不是别人给你的牌子。它们是你一次次面对“我能不能为了更稳更快而舍别人”时，亲手交出来的答案。'
-                    : state.routeScores.secluded >= state.routeScores.orthodox
-                        ? '正道、魔道、苟修从来都不是别人给你的牌子。你一路都在给自己留退路，如今终于要承认，这本身也是一种答案。'
-                        : '正道、魔道、苟修从来都不是别人给你的牌子。你走到这里，至少还分得清强大与麻木到底差在哪里。';
+            beats() {
                 return [
-                    beat('旁白', '你走到这一步时，终于不能再把许多事归结成“当时别无选择”。因为如今你有得选了。也正因如此，过去那些选过的，才变得格外重。'),
-                    beat('旁白', '你最早不是为了大道修仙。你只是太早见过无能为力，后来走得越来越高，才渐渐把那份“别再弱下去”活成了路。'),
-                    beat('旁白', relationLine),
-                    beat('旁白', routeLine),
-                    beat('旁白', causalLine),
-                    beat('旁白', '门已经在前，你如今要认的不是自己够不够强，而是这一生的关系、旧账与路数，你究竟肯不肯承认。'),
+                    beat('旁白', '化神后期的天地，与当年你初上修行路时所见已完全不同。山河在神识中不再只是地貌，而像无数条运转的脉络。许多人一生追逐的机缘、法宝、名望，如今大半都已落到你身后。'),
+                    beat('旁白', '飞升前夜，你没有立刻闭关，而是把一路留下来的旧物一一摊在案上：旧账页、凡俗旧物、墨府名单、旧符、残信。它们都不值钱，却比任何重宝都更像真正陪你走到这里的东西。'),
+                    beat('旁白', '你终于不能再把很多事归结成“当时别无选择”。因为如今你有得选了。也正因如此，过去那些选过的，才变得格外重。'),
+                    beat('旁白', '终局不该再是固定三选一，而应是根据路线、关系、旧账与关键旗标，让真正属于你的答案自己浮出来。'),
+                    beat('旁白', '你最早不是为了大道修仙，只是太早见过无能为力。'),
+                    beat('旁白', '一路遇见的人，不只是支线；他们是见过你、逼过你、成全过你、也让你没法再轻易骗过自己的人。'),
+                    beat('旁白', '正道、魔道、苟修，从来都不是别人给你的牌子，而是你一次次面对“我能不能为了更稳更快而舍别人”时交出的答案。'),
                 ];
             },
             choices(state) {
@@ -2601,110 +2845,65 @@
                 const orthodox = routes.orthodox || 0;
                 const demonic = routes.demonic || 0;
                 const secluded = routes.secluded || 0;
+                const orthodoxPlusSecluded = orthodox + secluded;
                 const relationNangong = state.npcRelations['南宫婉'] || 0;
                 const relationMo = state.npcRelations['墨彩环'] || 0;
                 const relationLi = state.npcRelations['李化元'] || 0;
-                const orthodoxLead = orthodox >= demonic && orthodox >= secluded;
-                const secludedLead = secluded > orthodox && secluded >= demonic;
-                const demonicLead = demonic > orthodox && demonic >= secluded;
-                const relationshipBonus = (flags.openlyAcknowledgedNangongImportance ? 24 : 0)
-                    + (flags.continuedToOweNangongSilently ? 10 : 0)
-                    + (flags.madeAmendsToMocaihuan ? 20 : 0)
-                    + (flags.admittedOldWrongToMocaihuan ? 10 : 0)
-                    + (flags.enteredLihuayuanLineage ? 10 : 0)
-                    + (flags.respectedLihuayuanButStayedIndependent ? 6 : 0);
-                const relationshipScore = Math.max(relationNangong, 0) + Math.max(relationMo, 0) + Math.max(relationLi, 0) + relationshipBonus;
-                const highBonds = relationshipScore >= 150 || (relationNangong >= 90 && (relationMo >= 45 || relationLi >= 45));
-                const debtsCleared = Boolean(
-                    flags.oldDebtsCleared
-                    || flags.returnedTiannanForSettlement
-                    || flags.settledScores
-                    || flags.mendedMoHouseDebt
-                    || (flags.returnedToMoHouse && flags.answeredLiSummons)
-                );
-                const bondRecovered = Boolean(
-                    flags.acceptedNangongDebt
-                    || flags.acceptedNangongPath
-                    || flags.returnedTiannanForBonds
-                    || flags.returnedToMoHouse
-                    || flags.answeredLiSummons
-                    || flags.openlyAcknowledgedNangongImportance
-                    || flags.continuedToOweNangongSilently
-                    || flags.madeAmendsToMocaihuan
-                    || flags.admittedOldWrongToMocaihuan
-                );
-                const hiddenPath = Boolean(
-                    flags.returnedTiannanButRemainedHidden
-                    || flags.returnedToSeclusion
-                    || flags.avoidedXuTian
-                    || flags.starSeaSeclusion
-                    || flags.slippedPastXuTian
-                );
-                const coldDecision = Boolean(
-                    flags.cutNangongTies
-                    || flags.cutEmotion
-                    || flags.avoidedNangongAgain
-                    || flags.tookQuhunByForce
-                    || flags.demonicPathSeed
-                    || flags.usedLihuayuanInfluencePragmatically
-                    || flags.warChoice === 'demonic'
-                    || flags.mineChoice === 'betrayGate'
-                    || flags.mineChoice === 'harvest'
-                );
-                const coldHeart = coldDecision || flags.suppressedNangongFeelings;
-                const severeDebt = !debtsCleared && (coldDecision || demonicLead || relationNangong < 0 || relationMo < 0);
+                const dominantRoute = orthodox >= demonic && orthodox >= secluded
+                    ? 'orthodox'
+                    : demonic >= secluded
+                        ? 'demonic'
+                        : 'secluded';
+                const karmicCollapse = demonic >= 10
+                    && (flags.lootedMoHouse || flags.executedDisabledEnemy || flags.escapedMineWithCoreAssets)
+                    && !flags.oldDebtsCleared;
                 const choices = [];
 
-                if ((orthodoxLead || flags.savedNangong || flags.acceptedNangongPath || flags.returnedTiannanForBonds)
-                    && !severeDebt
-                    && (debtsCleared || flags.successfulFoundationEstablished || highBonds)) {
+                if (orthodoxPlusSecluded >= 10
+                    && !karmicCollapse
+                    && (flags.oldDebtsCleared || relationNangong >= 35 || relationLi >= 18)) {
                     choices.push({
                         id: 'lingjie_xianzun',
-                        text: relationNangong >= 110 && bondRecovered ? '推开更高的门，把这一生认下的人与路一起背去灵界' : '顺着这口尚未散掉的道心继续上行',
+                        text: '推开更高的门，把这一生完整带去更高处',
                         effects: {
                             cultivation: 5200,
                             routeScores: { orthodox: 1 },
                             flags: {
                                 ascendedToSpiritWorld: true,
-                                ascendedWithNangong: relationNangong >= 110 && flags.acceptedNangongPath,
+                                ascendedWithNangong: relationNangong >= 110 && (flags.acceptedNangongDebt || flags.acceptedNangongPath),
                             },
                         },
                         ending: {
                             id: 'lingjie_xianzun',
                             title: '灵界仙尊',
-                            description: relationNangong >= 110 && flags.acceptedNangongPath
-                                ? '你并不比谁更干净。只是到了最后，你还愿意背着这一身并不全然体面的来路，继续往更高处走。血色禁地埋下的那条线没有被你丢在人界身后，而是与道心一起被你背过了界壁。'
-                                : '你并不比谁更干净。只是到了最后，你还愿意背着这一身并不全然体面的来路，继续往更高处走。灵界迎来的不是神话，而是一个终于敢完整认下自身来路的修士。',
+                            description: '你最终还是走向了那扇更高的门。并非因为你比谁更干净，而是因为你在漫长岁月里逐渐明白，大道不是把自己洗成白纸再送上去，而是明知纸上已有擦不掉的字，仍敢把它完整带去更高处。',
                         },
                         nextChapterId: -1,
                     });
                 }
 
-                if ((demonicLead || flags.returnedTiannanForSettlement || flags.settledScores)
-                    && (debtsCleared || demonic >= orthodox)) {
+                if (flags.stoodTheLine || flags.heldSpiritMineLine || flags.ledMineBreakout || flags.returnedTiannanForSettlement) {
                     choices.push({
                         id: 'renjie_zhizun',
-                        text: demonicLead ? '留在人界，做最后那个没人敢越过去的人' : '不急着飞升，先把这片旧天地整理到不再轻易碾碎后来者',
+                        text: '先留下，把这片旧天地真正压稳',
                         effects: {
                             cultivation: 3800,
-                            routeScores: { demonic: 1 },
+                            routeScores: { orthodox: 1, demonic: 1 },
                             flags: { stayedInMortalWorld: true },
                         },
                         ending: {
                             id: 'renjie_zhizun',
                             title: '人界至尊',
-                            description: debtsCleared
-                                ? '你明明可以走，最后却先选择留下。这不是贪恋权势，而是你终于有资格决定: 这个自己曾吃尽苦头的人界，值不值得亲手整一整。'
-                                : '你明明可以走，最后却先选择留下。有人敬你，有人惧你，但所有人都承认，那片天地最后得看你的脸色与决断。',
+                            description: '你最终没有立刻飞升。不是不能，而是不愿。你早已站到足够高的位置，高到只要愿意，便能以自己的名字压住一地风波。所谓至尊，不是坐在最高处等人来拜，而是明明已经可以离开，却仍决定留下。',
                         },
                         nextChapterId: -1,
                     });
                 }
 
-                if (secludedLead || hiddenPath) {
+                if (secluded >= 10 && !flags.enteredLihuayuanLineage) {
                     choices.push({
                         id: 'xiaoyao_sanxian',
-                        text: secludedLead ? '散去名号，只把风雨、药香与退路留在自己身边' : '不再给任何势力留下握住你的钥匙',
+                        text: '离开名号与门墙，只给自己留下一条路',
                         effects: {
                             cultivation: 3600,
                             routeScores: { secluded: 1 },
@@ -2713,18 +2912,17 @@
                         ending: {
                             id: 'xiaoyao_sanxian',
                             title: '逍遥散仙',
-                            description: '你不是输了，也不是倦了。你只是第一次真正替自己选了一种不用总向谁证明什么的活法。山海之间自有去处，宗门、名望与争夺都被你慢慢放下。',
+                            description: '你最终选了离开，却不是飞升。这不是逃，也不是倦，而是你终于有资格替自己选一种活法，不为宗门，不为名头，只为自己还愿意把日子过下去。',
                         },
                         nextChapterId: -1,
                     });
                 }
 
-                if ((flags.cutNangongTies || flags.suppressedNangongFeelings || flags.cutEmotion)
-                    && coldDecision
-                    && (demonicLead || secludedLead || hiddenPath)) {
+                if ((flags.suppressedNangongFeelings || flags.cutNangongTies || flags.cutEmotion)
+                    && (flags.executedDisabledEnemy || flags.firstSilencingKill)) {
                     choices.push({
                         id: 'taishang_wangqing',
-                        text: '斩断最后那点迟疑，带着最冷的道心继续往上走',
+                        text: '带着最冷的那一段道心，继续往上走',
                         effects: {
                             cultivation: 5000,
                             routeScores: { demonic: 1, secluded: 1 },
@@ -2733,16 +2931,16 @@
                         ending: {
                             id: 'taishang_wangqing',
                             title: '太上忘情',
-                            description: '你断得太干净，干净到几乎无懈可击。可真正让人不安的，正是连你自己都快想不起，当年差点舍不得的究竟是什么。',
+                            description: '你也飞升了，而且比很多人都更干净利落。可真正让人不安的，正是连你自己都快想不起，当年差点舍不得的究竟是什么。',
                         },
                         nextChapterId: -1,
                     });
                 }
 
-                if (severeDebt) {
+                if (demonic >= 10 && (flags.lootedMoHouse || flags.executedDisabledEnemy || flags.escapedMineWithCoreAssets)) {
                     choices.push({
                         id: 'yinguo_chanshen',
-                        text: '硬闯门前，看看那些被拖欠太久的因果会不会在此刻一起回来',
+                        text: '硬闯门前，看看旧因旧果会不会一起回来',
                         effects: {
                             cultivation: 3300,
                             routeScores: { demonic: 1 },
@@ -2751,13 +2949,13 @@
                         ending: {
                             id: 'yinguo_chanshen',
                             title: '因果缠身',
-                            description: '你以为很多事只要拖得够久就会淡。直到走到门前才发现，淡掉的是表面，不是账。那些被你推迟到“以后再说”的人、债与旧事，在这一刻全都浮回神魂之外。',
+                            description: '你最终还是走到了门前，可门没有真正为你打开。不是天道审你，而是那些你以为已经被时间埋掉的旧因旧果，在这一刻忽然全都浮了上来。',
                         },
                         nextChapterId: -1,
                     });
                 }
 
-                if (highBonds && debtsCleared && !flags.cutNangongTies && !severeDebt) {
+                if (flags.returnedTiannanForBonds || relationNangong >= 35 || relationMo >= 25) {
                     choices.push({
                         id: 'fanxin_weisi',
                         text: '门已打开，但先承认自己还有想留下的人与事',
@@ -2769,7 +2967,7 @@
                         ending: {
                             id: 'fanxin_weisi',
                             title: '凡心未死',
-                            description: '门已经开了，你却没有立刻过去。那不是退缩。那是你终于能心平气和地承认: 我可以飞升，但这一次，我想先为自己决定留下。',
+                            description: '门开了，你看见了更高处，也知道只要再往前一步，许多牵扯都会在身后缩小、淡去。可你最终没有立刻踏出去。不是因为软弱，而是因为这一次，你选留下。',
                         },
                         nextChapterId: -1,
                     });
@@ -2779,55 +2977,57 @@
                     return choices;
                 }
 
-                return [
-                    orthodoxLead
-                        ? {
+                if (dominantRoute === 'orthodox') {
+                    return [{
+                        id: 'lingjie_xianzun',
+                        text: '继续往上，把这一生完整带过去',
+                        effects: {
+                            cultivation: 5200,
+                            routeScores: { orthodox: 1 },
+                            flags: { ascendedToSpiritWorld: true },
+                        },
+                        ending: {
                             id: 'lingjie_xianzun',
-                            text: '继续往上，把这一生完整带过门去',
-                            effects: {
-                                cultivation: 5200,
-                                routeScores: { orthodox: 1 },
-                                flags: { ascendedToSpiritWorld: true },
-                            },
-                            ending: {
-                                id: 'lingjie_xianzun',
-                                title: '灵界仙尊',
-                                description: '你最终还是走向了更高处。门前没有谁替你洗白过去，你只是第一次肯完整认下自己的来路，并带着它继续往上走。',
-                            },
-                            nextChapterId: -1,
-                        }
-                        : secludedLead
-                            ? {
-                                id: 'xiaoyao_sanxian',
-                                text: '散去名号，把路留给自己',
-                                effects: {
-                                    cultivation: 3600,
-                                    routeScores: { secluded: 1 },
-                                    flags: { becameLooseImmortal: true },
-                                },
-                                ending: {
-                                    id: 'xiaoyao_sanxian',
-                                    title: '逍遥散仙',
-                                    description: '你没有继续把“更高”当成唯一答案，而是终于替自己选了一种还愿意过下去的活法。',
-                                },
-                                nextChapterId: -1,
-                            }
-                            : {
-                                id: 'renjie_zhizun',
-                                text: '先留下，把旧世界真正压稳',
-                                effects: {
-                                    cultivation: 3800,
-                                    routeScores: { demonic: 1 },
-                                    flags: { stayedInMortalWorld: true },
-                                },
-                                ending: {
-                                    id: 'renjie_zhizun',
-                                    title: '人界至尊',
-                                    description: '你没有离开，而是决定先把人界的秩序攥在自己手里。有人敬你，有人惧你，但所有人都得承认最后是你在发话。',
-                                },
-                                nextChapterId: -1,
-                            },
-                ];
+                            title: '灵界仙尊',
+                            description: '你最终还是走向了那扇更高的门。并非因为你比谁更干净，而是因为你终于敢完整认下这一生，再继续往前。',
+                        },
+                        nextChapterId: -1,
+                    }];
+                }
+
+                if (dominantRoute === 'secluded') {
+                    return [{
+                        id: 'xiaoyao_sanxian',
+                        text: '散去名号，把路留给自己',
+                        effects: {
+                            cultivation: 3600,
+                            routeScores: { secluded: 1 },
+                            flags: { becameLooseImmortal: true },
+                        },
+                        ending: {
+                            id: 'xiaoyao_sanxian',
+                            title: '逍遥散仙',
+                            description: '你最终选了离开，却不是飞升。你只是终于替自己选了一种还愿意继续过下去的活法。',
+                        },
+                        nextChapterId: -1,
+                    }];
+                }
+
+                return [{
+                    id: 'renjie_zhizun',
+                    text: '先留下，再决定这扇门何时再开',
+                    effects: {
+                        cultivation: 3800,
+                        routeScores: { demonic: 1 },
+                        flags: { stayedInMortalWorld: true },
+                    },
+                    ending: {
+                        id: 'renjie_zhizun',
+                        title: '人界至尊',
+                        description: '你最终没有立刻飞升。不是不能，而是不愿。既然这一界还压着旧账与后来者，那便先由你留下发话。',
+                    },
+                    nextChapterId: -1,
+                }];
             },
         },
     ];
@@ -3034,7 +3234,6 @@
         NEGATIVE_ENCOUNTERS,
         LEVEL_STORY_EVENTS,
         STORY_CHAPTERS,
-        CHAPTER_ECHO_PACKS,
     };
 
     if (typeof module !== 'undefined' && module.exports) {

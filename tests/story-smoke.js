@@ -246,6 +246,40 @@ function testMoHouseTreasurePathNoDeadlock() {
 
 function testLevelEventCoverage() {
     assert.strictEqual(GameCore.LEVEL_STORY_EVENTS.length, 15);
+    const titleKeywords = {
+        qi_0: '第一缕灵气',
+        qi_1: '药火第一次失控',
+        qi_2: '经脉如针',
+        ji_3: '脱胎',
+        ji_4: '人情入局',
+        ji_5: '瓶颈见锋',
+        jin_6: '丹成孤意',
+        jin_7: '旧账倒灌',
+        jin_8: '名声先于你到场',
+        yu_9: '神识外放',
+        yu_10: '海路长夜',
+        yu_11: '心魔借形',
+        hs_12: '天光破境',
+        hs_13: '旧人来信',
+        hs_14: '飞升前夜',
+    };
+    const beatKeywords = {
+        qi_0: '灵气入体',
+        qi_1: '残缺丹方',
+        qi_2: '经脉忽如针扎',
+        ji_3: '旧的自己死了一次',
+        ji_4: '带着礼物与试探',
+        ji_5: '心里有一件事一直没放平',
+        jin_6: '说不出的空',
+        jin_7: '一起浮出',
+        jin_8: '还未进门',
+        yu_9: '墙后之人',
+        yu_10: '孤舟夜渡',
+        yu_11: '你现在活成你当初想变成的人了吗',
+        hs_12: '天地像忽然静了一层',
+        hs_13: '不会再有第二封',
+        hs_14: '最早带出来的旧物',
+    };
 
     GameCore.LEVEL_STORY_EVENTS.forEach((event) => {
         const state = GameCore.createInitialState();
@@ -259,9 +293,12 @@ function testLevelEventCoverage() {
         assert.strictEqual(view.source, 'level');
         assert.strictEqual(view.story.id, event.id);
         assert.strictEqual(view.chapter.id, event.id);
+        assert(view.story.title.includes(titleKeywords[event.id]));
 
         const finishedView = playToChoices(state);
         assert.strictEqual(finishedView.source, 'level');
+        const beatText = finishedView.story.beats.map((item) => item.text).join('\n');
+        assert(beatText.includes(beatKeywords[event.id]));
         const firstChoice = finishedView.choices[0];
         topUpCosts(state, firstChoice);
         const result = GameCore.chooseStoryOption(state, firstChoice.id);
@@ -371,14 +408,11 @@ function testChoiceEchoStateUpdates() {
 }
 
 function testResourceValidation() {
-    const state = GameCore.createInitialState();
-    state.storyProgress = 999;
-    GameCore.setRealmScore(state, 5);
-    GameCore.ensureStoryCursor(state);
-
-    const view = playToChoices(state);
-    assert.strictEqual(view.source, 'level');
-    const costlyChoice = view.choices.find((item) => item.costs && item.costs.lingshi === 2);
+    const { state, view } = getChapterChoiceView(9, (chapterState) => {
+        chapterState.npcRelations['墨彩环'] = -10;
+    });
+    assert.strictEqual(view.source, 'main');
+    const costlyChoice = view.choices.find((item) => item.id === 'buy_back_trust');
     assert(costlyChoice);
     assert.strictEqual(costlyChoice.disabled, true);
 
@@ -625,100 +659,76 @@ function testChapter24ChoicesStayVisibleAndUseDebtHooks() {
 function testEndingChoiceVisibilityTracksStoryState() {
     const orthodoxEndingView = getChapterChoiceView(25, (state) => {
         state.routeScores.orthodox = 8;
-        state.routeScores.demonic = 2;
         state.routeScores.secluded = 3;
-        state.flags.successfulFoundationEstablished = true;
-        state.flags.openlyAcknowledgedNangongImportance = true;
-        state.flags.acceptedNangongPath = true;
         state.flags.returnedTiannanForBonds = true;
-        state.flags.enteredLihuayuanLineage = true;
         state.npcRelations['南宫婉'] = 120;
+        state.npcRelations['李化元'] = 20;
     }).view;
     const orthodoxEndingIds = orthodoxEndingView.choices.map((item) => item.id);
     assert(orthodoxEndingIds.includes('lingjie_xianzun'));
-    assert(!orthodoxEndingIds.includes('renjie_zhizun'));
 
     const renjieView = getChapterChoiceView(25, (state) => {
-        state.routeScores.orthodox = 2;
-        state.routeScores.demonic = 9;
-        state.routeScores.secluded = 3;
-        state.flags.returnedTiannanForSettlement = true;
-        state.flags.oldDebtsCleared = true;
+        state.flags.stoodTheLine = true;
     }).view;
     assert(renjieView.choices.map((item) => item.id).includes('renjie_zhizun'));
 
     const secludedEndingView = getChapterChoiceView(25, (state) => {
-        state.routeScores.orthodox = 3;
-        state.routeScores.demonic = 2;
-        state.routeScores.secluded = 9;
+        state.routeScores.secluded = 10;
         state.flags.returnedToSeclusion = true;
     }).view;
     assert(secludedEndingView.choices.map((item) => item.id).includes('xiaoyao_sanxian'));
 
     const karmaView = getChapterChoiceView(25, (state) => {
-        state.routeScores.orthodox = 1;
         state.routeScores.demonic = 10;
-        state.routeScores.secluded = 3;
-        state.flags.cutNangongTies = true;
-        state.flags.demonicPathSeed = true;
-        state.npcRelations['南宫婉'] = -30;
+        state.flags.lootedMoHouse = true;
+        state.flags.executedDisabledEnemy = true;
     }).view;
     assert(karmaView.choices.map((item) => item.id).includes('yinguo_chanshen'));
 
     const fanxinView = getChapterChoiceView(25, (state) => {
-        state.routeScores.orthodox = 7;
-        state.routeScores.demonic = 2;
-        state.routeScores.secluded = 4;
-        state.flags.openlyAcknowledgedNangongImportance = true;
         state.flags.returnedTiannanForBonds = true;
-        state.flags.oldDebtsCleared = true;
-        state.flags.madeAmendsToMocaihuan = true;
-        state.flags.enteredLihuayuanLineage = true;
-        state.npcRelations['南宫婉'] = 96;
-        state.npcRelations['墨彩环'] = 55;
-        state.npcRelations['李化元'] = 52;
+        state.npcRelations['南宫婉'] = 36;
     }).view;
     assert(fanxinView.choices.map((item) => item.id).includes('fanxin_weisi'));
 
     const coldView = getChapterChoiceView(25, (state) => {
-        state.routeScores.orthodox = 2;
-        state.routeScores.demonic = 8;
-        state.routeScores.secluded = 6;
-        state.flags.avoidedNangongAgain = true;
         state.flags.cutNangongTies = true;
-        state.flags.mineChoice = 'betrayGate';
-        state.flags.usedLihuayuanInfluencePragmatically = true;
-        state.npcRelations['南宫婉'] = -20;
+        state.flags.executedDisabledEnemy = true;
     }).view;
     assert(coldView.choices.map((item) => item.id).includes('taishang_wangqing'));
 }
 
 function testChapterEchoesStayConcrete() {
-    const { view } = getChapterChoiceView(25, (state) => {
-        state.routeScores.orthodox = 8;
-        state.flags.acceptedNangongDebt = true;
-        state.flags.returnedTiannanForBonds = true;
-        state.npcRelations['南宫婉'] = 108;
-    });
-    const beatTexts = view.story.beats.map((item) => item.text);
-    assert(beatTexts.every((text) => !text.includes('这一章走完后')));
-    assert(beatTexts.some((text) => text.includes('南宫婉') || text.includes('门前最后认三样东西') || text.includes('青牛镇')));
+    const chapter8Texts = getChapterChoiceView(8).view.story.beats.map((item) => item.text);
+    assert(chapter8Texts.some((text) => text.includes('试药') || text.includes('活人站在原地')));
 
-    const sixteenTexts = getChapterChoiceView(16, (state) => {
-        state.flags.enteredLihuayuanLineage = true;
+    const chapter9Texts = getChapterChoiceView(9).view.story.beats.map((item) => item.text);
+    assert(chapter9Texts.some((text) => text.includes('旧药杵') || text.includes('别过来')));
+
+    const chapter14Texts = getChapterChoiceView(14).view.story.beats.map((item) => item.text);
+    assert(chapter14Texts.some((text) => text.includes('最先开始猎杀的，从来不是妖兽')));
+
+    const chapter19Texts = getChapterChoiceView(19, (state) => {
+        state.flags.warChoice = 'orthodox';
     }).view.story.beats.map((item) => item.text);
-    assert(sixteenTexts.some((text) => text.includes('令牌') || text.includes('师门') || text.includes('李化元')));
+    assert(chapter19Texts.some((text) => text.includes('第一次有人把命押在你一句话上')));
 
-    const xuTianTexts = getChapterChoiceView(22, (state) => {
-        state.flags.enteredVoidHeavenMapGame = true;
+    const chapter23Texts = getChapterChoiceView(23, (state) => {
         state.flags.hasXuTianTu = true;
     }).view.story.beats.map((item) => item.text);
-    assert(xuTianTexts.some((text) => text.includes('残图') || text.includes('知道') || text.includes('资格')));
+    assert(chapter23Texts.some((text) => text.includes('真正考验信义的')));
 
-    const insertedTexts = getChapterChoiceView('23_mocaihuan_return', (state) => {
-        state.flags.madeAmendsToMocaihuan = true;
+    const chapter24Texts = getChapterChoiceView(24).view.story.beats.map((item) => item.text);
+    assert(chapter24Texts.some((text) => text.includes('真正的返乡')));
+
+    const chapter25Texts = getChapterChoiceView(25, (state) => {
+        state.routeScores.orthodox = 8;
+        state.routeScores.secluded = 3;
+        state.flags.returnedTiannanForBonds = true;
+        state.npcRelations['南宫婉'] = 108;
     }).view.story.beats.map((item) => item.text);
-    assert(insertedTexts.some((text) => text.includes('墨彩环') || text.includes('嘉元城') || text.includes('旧账')));
+    assert(chapter25Texts.some((text) => text.includes('飞升前夜')));
+    assert(chapter25Texts.some((text) => text.includes('你最早不是为了大道修仙')));
 }
 
 function testChapter17BeatsAndFlags() {
@@ -952,70 +962,90 @@ function testEchoesAndSideStoriesIncludeNewSignals() {
     assert(echoTitles.includes('先伸手的人'));
 
     const sideState = GameCore.createInitialState();
-    sideState.storyProgress = 23;
-    sideState.chapterChoices = {
-        17: 'trade_favors_banquet',
-        21: 'seek_cave',
-        22: 'sell_map',
-        23: 'watch_last',
-    };
+    sideState.storyProgress = 25;
+    sideState.flags.protectedMoHouse = true;
+    sideState.flags.escapedMineWithCoreAssets = true;
+    sideState.flags.enteredVoidHeavenMapGame = true;
     const sideStories = GameCore.getAvailableSideStories(sideState).map((item) => item.title);
-    assert(sideStories.includes('门路比风头久'));
-    assert(sideStories.includes('先把自己站稳'));
-    assert(sideStories.includes('危险换了主人'));
-    assert(sideStories.includes('等得越准越冷'));
+    assert(sideStories.includes('旧药账'));
+    assert(sideStories.includes('灵矿幸存者'));
+    assert(sideStories.includes('残图余波'));
+    assert(sideStories.includes('飞升前夜'));
 }
 
 function testNpcDialogueUsesChapterEchoes() {
     const mocaihuanState = GameCore.createInitialState();
-    mocaihuanState.chapterChoices[8] = 'protect_mo_house';
-    mocaihuanState.npcRelations['墨彩环'] = 80;
-    assert(GameCore.getNpcDialogue(mocaihuanState, '墨彩环').text.includes('没把我们也当成随手能丢的尾巴'));
+    mocaihuanState.flags.protectedMoHouse = true;
+    assert(GameCore.getNpcDialogue(mocaihuanState, '墨彩环').text.includes('墨府那点根'));
+
+    const mocaihuanLootState = GameCore.createInitialState();
+    mocaihuanLootState.flags.lootedMoHouse = true;
+    assert(GameCore.getNpcDialogue(mocaihuanLootState, '墨彩环').text.includes('不回头') || GameCore.getNpcDialogue(mocaihuanLootState, '墨彩环').text.includes('折成价'));
+
+    const mocaihuanPromiseState = GameCore.createInitialState();
+    mocaihuanPromiseState.flags.promisedMoReturn = true;
+    assert(GameCore.getNpcDialogue(mocaihuanPromiseState, '墨彩环').text.includes('我会回来') || GameCore.getNpcDialogue(mocaihuanPromiseState, '墨彩环').text.includes('记了很多年'));
 
     const nangongState = GameCore.createInitialState();
-    nangongState.chapterChoices[23] = 'watch_last';
-    nangongState.npcRelations['南宫婉'] = 40;
-    assert(GameCore.getNpcDialogue(nangongState, '南宫婉').text.includes('冷眼一起记住'));
+    nangongState.flags.acceptedNangongDebt = true;
+    assert(GameCore.getNpcDialogue(nangongState, '南宫婉').text.includes('你既认了')
+        || GameCore.getNpcDialogue(nangongState, '南宫婉').text.includes('人情不是锁'));
+
+    const nangongSuppressedState = GameCore.createInitialState();
+    nangongSuppressedState.flags.suppressedNangongFeelings = true;
+    assert(GameCore.getNpcDialogue(nangongSuppressedState, '南宫婉').text.includes('压得住心'));
+
+    const nangongCutState = GameCore.createInitialState();
+    nangongCutState.flags.cutNangongTies = true;
+    assert(GameCore.getNpcDialogue(nangongCutState, '南宫婉').text.includes('切得倒快') || GameCore.getNpcDialogue(nangongCutState, '南宫婉').text.includes('全忘'));
 
     const liState = GameCore.createInitialState();
-    liState.chapterChoices[19] = 'open_mine_gate';
-    liState.npcRelations['李化元'] = -30;
-    assert(GameCore.getNpcDialogue(liState, '李化元').text.includes('拿同门去换自己的位子'));
+    liState.flags.enteredLihuayuanLineage = true;
+    assert(GameCore.getNpcDialogue(liState, '李化元').text.includes('既入我门下'));
+
+    const liFreeState = GameCore.createInitialState();
+    liFreeState.flags.respectedLihuayuanButStayedIndependent = true;
+    assert(GameCore.getNpcDialogue(liFreeState, '李化元').text.includes('不肯全信我') || GameCore.getNpcDialogue(liFreeState, '李化元').text.includes('兜底'));
+
+    const liBattleState = GameCore.createInitialState();
+    liBattleState.flags.stoodTheLine = true;
+    assert(GameCore.getNpcDialogue(liBattleState, '李化元').text.includes('站住了'));
 }
 
 function testEndingEchoTextsStayReflective() {
     const chapterView = getChapterChoiceView(25, (state) => {
         state.routeScores.orthodox = 8;
+        state.routeScores.secluded = 3;
         state.flags.acceptedNangongDebt = true;
         state.flags.returnedTiannanForBonds = true;
         state.npcRelations['南宫婉'] = 108;
     }).view;
     const beatTexts = chapterView.story.beats.map((item) => item.text);
+    assert(beatTexts.some((text) => text.includes('飞升前夜')));
     assert(beatTexts.some((text) => text.includes('你最早不是为了大道修仙')));
     assert(beatTexts.some((text) => text.includes('正道、魔道、苟修')));
 
     const orthodoxState = getChapterChoiceView(25, (state) => {
         state.routeScores.orthodox = 8;
+        state.routeScores.secluded = 4;
         state.flags.acceptedNangongDebt = true;
         state.flags.returnedTiannanForBonds = true;
-        state.flags.oldDebtsCleared = true;
         state.npcRelations['南宫婉'] = 108;
-        state.npcRelations['墨彩环'] = 55;
+        state.npcRelations['李化元'] = 20;
     }).state;
     let result = GameCore.chooseStoryOption(orthodoxState, 'lingjie_xianzun');
     assert.strictEqual(result.ok, true);
-    assert(orthodoxState.ending.description.includes('并不比谁更干净'));
+    assert(orthodoxState.ending.description.includes('并非因为你比谁更干净'));
 
     const causalState = getChapterChoiceView(25, (state) => {
-        state.routeScores.demonic = 8;
+        state.routeScores.demonic = 12;
         state.flags.cutEmotion = true;
-        state.flags.mineChoice = 'betrayGate';
-        state.npcRelations['南宫婉'] = -10;
-        state.npcRelations['墨彩环'] = -5;
+        state.flags.executedDisabledEnemy = true;
+        state.flags.lootedMoHouse = true;
     }).state;
     result = GameCore.chooseStoryOption(causalState, 'yinguo_chanshen');
     assert.strictEqual(result.ok, true);
-    assert(causalState.ending.description.includes('淡掉的是表面，不是账'));
+    assert(causalState.ending.description.includes('旧因旧果'));
 }
 
 function testStringChapterLogsNoNaN() {
@@ -1155,7 +1185,7 @@ function testBranchEchoes() {
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
     }));
     const secludedEcho = GameCore.getEchoes(secludedState).map((item) => item.title);
-    assert(secludedEcho.includes('来过却不住回去'));
+    assert(secludedEcho.includes('只留一道影子'));
     assert(secludedEcho.includes('逍遥散仙'));
     const secludedEndingView = GameCore.getStoryView(secludedState);
     assert.strictEqual(secludedEndingView.source, 'ending');

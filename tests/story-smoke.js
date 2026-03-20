@@ -300,6 +300,9 @@ function testLevelEventCoverage() {
         const beatText = finishedView.story.beats.map((item) => item.text).join('\n');
         assert(beatText.includes(beatKeywords[event.id]));
         const firstChoice = finishedView.choices[0];
+        assert(firstChoice.tradeoff, `小境界事件 ${event.id} 需要归一化 tradeoff`);
+        assert(firstChoice.tradeoff.battleWillGain >= 1);
+        assert(firstChoice.tradeoff.tribulationGain >= 1);
         topUpCosts(state, firstChoice);
         const result = GameCore.chooseStoryOption(state, firstChoice.id);
         assert(result.ok, `小境界事件 ${event.id} 选择失败: ${result.error || 'unknown'}`);
@@ -365,6 +368,8 @@ function testProfileCollapseSaveCompatibility() {
     assert.strictEqual(initialState.ui.profileCollapsed, true);
     assert.deepStrictEqual(initialState.chapterChoices, {});
     assert.strictEqual(initialState.recentChoiceEcho, null);
+    assert.deepStrictEqual(initialState.storyConsequences, { battleWill: 0, tribulation: 0 });
+    assert.strictEqual(initialState.recentChoiceOutcome, null);
 
     const mergedLegacyState = GameCore.mergeSave({
         ui: {
@@ -375,6 +380,8 @@ function testProfileCollapseSaveCompatibility() {
     assert.strictEqual(mergedLegacyState.ui.activeTab, 'story');
     assert.deepStrictEqual(mergedLegacyState.chapterChoices, {});
     assert.strictEqual(mergedLegacyState.recentChoiceEcho, null);
+    assert.deepStrictEqual(mergedLegacyState.storyConsequences, { battleWill: 0, tribulation: 0 });
+    assert.strictEqual(mergedLegacyState.recentChoiceOutcome, null);
 
     const mergedExplicitState = GameCore.mergeSave({
         ui: {
@@ -387,11 +394,37 @@ function testProfileCollapseSaveCompatibility() {
             chapterId: 14,
             choiceId: 'save_nangong',
         },
+        storyConsequences: {
+            battleWill: 99,
+            tribulation: 88,
+        },
+        recentChoiceOutcome: {
+            chapterId: 14,
+            choiceId: 'save_nangong',
+            battleWillGain: 9,
+            tribulationGain: 7,
+            attackBonus: 999,
+            defenseBonus: 999,
+            hpBonus: 999,
+        },
     });
     assert.strictEqual(mergedExplicitState.ui.profileCollapsed, false);
     assert.strictEqual(mergedExplicitState.chapterChoices[14], 'save_nangong');
     assert.strictEqual(mergedExplicitState.recentChoiceEcho.chapterId, 14);
     assert.strictEqual(mergedExplicitState.recentChoiceEcho.choiceId, 'save_nangong');
+    assert.deepStrictEqual(mergedExplicitState.storyConsequences, {
+        battleWill: GameCore.STORY_CONSEQUENCE_LIMITS.battleWill,
+        tribulation: GameCore.STORY_CONSEQUENCE_LIMITS.tribulation,
+    });
+    assert.deepStrictEqual(mergedExplicitState.recentChoiceOutcome, {
+        chapterId: 14,
+        choiceId: 'save_nangong',
+        battleWillGain: 3,
+        tribulationGain: 2,
+        attackBonus: GameCore.STORY_CONSEQUENCE_LIMITS.battleWill * 2,
+        defenseBonus: Math.floor(GameCore.STORY_CONSEQUENCE_LIMITS.battleWill / 2),
+        hpBonus: GameCore.STORY_CONSEQUENCE_LIMITS.battleWill * 6,
+    });
 }
 
 function testChoiceEchoStateUpdates() {
@@ -401,10 +434,89 @@ function testChoiceEchoStateUpdates() {
     assert.strictEqual(state.chapterChoices[14], 'save_nangong');
     assert.strictEqual(state.recentChoiceEcho.chapterId, 14);
     assert.strictEqual(state.recentChoiceEcho.choiceId, 'save_nangong');
+    assert.deepStrictEqual(state.storyConsequences, { battleWill: 2, tribulation: 1 });
+    assert.strictEqual(state.recentChoiceOutcome.chapterId, 14);
+    assert.strictEqual(state.recentChoiceOutcome.choiceId, 'save_nangong');
+    assert.strictEqual(state.recentChoiceOutcome.battleWillGain, 2);
+    assert.strictEqual(state.recentChoiceOutcome.tribulationGain, 1);
 
     const echoes = GameCore.getEchoes(state);
-    assert.strictEqual(echoes[0].title, '禁地回身');
+    assert.strictEqual(echoes[0].title, '抉择余波');
+    assert(echoes[0].detail.includes('战意 +2'));
+    assert(echoes[0].detail.includes('劫煞 +1'));
+    assert(echoes.some((item) => item.title === '禁地回身'));
     assert(echoes.some((item) => item.title === '禁地留名'));
+}
+
+function testChoiceTextsHideTradeoffPreview() {
+    const mainView = getChapterChoiceView(14).view;
+    mainView.choices.forEach((choice) => {
+        assert(!choice.text.includes('战意'));
+        assert(!choice.text.includes('劫煞'));
+    });
+
+    const levelState = GameCore.createInitialState();
+    levelState.storyProgress = 999;
+    GameCore.setRealmScore(levelState, 0);
+    GameCore.ensureStoryCursor(levelState);
+    const levelView = playToChoices(levelState);
+    levelView.choices.forEach((choice) => {
+        assert(!choice.text.includes('战意'));
+        assert(!choice.text.includes('劫煞'));
+    });
+}
+
+function testBattleWillBonusesAffectStats() {
+    const { state } = getChapterChoiceView(0);
+    const initialStats = {
+        hp: state.playerStats.maxHp,
+        attack: state.playerStats.attack,
+        defense: state.playerStats.defense,
+    };
+
+    const result = GameCore.chooseStoryOption(state, 'set_out_now');
+    assert.strictEqual(result.ok, true);
+
+    const bonuses = GameCore.getBattleWillBonuses(state);
+    assert.deepStrictEqual(bonuses, { attack: 4, defense: 1, hp: 12 });
+    assert.strictEqual(state.playerStats.maxHp, initialStats.hp + bonuses.hp);
+    assert.strictEqual(state.playerStats.attack, initialStats.attack + bonuses.attack);
+    assert.strictEqual(state.playerStats.defense, initialStats.defense + bonuses.defense);
+}
+
+function testLevelChoiceOutcomeStateUpdates() {
+    const state = GameCore.createInitialState();
+    state.storyProgress = 999;
+    GameCore.setRealmScore(state, 0);
+    GameCore.ensureStoryCursor(state);
+
+    const view = playToChoices(state);
+    const result = GameCore.chooseStoryOption(state, 'observe_change');
+    assert.strictEqual(view.source, 'level');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(state.recentChoiceOutcome.chapterId, 'qi_0');
+    assert.strictEqual(state.recentChoiceOutcome.choiceId, 'observe_change');
+    assert.strictEqual(state.recentChoiceOutcome.battleWillGain, 1);
+    assert.strictEqual(state.recentChoiceOutcome.tribulationGain, 1);
+    assert.strictEqual(GameCore.getEchoes(state)[0].title, '抉择余波');
+}
+
+function testTribulationDeathEnding() {
+    const { state } = getChapterChoiceView(14, (chapterState) => {
+        chapterState.storyConsequences.tribulation = 41;
+    });
+
+    const result = GameCore.chooseStoryOption(state, 'kill_for_gain');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.ending, true);
+    assert.strictEqual(result.death, true);
+    assert.strictEqual(state.ending.id, 'zouhuorumo');
+    assert.strictEqual(state.storyProgress, -1);
+    assert.strictEqual(state.storyCursor.source, 'ending');
+    assert.strictEqual(state.storyConsequences.tribulation, GameCore.STORY_CONSEQUENCE_LIMITS.tribulation);
+    assert.strictEqual(state.recentChoiceOutcome.battleWillGain, 3);
+    assert.strictEqual(state.recentChoiceOutcome.tribulationGain, 2);
+    assert.strictEqual(GameCore.getStoryView(state).source, 'ending');
 }
 
 function testResourceValidation() {
@@ -1147,10 +1259,10 @@ function testBranchEchoes() {
     }));
     const demonicEcho = GameCore.getEchoes(demonicState).map((item) => item.title);
     assert(demonicEcho.includes('底线后移'));
-    assert(demonicEcho.includes('人界至尊'));
     const demonicEndingView = GameCore.getStoryView(demonicState);
     assert.strictEqual(demonicEndingView.source, 'ending');
-    assert.strictEqual(demonicEndingView.ending.id, 'renjie_zhizun');
+    assert.strictEqual(demonicEndingView.ending.id, 'zouhuorumo');
+    assert.strictEqual(demonicState.storyConsequences.tribulation, GameCore.STORY_CONSEQUENCE_LIMITS.tribulation);
 
     const secludedState = runMainPath(withInsertedChoices({
         0: 'pack_and_leave',
@@ -1200,6 +1312,10 @@ testBreakthroughQueuesLevelStory();
 testMissedLevelStoryCanRecover();
 testProfileCollapseSaveCompatibility();
 testChoiceEchoStateUpdates();
+testChoiceTextsHideTradeoffPreview();
+testBattleWillBonusesAffectStats();
+testLevelChoiceOutcomeStateUpdates();
+testTribulationDeathEnding();
 testResourceValidation();
 testMineChoicesBecomeRouteSpecific();
 testChapter15ChoiceFlags();

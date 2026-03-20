@@ -724,6 +724,37 @@
         { text: '你被妖气擦过经脉，心神一时难定。', cultivation: -24 },
     ];
 
+    function normalizeTradeoff(rawTradeoff, choice) {
+        if (rawTradeoff && typeof rawTradeoff === 'object') {
+            const battleWillGain = Number.isFinite(rawTradeoff.battleWillGain)
+                ? Math.max(1, Math.min(3, Math.floor(rawTradeoff.battleWillGain)))
+                : 2;
+            const tribulationGain = Number.isFinite(rawTradeoff.tribulationGain)
+                ? Math.max(1, Math.min(2, Math.floor(rawTradeoff.tribulationGain)))
+                : 1;
+            return { battleWillGain, tribulationGain };
+        }
+
+        const routeScores = choice?.effects?.routeScores || {};
+        if ((routeScores.demonic || 0) > 0) {
+            return { battleWillGain: 3, tribulationGain: 2 };
+        }
+        if ((routeScores.secluded || 0) > 0) {
+            return { battleWillGain: 1, tribulationGain: 1 };
+        }
+        return { battleWillGain: 2, tribulationGain: 1 };
+    }
+
+    function normalizeChoice(choice, fallbackId) {
+        return {
+            ...choice,
+            id: choice.id || fallbackId,
+            effects: choice.effects || {},
+            nextChapterId: choice.nextChapterId ?? null,
+            tradeoff: normalizeTradeoff(choice.tradeoff, choice),
+        };
+    }
+
     function levelEvent(options) {
         return {
             id: options.id,
@@ -1045,12 +1076,7 @@
         const originalChoices = event.choices;
         event.choices = function normalizedChoices(state) {
             const rawChoices = typeof originalChoices === 'function' ? originalChoices(state) : originalChoices;
-            return rawChoices.map((choice, index) => ({
-                ...choice,
-                id: choice.id || `${event.id}_choice_${index}`,
-                effects: choice.effects || {},
-                nextChapterId: choice.nextChapterId ?? null,
-            }));
+            return rawChoices.map((choice, index) => normalizeChoice(choice, `${event.id}_choice_${index}`));
         };
     });
 
@@ -3217,9 +3243,16 @@
 
     STORY_CHAPTERS.forEach((chapter) => {
         const originalBeats = chapter.beats;
+        const originalChoices = chapter.choices;
+
         chapter.beats = function enrichedBeats(state) {
             const baseBeats = typeof originalBeats === 'function' ? originalBeats(state) : originalBeats;
             return [...baseBeats, ...getChapterEchoes(chapter, state)];
+        };
+
+        chapter.choices = function normalizedChoices(state) {
+            const rawChoices = typeof originalChoices === 'function' ? originalChoices(state) : originalChoices;
+            return (rawChoices || []).map((choice, index) => normalizeChoice(choice, `${chapter.id}_choice_${index}`));
         };
     });
 

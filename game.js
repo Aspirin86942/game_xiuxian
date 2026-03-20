@@ -714,7 +714,7 @@
                 return;
             }
             gameState.unreadStory = false;
-            playSound(result.ending ? 'victory' : 'story');
+            playSound(result.death ? 'fail' : (result.ending ? 'victory' : 'story'));
             render();
             saveGame();
         });

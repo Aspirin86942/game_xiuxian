@@ -21,6 +21,10 @@
     const STORY_LOOKUP = new Map(STORY_CHAPTERS.map((chapter) => [chapter.id, chapter]));
     const STORY_ORDER = new Map(STORY_CHAPTERS.map((chapter, index) => [String(chapter.id), index]));
     const MAX_LOGS = 120;
+    const STORY_CONSEQUENCE_LIMITS = Object.freeze({
+        battleWill: 8,
+        tribulation: 42,
+    });
 
     function clone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -51,6 +55,13 @@
         };
     }
 
+    function createDefaultStoryConsequences() {
+        return {
+            battleWill: 0,
+            tribulation: 0,
+        };
+    }
+
     function normalizeOfflineTrainingState(rawState) {
         const nextState = createDefaultOfflineTrainingState();
         if (!rawState || typeof rawState !== 'object') {
@@ -71,6 +82,40 @@
         });
         nextState.wasCapped = Boolean(rawState.wasCapped);
         return nextState;
+    }
+
+    function clampConsequenceValue(rawValue, upperBound) {
+        if (!Number.isFinite(rawValue)) {
+            return 0;
+        }
+        return Math.max(0, Math.min(upperBound, Math.floor(rawValue)));
+    }
+
+    function normalizeStoryConsequences(rawState) {
+        const nextState = createDefaultStoryConsequences();
+        if (!rawState || typeof rawState !== 'object') {
+            return nextState;
+        }
+
+        nextState.battleWill = clampConsequenceValue(rawState.battleWill, STORY_CONSEQUENCE_LIMITS.battleWill);
+        nextState.tribulation = clampConsequenceValue(rawState.tribulation, STORY_CONSEQUENCE_LIMITS.tribulation);
+        return nextState;
+    }
+
+    function normalizeRecentChoiceOutcome(rawState) {
+        if (!rawState || typeof rawState !== 'object') {
+            return null;
+        }
+
+        return {
+            chapterId: rawState.chapterId ?? null,
+            choiceId: rawState.choiceId ?? null,
+            battleWillGain: clampConsequenceValue(rawState.battleWillGain, 3),
+            tribulationGain: clampConsequenceValue(rawState.tribulationGain, 2),
+            attackBonus: clampConsequenceValue(rawState.attackBonus, STORY_CONSEQUENCE_LIMITS.battleWill * 2),
+            defenseBonus: clampConsequenceValue(rawState.defenseBonus, Math.floor(STORY_CONSEQUENCE_LIMITS.battleWill / 2)),
+            hpBonus: clampConsequenceValue(rawState.hpBonus, STORY_CONSEQUENCE_LIMITS.battleWill * 6),
+        };
     }
 
     function getOfflineTrainingCapMs() {
@@ -148,6 +193,24 @@
         return nextState;
     }
 
+    function getBattleWillBonuses(state) {
+        const consequences = normalizeStoryConsequences(state?.storyConsequences);
+        return {
+            attack: consequences.battleWill * 2,
+            defense: Math.floor(consequences.battleWill / 2),
+            hp: consequences.battleWill * 6,
+        };
+    }
+
+    function createTribulationEnding(state) {
+        const consequences = normalizeStoryConsequences(state?.storyConsequences);
+        return {
+            id: 'zouhuorumo',
+            title: '走火入魔',
+            description: `你一路积下的劫煞终于反噬心神。战意虽盛，却已压不住识海裂开的回声；当劫煞攀至 ${consequences.tribulation}/${STORY_CONSEQUENCE_LIMITS.tribulation}，这一局也只能在失控中断掉。`,
+        };
+    }
+
     function createInitialState() {
         const state = {
             version: 4,
@@ -172,9 +235,11 @@
                 musicEnabled: true,
             },
             offlineTraining: createDefaultOfflineTrainingState(),
+            storyConsequences: createDefaultStoryConsequences(),
             storyProgress: 0,
             chapterChoices: {},
             recentChoiceEcho: null,
+            recentChoiceOutcome: null,
             storyCursor: {
                 source: 'main',
                 storyId: null,
@@ -218,6 +283,7 @@
         Object.assign(nextState, rawState);
         nextState.settings = { ...createInitialState().settings, ...(rawState.settings || {}) };
         nextState.offlineTraining = normalizeOfflineTrainingState(rawState.offlineTraining);
+        nextState.storyConsequences = normalizeStoryConsequences(rawState.storyConsequences);
         nextState.ui = { ...createInitialState().ui, ...(rawState.ui || {}) };
         nextState.storyCursor = normalizeStoryCursor(rawState.storyCursor);
         nextState.playerStats = { ...createInitialState().playerStats, ...(rawState.playerStats || {}) };
@@ -229,6 +295,7 @@
         nextState.recentChoiceEcho = rawState.recentChoiceEcho && typeof rawState.recentChoiceEcho === 'object'
             ? { chapterId: rawState.recentChoiceEcho.chapterId ?? null, choiceId: rawState.recentChoiceEcho.choiceId ?? null }
             : null;
+        nextState.recentChoiceOutcome = normalizeRecentChoiceOutcome(rawState.recentChoiceOutcome);
         nextState.logs = Array.isArray(rawState.logs) ? rawState.logs.slice(0, MAX_LOGS) : [];
         nextState.ending = rawState.ending || null;
         nextState.levelStoryState = normalizeLevelStoryState(rawState.levelStoryState);
@@ -289,11 +356,12 @@
         const itemAttack = getInventoryCount(state, 'feijian') > 0 ? 6 : 0;
         const itemDefense = getInventoryCount(state, 'hujian') > 0 ? 4 : 0;
         const companionBonus = getInventoryCount(state, 'quhun') > 0 ? 12 : 0;
+        const battleWillBonuses = getBattleWillBonuses(state);
 
-        state.playerStats.maxHp = baseHp + companionBonus;
+        state.playerStats.maxHp = baseHp + companionBonus + battleWillBonuses.hp;
         state.playerStats.hp = healFull ? state.playerStats.maxHp : Math.max(1, Math.min(state.playerStats.maxHp, Math.round(state.playerStats.maxHp * hpRatio)));
-        state.playerStats.attack = 12 + (state.realmIndex * 5) + (state.stageIndex * 2) + itemAttack;
-        state.playerStats.defense = 5 + (state.realmIndex * 3) + state.stageIndex + itemDefense;
+        state.playerStats.attack = 12 + (state.realmIndex * 5) + (state.stageIndex * 2) + itemAttack + battleWillBonuses.attack;
+        state.playerStats.defense = 5 + (state.realmIndex * 3) + state.stageIndex + itemDefense + battleWillBonuses.defense;
     }
 
     function pushLog(state, message, type = 'normal') {
@@ -403,6 +471,42 @@
         }
 
         recalculateState(state, false);
+    }
+
+    function applyChoiceTradeoff(state, story, choice) {
+        const tradeoff = choice.tradeoff && typeof choice.tradeoff === 'object'
+            ? choice.tradeoff
+            : { battleWillGain: 2, tribulationGain: 1 };
+        const consequences = normalizeStoryConsequences(state.storyConsequences);
+        const battleWillGain = clampConsequenceValue(tradeoff.battleWillGain, 3);
+        const tribulationGain = clampConsequenceValue(tradeoff.tribulationGain, 2);
+        const nextBattleWill = consequences.battleWill + battleWillGain;
+        const nextTribulation = consequences.tribulation + tribulationGain;
+
+        consequences.battleWill = Math.min(STORY_CONSEQUENCE_LIMITS.battleWill, nextBattleWill);
+        consequences.tribulation = Math.min(STORY_CONSEQUENCE_LIMITS.tribulation, nextTribulation);
+        state.storyConsequences = consequences;
+        recalculateState(state, false);
+
+        const totalBonus = getBattleWillBonuses(state);
+        state.recentChoiceOutcome = {
+            chapterId: story.id,
+            choiceId: choice.id,
+            battleWillGain,
+            tribulationGain,
+            attackBonus: totalBonus.attack,
+            defenseBonus: totalBonus.defense,
+            hpBonus: totalBonus.hp,
+        };
+
+        pushLog(state, `抉择余波：战意 +${battleWillGain}，劫煞 +${tribulationGain}`, tribulationGain > battleWillGain ? 'bad' : 'normal');
+
+        return {
+            battleWillGain,
+            tribulationGain,
+            totalBonus,
+            triggeredDeath: nextTribulation > STORY_CONSEQUENCE_LIMITS.tribulation,
+        };
     }
 
     function meetsRequirements(state, requirements) {
@@ -728,11 +832,34 @@
 
         applyEffects(state, choice.effects);
         pushLog(state, `剧情抉择：${choice.text}`, 'normal');
+        const tradeoffResult = applyChoiceTradeoff(state, story, choice);
 
         if (story.source === 'main') {
             const chapterId = story.id;
             state.chapterChoices[String(chapterId)] = choice.id;
             state.recentChoiceEcho = { chapterId, choiceId: choice.id };
+        }
+
+        if (story.source === 'level') {
+            const levelEntry = state.levelStoryState.events[story.id] || { triggered: true, completed: false };
+            levelEntry.triggered = true;
+            levelEntry.completed = true;
+            state.levelStoryState.events[story.id] = levelEntry;
+            state.levelStoryState.currentEventId = null;
+        }
+
+        if (tradeoffResult.triggeredDeath) {
+            state.ending = createTribulationEnding(state);
+            state.storyCursor = {
+                source: 'ending',
+                storyId: null,
+                chapterId: null,
+                beatIndex: 0,
+                mode: 'idle',
+            };
+            state.storyProgress = -1;
+            pushLog(state, '劫煞积满，心神失守，本局在走火入魔中终结。', 'fail');
+            return { ok: true, ending: true, death: true };
         }
 
         if (choice.ending) {
@@ -751,14 +878,6 @@
 
         if (story.source === 'main' && choice.nextChapterId !== undefined) {
             state.storyProgress = choice.nextChapterId;
-        }
-
-        if (story.source === 'level') {
-            const levelEntry = state.levelStoryState.events[story.id] || { triggered: true, completed: false };
-            levelEntry.triggered = true;
-            levelEntry.completed = true;
-            state.levelStoryState.events[story.id] = levelEntry;
-            state.levelStoryState.currentEventId = null;
         }
 
         state.storyCursor = {
@@ -825,6 +944,8 @@
 
     function getRouteSummary(state) {
         const dominant = getRouteDominant(state);
+        const consequences = normalizeStoryConsequences(state.storyConsequences);
+        const battleWillBonuses = getBattleWillBonuses(state);
         const scoreMap = {
             orthodox: state.routeScores.orthodox,
             demonic: state.routeScores.demonic,
@@ -855,6 +976,14 @@
             {
                 title: '分值对照',
                 detail: `正道 ${scoreMap.orthodox} / 魔路 ${scoreMap.demonic} / 苟修 ${scoreMap.secluded}`,
+            },
+            {
+                title: '战意',
+                detail: `战意 ${consequences.battleWill}/${STORY_CONSEQUENCE_LIMITS.battleWill}：当前战斗加成 攻击 +${battleWillBonuses.attack} / 防御 +${battleWillBonuses.defense} / 气血 +${battleWillBonuses.hp}`,
+            },
+            {
+                title: '劫煞',
+                detail: `劫煞 ${consequences.tribulation}/${STORY_CONSEQUENCE_LIMITS.tribulation}：劫煞过盛将走火入魔`,
             },
         ];
     }
@@ -1085,8 +1214,28 @@
         }
     }
 
+    function getChoiceOutcomeEcho(state) {
+        const outcome = normalizeRecentChoiceOutcome(state.recentChoiceOutcome);
+        if (!outcome) {
+            return null;
+        }
+
+        return {
+            title: '抉择余波',
+            detail: `本次抉择：战意 +${outcome.battleWillGain}，劫煞 +${outcome.tribulationGain}。当前战斗加成：攻击 +${outcome.attackBonus}、防御 +${outcome.defenseBonus}、气血 +${outcome.hpBonus}。`,
+        };
+    }
+
     function getEchoes(state) {
         const echoes = [];
+        const outcomeEcho = getChoiceOutcomeEcho(state);
+        if (outcomeEcho) {
+            echoes.push({
+                title: outcomeEcho.title,
+                detail: outcomeEcho.detail,
+            });
+        }
+
         const recentEcho = getChoiceImmediateEcho(state.recentChoiceEcho?.chapterId, state.recentChoiceEcho?.choiceId);
         if (recentEcho) {
             echoes.push({
@@ -1439,12 +1588,14 @@
         LOCATIONS,
         NPCS,
         LEVEL_STORY_EVENTS,
+        STORY_CONSEQUENCE_LIMITS,
         createInitialState,
         mergeSave,
         recalculateState,
         getRealmScore,
         setRealmScore,
         getRealmLabel,
+        getBattleWillBonuses,
         getRouteDisplay,
         getRouteSummary,
         getEchoes,

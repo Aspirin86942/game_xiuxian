@@ -34,12 +34,15 @@ function testProfileAndStoryAnchors(indexHtml, gameJs, gameCoreJs, styleCss) {
     assert(gameJs.includes("window.addEventListener('pagehide', saveGame)"), 'game.js 应在 pagehide 时刷新存档时间戳');
     assert(gameJs.includes("elements.storyProgress.textContent"), 'game.js 应更新剧情页码文案');
     assert(gameJs.includes('view.chapter.chapterLabel'), 'game.js 应优先使用 chapterLabel 显示插章标题');
+    assert(gameJs.includes('result.death ? \'fail\''), 'game.js 应区分死亡结局与普通终局音效');
     assert(gameJs.includes("'下一页'"), '剧情继续按钮应改为下一页');
     assert(gameJs.includes("'跳至抉择'"), '剧情跳过按钮应改为跳至抉择');
 
     assert(gameCoreJs.includes('profileCollapsed'), 'game-core.js 应继续兼容旧存档的 profileCollapsed 字段');
     assert(gameCoreJs.includes('resolveOfflineCultivation'), 'game-core.js 应提供离线挂机结算接口');
     assert(gameCoreJs.includes('touchSaveTimestamp'), 'game-core.js 应提供存档时间戳刷新接口');
+    assert(gameCoreJs.includes('storyConsequences'), 'game-core.js 应维护抉择后果累计状态');
+    assert(gameCoreJs.includes('recentChoiceOutcome'), 'game-core.js 应维护最近一次抉择结算结果');
 
     assert(!styleCss.includes('@media (min-width: 760px)'), '不应继续保留桌面端专用布局');
     assert(!styleCss.includes('.status-card.is-mobile-compact'), '样式中不应继续保留 is-mobile-compact 分支');

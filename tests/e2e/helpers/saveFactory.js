@@ -14,6 +14,37 @@ function setRealmScore(state, score) {
     GameCore.recalculateState(state, true);
 }
 
+function satisfyChapterRequirements(state, chapterId) {
+    const chapter = GameCore.getChapterById(chapterId);
+    if (!chapter) {
+        return;
+    }
+
+    const requirements = chapter.requirements || {};
+    if (requirements.realmScoreAtLeast !== undefined && GameCore.getRealmScore(state) < requirements.realmScoreAtLeast) {
+        GameCore.setRealmScore(state, requirements.realmScoreAtLeast);
+    }
+    if (requirements.cultivationAtLeast !== undefined) {
+        state.cultivation = Math.max(state.cultivation, requirements.cultivationAtLeast);
+    }
+    if (requirements.relationsMin) {
+        Object.entries(requirements.relationsMin).forEach(([npcName, value]) => {
+            state.npcRelations[npcName] = Math.max(state.npcRelations[npcName] || 0, value);
+        });
+    }
+    if (requirements.items) {
+        Object.entries(requirements.items).forEach(([itemId, value]) => {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, value);
+        });
+    }
+    if (requirements.flagsAll) {
+        Object.entries(requirements.flagsAll).forEach(([flagName, value]) => {
+            state.flags[flagName] = value;
+        });
+    }
+    GameCore.recalculateState(state, false);
+}
+
 function formatRenderedStoryTitle(state) {
     const view = GameCore.getStoryView(state);
     if (!view) {
@@ -135,6 +166,36 @@ function createStoryScenario() {
         expectedTitle: formatRenderedStoryTitle(afterChoiceState),
         expectedStoryProgress: afterChoiceState.storyProgress,
         expectedEchoTitle: echoes[0] || '',
+    };
+}
+
+function createTribulationEndingScenario() {
+    const { state, serialized } = createSerializedState((draft) => {
+        draft.storyProgress = 14;
+        draft.ui.activeTab = 'story';
+        draft.storyConsequences.tribulation = GameCore.STORY_CONSEQUENCE_LIMITS.tribulation - 1;
+        draft.storyConsequences.battleWill = 3;
+        GameCore.LEVEL_STORY_EVENTS.forEach((event) => {
+            draft.levelStoryState.events[event.id] = { triggered: true, completed: true };
+        });
+        satisfyChapterRequirements(draft, 14);
+        draft.storyCursor = {
+            source: 'main',
+            storyId: 14,
+            chapterId: 14,
+            beatIndex: 0,
+            mode: 'idle',
+        };
+        GameCore.ensureStoryCursor(draft);
+        GameCore.skipStoryPlayback(draft);
+    });
+
+    return {
+        serialized,
+        choiceId: 'kill_for_gain',
+        expectedEndingTitle: '走火入魔',
+        expectedResetRealmLabel: '炼气·初期',
+        expectedResetCultivationText: '0/100',
     };
 }
 
@@ -271,6 +332,7 @@ module.exports = {
     createFreshScenario,
     createBreakthroughScenario,
     createStoryScenario,
+    createTribulationEndingScenario,
     createCombatScenario,
     createConsumableScenario,
     createCustomSaveScenario,

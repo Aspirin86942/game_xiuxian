@@ -326,6 +326,8 @@ function testMissedLevelStoryCanRecover() {
 function testProfileCollapseSaveCompatibility() {
     const initialState = GameCore.createInitialState();
     assert.strictEqual(initialState.ui.profileCollapsed, true);
+    assert.deepStrictEqual(initialState.chapterChoices, {});
+    assert.strictEqual(initialState.recentChoiceEcho, null);
 
     const mergedLegacyState = GameCore.mergeSave({
         ui: {
@@ -334,13 +336,38 @@ function testProfileCollapseSaveCompatibility() {
     });
     assert.strictEqual(mergedLegacyState.ui.profileCollapsed, true);
     assert.strictEqual(mergedLegacyState.ui.activeTab, 'story');
+    assert.deepStrictEqual(mergedLegacyState.chapterChoices, {});
+    assert.strictEqual(mergedLegacyState.recentChoiceEcho, null);
 
     const mergedExplicitState = GameCore.mergeSave({
         ui: {
             profileCollapsed: false,
         },
+        chapterChoices: {
+            14: 'save_nangong',
+        },
+        recentChoiceEcho: {
+            chapterId: 14,
+            choiceId: 'save_nangong',
+        },
     });
     assert.strictEqual(mergedExplicitState.ui.profileCollapsed, false);
+    assert.strictEqual(mergedExplicitState.chapterChoices[14], 'save_nangong');
+    assert.strictEqual(mergedExplicitState.recentChoiceEcho.chapterId, 14);
+    assert.strictEqual(mergedExplicitState.recentChoiceEcho.choiceId, 'save_nangong');
+}
+
+function testChoiceEchoStateUpdates() {
+    const { state } = getChapterChoiceView(14);
+    const result = GameCore.chooseStoryOption(state, 'save_nangong');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(state.chapterChoices[14], 'save_nangong');
+    assert.strictEqual(state.recentChoiceEcho.chapterId, 14);
+    assert.strictEqual(state.recentChoiceEcho.choiceId, 'save_nangong');
+
+    const echoes = GameCore.getEchoes(state);
+    assert.strictEqual(echoes[0].title, '禁地回身');
+    assert(echoes.some((item) => item.title === '禁地留名'));
 }
 
 function testResourceValidation() {
@@ -911,28 +938,84 @@ function testChapter23BranchChoices() {
 
 function testEchoesAndSideStoriesIncludeNewSignals() {
     const echoState = GameCore.createInitialState();
-    echoState.flags.lowProfileBanquet = true;
-    echoState.flags.starSeaStyle = 'hunter';
-    echoState.flags.grabbedTreasure = true;
-    const echoTitles = GameCore.getEchoes(echoState).map((item) => item.title);
-    assert(echoTitles.includes('燕堡观察'));
-    assert(echoTitles.includes('猎妖名声'));
-    assert(echoTitles.includes('先手夺宝'));
+    echoState.chapterChoices = {
+        17: 'stay_quiet_banquet',
+        21: 'hunt_monsters',
+        23: 'grab_treasure',
+    };
+    echoState.recentChoiceEcho = { chapterId: 23, choiceId: 'grab_treasure' };
+    const echoes = GameCore.getEchoes(echoState);
+    const echoTitles = echoes.map((item) => item.title);
+    assert.strictEqual(echoes[0].title, '抢先夺宝');
+    assert(echoTitles.includes('笑里先看座次'));
+    assert(echoTitles.includes('海上先活'));
+    assert(echoTitles.includes('先伸手的人'));
 
     const sideState = GameCore.createInitialState();
     sideState.storyProgress = 23;
-    sideState.flags.lowProfileBanquet = true;
-    sideState.flags.builtBanquetNetwork = true;
-    sideState.flags.starSeaStyle = 'secluded';
-    sideState.flags.grabbedTreasure = true;
-    sideState.flags.watchedXuTianFight = true;
-    sideState.flags.secondHandBroker = true;
+    sideState.chapterChoices = {
+        17: 'trade_favors_banquet',
+        21: 'seek_cave',
+        22: 'sell_map',
+        23: 'watch_last',
+    };
     const sideStories = GameCore.getAvailableSideStories(sideState).map((item) => item.title);
-    assert(sideStories.includes('燕堡余音'));
-    assert(sideStories.includes('隐海传闻'));
-    assert(sideStories.includes('先手留痕'));
-    assert(sideStories.includes('虚天旁观'));
-    assert(sideStories.includes('虚天转手'));
+    assert(sideStories.includes('门路比风头久'));
+    assert(sideStories.includes('先把自己站稳'));
+    assert(sideStories.includes('危险换了主人'));
+    assert(sideStories.includes('等得越准越冷'));
+}
+
+function testNpcDialogueUsesChapterEchoes() {
+    const mocaihuanState = GameCore.createInitialState();
+    mocaihuanState.chapterChoices[8] = 'protect_mo_house';
+    mocaihuanState.npcRelations['墨彩环'] = 80;
+    assert(GameCore.getNpcDialogue(mocaihuanState, '墨彩环').text.includes('没把我们也当成随手能丢的尾巴'));
+
+    const nangongState = GameCore.createInitialState();
+    nangongState.chapterChoices[23] = 'watch_last';
+    nangongState.npcRelations['南宫婉'] = 40;
+    assert(GameCore.getNpcDialogue(nangongState, '南宫婉').text.includes('冷眼一起记住'));
+
+    const liState = GameCore.createInitialState();
+    liState.chapterChoices[19] = 'open_mine_gate';
+    liState.npcRelations['李化元'] = -30;
+    assert(GameCore.getNpcDialogue(liState, '李化元').text.includes('拿同门去换自己的位子'));
+}
+
+function testEndingEchoTextsStayReflective() {
+    const chapterView = getChapterChoiceView(25, (state) => {
+        state.routeScores.orthodox = 8;
+        state.flags.acceptedNangongDebt = true;
+        state.flags.returnedTiannanForBonds = true;
+        state.npcRelations['南宫婉'] = 108;
+    }).view;
+    const beatTexts = chapterView.story.beats.map((item) => item.text);
+    assert(beatTexts.some((text) => text.includes('你最早不是为了大道修仙')));
+    assert(beatTexts.some((text) => text.includes('正道、魔道、苟修')));
+
+    const orthodoxState = getChapterChoiceView(25, (state) => {
+        state.routeScores.orthodox = 8;
+        state.flags.acceptedNangongDebt = true;
+        state.flags.returnedTiannanForBonds = true;
+        state.flags.oldDebtsCleared = true;
+        state.npcRelations['南宫婉'] = 108;
+        state.npcRelations['墨彩环'] = 55;
+    }).state;
+    let result = GameCore.chooseStoryOption(orthodoxState, 'lingjie_xianzun');
+    assert.strictEqual(result.ok, true);
+    assert(orthodoxState.ending.description.includes('并不比谁更干净'));
+
+    const causalState = getChapterChoiceView(25, (state) => {
+        state.routeScores.demonic = 8;
+        state.flags.cutEmotion = true;
+        state.flags.mineChoice = 'betrayGate';
+        state.npcRelations['南宫婉'] = -10;
+        state.npcRelations['墨彩环'] = -5;
+    }).state;
+    result = GameCore.chooseStoryOption(causalState, 'yinguo_chanshen');
+    assert.strictEqual(result.ok, true);
+    assert(causalState.ending.description.includes('淡掉的是表面，不是账'));
 }
 
 function testStringChapterLogsNoNaN() {
@@ -997,7 +1080,8 @@ function testBranchEchoes() {
         '23_mocaihuan_return': 'support_mocaihuan_longterm',
     }));
     const orthodoxEcho = GameCore.getEchoes(orthodoxState).map((item) => item.title);
-    assert(orthodoxEcho.includes('禁地救援'));
+    assert(orthodoxEcho.includes('禁地留名'));
+    assert(orthodoxEcho.includes('灵界仙尊'));
 
     const demonicState = runMainPath(withInsertedChoices({
         0: 'set_out_now',
@@ -1032,7 +1116,8 @@ function testBranchEchoes() {
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
     }));
     const demonicEcho = GameCore.getEchoes(demonicState).map((item) => item.title);
-    assert(demonicEcho.includes('魔道投影'));
+    assert(demonicEcho.includes('底线后移'));
+    assert(demonicEcho.includes('人界至尊'));
     const demonicEndingView = GameCore.getStoryView(demonicState);
     assert.strictEqual(demonicEndingView.source, 'ending');
     assert.strictEqual(demonicEndingView.ending.id, 'renjie_zhizun');
@@ -1070,7 +1155,8 @@ function testBranchEchoes() {
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
     }));
     const secludedEcho = GameCore.getEchoes(secludedState).map((item) => item.title);
-    assert(secludedEcho.includes('藏锋之心'));
+    assert(secludedEcho.includes('来过却不住回去'));
+    assert(secludedEcho.includes('逍遥散仙'));
     const secludedEndingView = GameCore.getStoryView(secludedState);
     assert.strictEqual(secludedEndingView.source, 'ending');
     assert.strictEqual(secludedEndingView.ending.id, 'xiaoyao_sanxian');
@@ -1083,6 +1169,7 @@ testLevelEventCoverage();
 testBreakthroughQueuesLevelStory();
 testMissedLevelStoryCanRecover();
 testProfileCollapseSaveCompatibility();
+testChoiceEchoStateUpdates();
 testResourceValidation();
 testMineChoicesBecomeRouteSpecific();
 testChapter15ChoiceFlags();
@@ -1097,6 +1184,8 @@ testChapter19RouteChoices();
 testChapter21StarSeaFlags();
 testChapter23BranchChoices();
 testEchoesAndSideStoriesIncludeNewSignals();
+testNpcDialogueUsesChapterEchoes();
+testEndingEchoTextsStayReflective();
 testStringChapterLogsNoNaN();
 testStoryPagingState();
 testBranchEchoes();

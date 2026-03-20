@@ -69,6 +69,276 @@
         '大晋': { name: '大晋', description: '人界最后一段路，谁都想在这里定出自己的答案。', npcs: [] },
     };
 
+    const CHAPTER_ECHO_PACKS = {
+        8: {
+            protect_mo_house: {
+                immediate: { title: '墨府回响', detail: '你离开时，院中的灯没有立刻熄。那点光不算明亮，却像一笔你已经答应接下的活人账。' },
+                delayed: { title: '墨府余灯', detail: '后来你再想起墨府时，先记住的不是死人，而是那句“你若想补，就别只补给自己看”。', npc: '墨彩环' },
+                npcComment: { '墨彩环': { high: '你那次回来，至少没把我们也当成随手能丢的尾巴。', neutral: '你帮过，但也只是帮过。凡人的日子，终究还是得凡人自己过。', low: '你回来那一趟，更像是在替自己求心安。' } },
+            },
+            take_treasure_leave: {
+                immediate: { title: '卷财离场', detail: '你带走了最值钱的东西，也把墨府最后一点还能相信你的理由一起带走了。' },
+                delayed: { title: '宅门旧刺', detail: '日后每当你再看见墨府旧物，心里先浮起来的不是赚到多少，而是那天屋里压着怒气却连哭都没哭出来的安静。', npc: '墨彩环' },
+                npcComment: { '墨彩环': { neutral: '我后来想明白了。修仙的人离开时，最会把拿走说成“减灾”。' } },
+            },
+            promise_caihuan: {
+                immediate: { title: '留下承诺', detail: '你没有立刻补上这笔账，可从开口那一刻起，这就不再是“以后再说”，而是迟早要回来面对的事。' },
+                delayed: { title: '一句未完', detail: '有些承诺最重，不是因为说得郑重，而是对方没有逼你发誓，却仍记住了。', npc: '墨彩环' },
+                npcComment: { '墨彩环': { high: '你来得晚，但总算不是没来。', low: '我那时候就知道，修仙的人最喜欢把“回来”说得像明天。' } },
+            },
+        },
+        9: {
+            take_quhun: {
+                immediate: { title: '曲魂在侧', detail: '你把一件可怕的东西留在了身边。从这天起，你越来越会把危险变成自己的力量。' },
+                delayed: { title: '曲魂停顿', detail: '后来再驱使曲魂时，你偶尔会想起那一点像人的停顿。那念头很短，却足够让你知道，自己并非全然无感。', npc: '曲魂' },
+                npcComment: { '墨彩环': { neutral: '你是留了它，也还是留了你自己的一道线。只是我不知道，那线以后会不会越来越淡。' } },
+            },
+            repair_quhun: {
+                immediate: { title: '曲魂在侧', detail: '你把曲魂留在身边，却没把它只当工具。这会让你以后很难再把“用人”两个字说得太轻。' },
+                delayed: { title: '曲魂余念', detail: '你没有把曲魂只当兵器。之后每逢再见傀儡、尸炼、禁魂之物，都会比旁人多停一息。', npc: '曲魂' },
+                npcComment: { '墨彩环': { high: '你留了它，却没把它彻底留成死物。这一点，我记得。', neutral: '你若真记得它也曾像个人，就别只在好用的时候想起这件事。' } },
+            },
+            release_quhun: {
+                immediate: { title: '超度曲魂', detail: '法火烧起来时，屋中像忽然轻了一点。你失去了一件好用的工具，却保住了一种还能直视自己的可能。' },
+                delayed: { title: '火后余白', detail: '此后每逢再见傀儡、尸炼、禁魂之物，你都会比旁人多停一息。那一息很短，却是你没彻底滑下去的证据。', npc: '曲魂' },
+                npcComment: { '墨彩环': { neutral: '那时我才第一次觉得，你还没有被这条路吃干净。' } },
+            },
+            buy_back_trust: {
+                immediate: { title: '先把债压住', detail: '你没有立刻带走曲魂，也没有替这件事下最终判决。很多时候，暂时不判，并不代表迟早能避开。' },
+                delayed: { title: '封存之问', detail: '后来你明白，真正被封住的从来不是曲魂，而是你一时不愿回答的那个问题。', npc: '墨彩环' },
+                npcComment: { '墨彩环': { neutral: '你没急着伸手，这件事我记着。只是有些问题，不会因为先放着就自己散掉。' } },
+            },
+        },
+        14: {
+            save_nangong: {
+                immediate: { title: '禁地回身', detail: '你慢了半息，却也正是这半息，让你以后再想起禁地时，至少还能认得那时的自己。' },
+                delayed: { title: '禁地留名', detail: '禁地之后，很多人记住的不是你拿了什么，而是有人在最乱的时候，真回过头。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { high: '你那时救人，不是为了给谁看。', neutral: '禁地里肯回头的人不多，这件事我记得。' } },
+            },
+            watch_and_wait: {
+                immediate: { title: '避开杀圈', detail: '你活得最稳，也看得最清。最稳的路，往往也最孤。' },
+                delayed: { title: '退路先成', detail: '禁地这件事以后，你开始更相信退路，也开始更少期待别人会在关键时刻替你回头。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你不是胆小，你只是太早学会了，不把自己放到别人的选择里。' } },
+            },
+            loot_in_chaos: {
+                immediate: { title: '主药先手', detail: '主药入手时，你先想到的不是喜悦，而是以后再遇上类似的局，你会不会越来越快。' },
+                delayed: { title: '高效之险', detail: '那是你第一次真正尝到“先下手清场”有多高效。也正因如此，它才危险。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你那时很清楚自己在做什么。比犹豫的人更可怕。' } },
+            },
+            kill_for_gain: {
+                immediate: { title: '主药先手', detail: '你把更狠的那一步也一起跨过去了。最先留下的，不是喜悦，而是你已经知道自己会越来越快。' },
+                delayed: { title: '高效成瘾', detail: '你第一次真正把“先下手清场”当成了路数。越高效，越危险。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { low: '你那时不是没得选，你只是选了更快的那条。', neutral: '你那时很清楚自己在做什么。比犹豫的人更可怕。' } },
+            },
+        },
+        15: {
+            accept_nangong_debt: {
+                immediate: { title: '认下情债', detail: '你并没有因此变弱。只是从这一刻起，你往后很多决定都不能再只按“值不值”来算。' },
+                delayed: { title: '有人算进未来', detail: '有人不是你的拖累，也不是你的工具，而是你一旦认了，就必须把她算进未来的人。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { high: '你若真记得，不必总说出来。', neutral: '你既认了，就别再把这笔账说成一时路过。' } },
+            },
+            suppress_nangong_feelings: {
+                immediate: { title: '压住心绪', detail: '你把那点心绪压了下去，手很稳。可真正难的不是压住，而是压久了以后，会不会连自己都信了那不重要。' },
+                delayed: { title: '压久成影', detail: '后来每次见她，你都比平时更像无事发生。也正因为太像，才更显得那不是自然，而是刻意。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你最会的从来不是无情，是装作不必回应。' } },
+            },
+            cut_nangong_ties: {
+                immediate: { title: '斩情求稳', detail: '你想把一切切得干净，可真正难斩的是已经进过心的那一瞬。' },
+                delayed: { title: '记忆未断', detail: '往后只要她再出现一次，你就会知道自己那时斩掉的，未必是情，更可能只是想把“被牵住”的可能提前掐死。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { low: '你不是果断，你只是怕。', neutral: '你斩得很快，只是未必真斩干净。' } },
+            },
+        },
+        16: {
+            become_li_disciple: {
+                immediate: { title: '正式入门', detail: '令牌入手那一刻，你得到的不只是庇护。你也第一次真正站进了某个秩序里。' },
+                delayed: { title: '门墙在身', detail: '往后每当你借到师门之势时，都会想起这点: 宗门给你的，从来不是白给。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '入我门下，不是叫你更像我，是叫你别活成一块只会避祸的石头。' } },
+            },
+            keep_free: {
+                immediate: { title: '受教而留步', detail: '你既想听明白局势，也想留好退路。这没有错，只是从今以后，别人很难彻底把后背交给你。' },
+                delayed: { title: '独立有价', detail: '独立不是不站队，而是每一次不彻底站进去，都得自己补足代价。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '会给自己留退路的人，往往活得久；可太会留退路，也会让人不敢全信。' } },
+            },
+            learn_in_secret: {
+                immediate: { title: '借势而行', detail: '你做了最现实的选择。这能让你走得快，也会让真正看得懂局的人更早防你。' },
+                delayed: { title: '归属成筹码', detail: '别人说你“会做人”时，你知道那不是夸你温和，而是说你连归属都能算成筹码。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '你脑子够用，只是有时太把自己放在最后一道门里。' } },
+            },
+        },
+        17: {
+            stay_quiet_banquet: {
+                immediate: { title: '席间观局', detail: '你没在桌上替谁开口，却也因此让更多人记住: 你不是那种能被一句话拖下场的人。' },
+                delayed: { title: '笑里先看座次', detail: '此后再入类似场合，你会本能先看座次、酒次、谁先笑、谁后答。你开始懂得，修仙界有些杀机从不带血。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '你不是不会说话，你只是终于知道，太早开口和把脖子先递上去没什么差别。' } },
+            },
+            show_strength_banquet: {
+                immediate: { title: '席上立威', detail: '你把场面压住了，也把很多人的记恨一起压进了心里。' },
+                delayed: { title: '威与债一起留下', detail: '后来每逢局面发烂，总会有人先想到你是不是又要直接掀桌。这既是威，也是债。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '该压的时候能压，算个人物。只是压住一桌人，往往也会把记恨一起压出来。' } },
+            },
+            trade_favors_banquet: {
+                immediate: { title: '桌下结线', detail: '你没有赢一夜的风头，却可能赢了很多以后才会显出用处的门路。' },
+                delayed: { title: '门路比风头久', detail: '许多后来避开的坑、谈成的合作，都能追溯到这晚你没有只看眼前场面的那点耐心。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '你倒是真把那点权势场的门道听进去了。' } },
+            },
+        },
+        18: {
+            fight_for_sect: {
+                immediate: { title: '护住阵线', detail: '你不是不怕死，只是最后没有让“我能活”压过“他们会死”。' },
+                delayed: { title: '可靠二字', detail: '大战之后，有人提你，先说“可靠”；这两个字听上去简单，背后却是拿命换来的。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '你终于不像只会替自己活。' } },
+            },
+            defect_demonic: {
+                immediate: { title: '斩敌夺势', detail: '你做得很快，快到几乎没有多余情绪。那一刻你便知道，自己正在变成一种以后连自己都得提防的效率。' },
+                delayed: { title: '底线后移', detail: '只要再遇见失去反抗能力的敌人，你都会清楚记得: 第一次跨过去以后，后面会越来越容易。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { low: '你不是比以前更会活了，你只是更早决定谁该被留在后面。', neutral: '你那时快得太干净，连借口都没给自己留。' }, '李化元': { low: '你走得更快了，也把“门里的人”和“能拿来换位子的人”算得越来越像。' } },
+            },
+            fake_fight: {
+                immediate: { title: '只带少数人走', detail: '你没替宗门补完那道裂口。可你救下的那些人，会比任何阵亡名册都更具体地记住你。' },
+                delayed: { title: '少数人的活路', detail: '你不是愿为所有人负责的人。可对少数认定的人，你会真带他们活着出去。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你没替所有人扛下去，可你也不是只顾自己的人。' }, '李化元': { neutral: '你给少数人留了活路，宗门未必满意，但活下来的人会记得。' } },
+            },
+        },
+        19: {
+            hold_the_line: {
+                immediate: { title: '死守矿线', detail: '你撑住了场面，也把更多人的生死一起压到了自己肩上。' },
+                delayed: { title: '一句话压着人命', detail: '后来你总会想起那种感觉: 一句话出口，别人是真的会拿命照做。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '矿脉死局里你没先跑，这才像真正懂了门里为什么要筑基修士。' } },
+            },
+            lead_breakout: {
+                immediate: { title: '带队突围', detail: '你放弃了死守，也放弃了体面上的全赢。可你第一次真正明白，带人活出来，本身就是一种很重的本事。' },
+                delayed: { title: '生路也算本事', detail: '你往后会越来越擅长判断: 什么时候继续顶只是在给死人凑数，什么时候退一步反而是对活人负责。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '你带人活出来了。矿丢不丢是一回事，知道什么时候该先把活人带出去，是另一回事。' } },
+            },
+            rescue_rearguard: {
+                immediate: { title: '回身接人', detail: '你没有把所有人都带出来，却把最后一段最容易被放弃的人命也扛进了自己的账里。' },
+                delayed: { title: '最后一段人命', detail: '回头接应的那一步，会让很多旧人后来更愿意把命押在你身上。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '灵矿那次你肯回头接人，这才像真正懂了“门里为什么要筑基修士”。' } },
+            },
+            sabotage_and_leave: {
+                immediate: { title: '炸路脱身', detail: '你做的是能保自己脱身的干净选择。可真正拖住你的，是那些你明知来得及多做一点、却还是转身了的瞬间。' },
+                delayed: { title: '活路不回头', detail: '你后来越走越稳，也越清楚自己那时切断的，不只是追兵，还有“我还能再多扛一点”的可能。', npc: '李化元' },
+                npcComment: { '李化元': { low: '你给自己留了活路，也把“回头接人”这件事一并炸断了。' } },
+            },
+            escape_alone: {
+                immediate: { title: '自保脱身', detail: '你做的是最干净利落的选择。可真正拖住你的，是那些你明知来得及多做一点、却还是转身了的瞬间。' },
+                delayed: { title: '矿道背影', detail: '很多年后你未必还记得带出来了什么，却会记得矿道里那几道没来得及跟上的身影。', npc: '李化元' },
+                npcComment: { '李化元': { low: '你活下来了，可门里未必要这种只顾自己先出矿的人。' } },
+            },
+            open_mine_gate: {
+                immediate: { title: '开门换位', detail: '你把最冷的一步走成了现实。真正留下的，不是矿门开没开，而是你已经知道自己肯把谁拿去换更高的位置。' },
+                delayed: { title: '矿门改色', detail: '后来你再怎么解释利害与大势，这件事都会先一步替别人定义你肯把谁当代价。', npc: '李化元' },
+                npcComment: { '李化元': { low: '门墙可以容你借势，容不了你拿同门去换自己的位子。' } },
+            },
+            harvest_chaos: {
+                immediate: { title: '死局收割', detail: '你在最乱的时候先看见了还能拿走什么。那一刻你已经知道，自己越来越像会把尸骨也折成台阶的人。' },
+                delayed: { title: '冷收益', detail: '你已经证明过，最乱的时候你也能先看见可拿走什么。', npc: '李化元' },
+                npcComment: { '李化元': { low: '你在死局里先看见了资源，这种眼力有用，也最让人心寒。' } },
+            },
+        },
+        21: {
+            hunt_monsters: {
+                immediate: { title: '猎妖立足', detail: '海上的第一课不是变强，而是知道每次出手都真可能把命丢在水里。' },
+                delayed: { title: '海上先活', detail: '后来你闻见海腥味，第一反应不再是远行，而是风向、妖潮、退路和能不能赚到这一趟。', npc: '万小山' },
+            },
+            run_trade: {
+                immediate: { title: '跑商摸路', detail: '你没有第一时间去抢最凶的活，却更早学会了什么该碰，什么连看都别多看。' },
+                delayed: { title: '风向先清', detail: '往后很多次避祸、寻路、先人一步，都不是靠运气，而是靠你在最开始愿意先把规则摸明白。', npc: '万小山' },
+            },
+            seek_cave: {
+                immediate: { title: '闭关隐修', detail: '你拒绝了海上的喧哗。这让你错过很多，也保住了很多，尤其是在新地方最容易乱掉的心。' },
+                delayed: { title: '先把自己站稳', detail: '别人都说你太稳。只有你自己知道，那时不是稳，是不想刚到新地便被人牵着走。', npc: '万小山' },
+            },
+        },
+        22: {
+            collect_map: {
+                immediate: { title: '亲自争图', detail: '你不是拿到了一张图，而是亲手把自己放进了一个知道太多就很难善终的局。' },
+                delayed: { title: '知道也是代价', detail: '此后只要有人笑着来谈交易，你都会先想: 他到底是来买图，还是来确认该不该杀我。', npc: '万小山' },
+            },
+            sell_map: {
+                immediate: { title: '卖图兑现', detail: '你把危险换成了资源。账面上这是赚，心里却未必真轻。' },
+                delayed: { title: '危险换了主人', detail: '后来每当你花掉那笔换来的资源，总会短短地想一下: 危险只是换了个主人。', npc: '万小山' },
+            },
+            avoid_map: {
+                immediate: { title: '主动避局', detail: '你亲手放过了一扇很可能一生只开一次的门。能做到这一步的人不多。' },
+                delayed: { title: '收手知重', detail: '你会更清楚自己到底是哪类修士: 不是看见机缘就扑上去的人，而是能忍住不让“可能更高”把自己拖进必死局的人。', npc: '万小山' },
+            },
+        },
+        23: {
+            grab_treasure: {
+                immediate: { title: '抢先夺宝', detail: '你先动了。那一刻所有还在维持的表面合作都被你一把撕开。' },
+                delayed: { title: '先伸手的人', detail: '以后别人提起你在星海的名声时，会先记住一件事: 你在最关键的时候，永远不等别人先伸手。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你先伸手夺宝那一下，倒比你平日的推托更诚实。' } },
+            },
+            cooperate_allies: {
+                immediate: { title: '稳住同盟', detail: '你没有拿最先那一下，却把一群原本很容易散掉的人重新拉在了一起。' },
+                delayed: { title: '宝与命先看命', detail: '在宝和命摆在一处时，你没有先选宝。活下来的人会记得这个。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { high: '那种时候还肯回头的人，不多。', neutral: '你没先选宝，这种事在乱星海比情话更值钱。' } },
+            },
+            pull_ally_out: {
+                immediate: { title: '接应后退', detail: '你没有冲进最亮的宝光里，而是把能救的人先接出来。' },
+                delayed: { title: '裂隙边回头', detail: '你不是愿为所有人负责的人。可对少数认定的人，你会真把他们带离最窄的裂隙。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你既然都在殿外回过头，就别再装作自己什么人都不想认。' } },
+            },
+            watch_last: {
+                immediate: { title: '观望后动', detail: '你让别人先暴露，自己再找最优位。这很聪明，也让活下来的人以后都更难彻底信你。' },
+                delayed: { title: '等得越准越冷', detail: '你越来越擅长等。只是等得越准，有时也越容易把自己等成别人眼里最冷的那种人。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你总爱等别人先露底。只是虚天殿那次，旁人也把你的冷眼一起记住了。' } },
+            },
+            sell_route_info: {
+                immediate: { title: '再卖一手', detail: '你没有拿最亮的那口宝，却把风暴也做成了买卖。聪明是真的，冷也是真的。' },
+                delayed: { title: '风暴也是货', detail: '很多人以后提起你时，不会先说你胆大，而会说你连一场大机缘都能拆成消息差去赚第二遍。', npc: '万小山' },
+            },
+            slip_past_palace: {
+                immediate: { title: '悄然退场', detail: '你绕开了最亮也最窄的那一口气。多数人不是死在争，而是死在舍不得不争。' },
+                delayed: { title: '避开传说', detail: '活下来的人未必看得懂你，但会先记住一件事: 你在最容易把命补进传说的时候，先把自己抽了出来。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你绕殿而走那一步很稳，也让人更难看清你心里究竟还留没留别人。' } },
+            },
+        },
+        24: {
+            returned_tiannan_for_settlement: {
+                immediate: { title: '清算旧账', detail: '你终于把那些拖了很多年的旧账翻到台面上。做完之后并没有想象中痛快，反倒像慢慢拔出一根埋了太久的刺。' },
+                delayed: { title: '旧地认账', detail: '后来你再提起天南，不再只是一个离开的地方，而成了你真正回去认过一次账的旧地。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '肯回来清账，总比只会往高处飞强。' } },
+            },
+            returned_tiannan_for_bonds: {
+                immediate: { title: '接住旧情', detail: '你没有再把最重要的人往“以后再说”里推。这一步看似不大，实际上比很多杀伐决断都更难。' },
+                delayed: { title: '有人不能再拖', detail: '你终于不能再假装自己的一生只需要对大道负责。因为你已经亲手承认，有些人也该算进去。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { high: '你总算不是只在最危险的时候才想起回头。', neutral: '你既然回来了，就别再把真正重要的人留在“以后再说”里。' }, '墨彩环': { neutral: '你若真记得谁重要，就别总拿“以后”来糊弄现在。' } },
+            },
+            returned_tiannan_but_remained_hidden: {
+                immediate: { title: '藏锋离场', detail: '你回来过，也处理了该处理的，却没有再把自己重新扔进旧名旧局里。' },
+                delayed: { title: '来过却不住回去', detail: '你不是不认过去，只是不再让过去重新决定你现在是谁。', npc: '墨彩环' },
+                npcComment: { '墨彩环': { neutral: '你回来过，却还是像一道影子。来得快，去得也快。' }, '南宫婉': { neutral: '你回来不是为了重新住进去，这点我看得出来。' } },
+            },
+        },
+        25: {
+            lingjie_xianzun: { immediate: { title: '灵界仙尊', detail: '你并不比谁更干净。只是到了最后，你还愿意背着这一身并不全然体面的来路，继续往更高处走。' } },
+            renjie_zhizun: { immediate: { title: '人界至尊', detail: '你明明可以走，最后却先选择留下。这不是贪恋权势，而是你终于有资格决定这个人界值不值得亲手整一整。' } },
+            xiaoyao_sanxian: { immediate: { title: '逍遥散仙', detail: '你不是输了，也不是倦了。你只是第一次真正替自己选了一种不用总向谁证明什么的活法。' } },
+            taishang_wangqing: { immediate: { title: '太上忘情', detail: '你断得太干净，干净到几乎无懈可击。可真正让人不安的，是连你自己都快想不起当年差点舍不得的究竟是什么。' } },
+            yinguo_chanshen: { immediate: { title: '因果缠身', detail: '你以为很多事只要拖得够久就会淡。直到走到门前才发现，淡掉的是表面，不是账。' } },
+            fanxin_weisi: { immediate: { title: '凡心未死', detail: '门已经开了，你却没有立刻过去。那不是退缩，而是你终于肯承认这一次想先为自己决定留下。' } },
+        },
+    };
+
+    function getChapterChoiceComment(state, npcName) {
+        const chapterChoices = state?.chapterChoices || {};
+        const entries = Object.entries(chapterChoices);
+        for (let index = entries.length - 1; index >= 0; index -= 1) {
+            const [chapterId, choiceId] = entries[index];
+            const choicePack = CHAPTER_ECHO_PACKS[chapterId]?.[choiceId];
+            const npcPack = choicePack?.npcComment?.[npcName];
+            if (!npcPack) continue;
+            if (typeof npcPack === 'string') return npcPack;
+            const relation = state?.npcRelations?.[npcName] || 0;
+            if (relation >= 60 && npcPack.high) return npcPack.high;
+            if (relation <= 20 && npcPack.low) return npcPack.low;
+            return npcPack.neutral || npcPack.high || npcPack.low || '';
+        }
+        return '';
+    }
+
     const NPCS = {
         '墨大夫': {
             name: '墨大夫',
@@ -100,6 +370,8 @@
             avatar: '彩',
             dialogueByStage(state) {
                 const relation = state.npcRelations['墨彩环'] || 0;
+                const chapterComment = getChapterChoiceComment(state, '墨彩环');
+                if (chapterComment) return chapterComment;
                 if (state.flags.madeAmendsToMocaihuan) return '你这次没有只留一句“以后再说”。我记得的，也不只是你来迟了。';
                 if (state.flags.admittedOldWrongToMocaihuan) return '人肯认错不算容易。只是有些日子已经过去，终究回不到原样。';
                 if (state.flags.checkedOnMocaihuanThenLeft) return '你来确认我安好，这就够了。剩下的日子，我会自己过。';
@@ -116,6 +388,8 @@
             avatar: '婉',
             dialogueByStage(state) {
                 const relation = state.npcRelations['南宫婉'] || 0;
+                const chapterComment = getChapterChoiceComment(state, '南宫婉');
+                if (chapterComment) return chapterComment;
                 if (state.flags.openlyAcknowledgedNangongImportance) return '你既然已经承认我重要，往后很多路就不能再只按你一个人的活法去走。';
                 if (state.flags.continuedToOweNangongSilently) return '你总说记得，可若一直只记在心里，这笔账和没还也没什么两样。';
                 if (state.flags.avoidedNangongAgain) return '你躲得开我，却躲不开自己为什么总在真正重要的时候往后退。';
@@ -137,6 +411,8 @@
             avatar: '李',
             dialogueByStage(state) {
                 const relation = state.npcRelations['李化元'] || 0;
+                const chapterComment = getChapterChoiceComment(state, '李化元');
+                if (chapterComment) return chapterComment;
                 if (state.flags.answeredLiSummons) return '门墙不只记名分，也记得谁肯在最后回来把话说清。';
                 if (state.flags.enteredLihuayuanLineage) return '接了令牌，就别再把自己只当成借屋檐避雨的人。门里会护你，也会记着你该替谁扛事。';
                 if (state.flags.usedLihuayuanInfluencePragmatically) return '你很会算借势的分寸，可门墙这种东西，借久了也会反过来看你。';
@@ -2303,35 +2579,20 @@
                     ? '你已回头清过一轮旧账，所以此刻站在门前，最重的并不是悔，而是你准备把怎样的自己继续带上去。'
                     : '你还记得那些被你拖进“以后再说”的人和事。门越近，这些没清完的旧账反而越像细线一样缠回神魂。';
                 const relationLine = (state.flags.acceptedNangongPath || state.flags.acceptedNangongDebt || state.flags.returnedTiannanForBonds)
-                    ? '墨彩环、李化元、南宫婉，甚至那些只在某一夜与你同路过的人，都不再只是支线对象，而是一路见过你底色的见证者。'
+                    ? '你一路遇见的人，不只是支线。他们是见过你、逼过你、成全过你，也让你没法再轻易骗过自己的人。'
                     : '你回看一路同行的人时才发现，真正难丢的不是法宝和名声，而是那些你曾欠过、避过、也辜负过的目光。';
                 const routeLine = state.routeScores.demonic >= state.routeScores.orthodox && state.routeScores.demonic >= state.routeScores.secluded
-                    ? '正道、魔路、苟修从来不是旁人贴给你的标签，而是你每次为了更快更稳，究竟肯牺牲到哪一步的答案。'
+                    ? '正道、魔道、苟修从来都不是别人给你的牌子。它们是你一次次面对“我能不能为了更稳更快而舍别人”时，亲手交出来的答案。'
                     : state.routeScores.secluded >= state.routeScores.orthodox
-                        ? '你一路都在给自己留退路，如今站到门前，才知道“留后手”也终究会变成一种必须承认的活法。'
-                        : '你并没有把所有人都算成代价，这让你走到最后时，仍能分得清强大与麻木到底差在哪里。';
-                const legacyLine = state.flags.mineChoice === 'hold' || state.flags.mineChoice === 'rearGuard'
-                    ? '灵矿那次有人因为你活着走了出来，所以你如今再谈大道，终究没法把“别人把命押在你身上”这件事从道心里剥开。'
-                    : state.flags.mineChoice === 'betrayGate' || state.flags.mineChoice === 'harvest' || state.flags.mineChoice === 'soloEscape'
-                        ? '灵矿那次你是怎么取舍的，连你自己都没法装作已经忘了。飞升门前，最先浮上来的往往不是功法，而是当年那些没被你一起带走的人。'
-                        : '你回看灵矿和旧战场时才明白，很多人后来怎么看你，不是看你修到了什么，而是看你最先保住了什么。';
-                const seaLine = state.flags.starSeaStyle === 'hunter'
-                    ? '星海让你习惯拿命换快刀和名声，可真到了门前，名声最重的部分反而不是你杀了多少海妖，而是你在虚天殿那类局里有没有先对人下手。'
-                    : state.flags.starSeaStyle === 'merchant'
-                        ? '星海让你学会先看契约、消息和价码。如今站到门前，你才知道有些东西能算清，有些却一旦拿去换过，就会一直留在心里。'
-                        : state.flags.starSeaStyle === 'secluded'
-                            ? '星海让你把“先活下来”磨成了本能。直到飞升门前，你才第一次认真问自己: 活到这里之后，究竟要不要为谁停一停。'
-                            : '乱星海那些年不只是换地图，也是在逼你选一种更像自己的活法。那种活法一路带着你走到了门前。';
+                        ? '正道、魔道、苟修从来都不是别人给你的牌子。你一路都在给自己留退路，如今终于要承认，这本身也是一种答案。'
+                        : '正道、魔道、苟修从来都不是别人给你的牌子。你走到这里，至少还分得清强大与麻木到底差在哪里。';
                 return [
-                    beat('旁白', '飞升从来不是一道光。真正站到门前的人都知道，那更像是把这一生的路、债、名与人重新看一遍。'),
-                    beat('旁白', '化神之后，风里灵机的流向、山河暗处的脉络、人与人之间藏着的因果，都比你少年时所见清楚了太多。'),
-                    beat('旁白', '飞升前夜，你把青牛镇旧物、墨府旧名单和零散传信摊在案上。它们毫无灵气，却比任何重宝都更像来路。'),
-                    beat('旁白', '你这才承认，最初修仙不是为了某句漂亮的大道之言，而是为了不再眼看凡人的命被慢慢磨掉，自己却什么都做不了。'),
+                    beat('旁白', '你走到这一步时，终于不能再把许多事归结成“当时别无选择”。因为如今你有得选了。也正因如此，过去那些选过的，才变得格外重。'),
+                    beat('旁白', '你最早不是为了大道修仙。你只是太早见过无能为力，后来走得越来越高，才渐渐把那份“别再弱下去”活成了路。'),
                     beat('旁白', relationLine),
-                    beat('旁白', legacyLine),
-                    beat('旁白', seaLine),
                     beat('旁白', routeLine),
                     beat('旁白', causalLine),
+                    beat('旁白', '门已经在前，你如今要认的不是自己够不够强，而是这一生的关系、旧账与路数，你究竟肯不肯承认。'),
                 ];
             },
             choices(state) {
@@ -2412,8 +2673,8 @@
                             id: 'lingjie_xianzun',
                             title: '灵界仙尊',
                             description: relationNangong >= 110 && flags.acceptedNangongPath
-                                ? '你最终还是走向了更高处。血色禁地埋下的那条线没有被你丢在人界身后，而是与道心一起被你背过了界壁。旁人先记得你的通玄道法，只有你自己知道，那个怕穷、怕弱、怕无力的凡人少年始终没有真正离开。'
-                                : '你最终走向了更高的门。不是因为这一生足够干净，而是因为你肯承认那些擦不掉的旧字仍写在自己身上，并带着它们继续往上走。灵界迎来的不是神话，而是一个终于敢完整认下自身来路的修士。',
+                                ? '你并不比谁更干净。只是到了最后，你还愿意背着这一身并不全然体面的来路，继续往更高处走。血色禁地埋下的那条线没有被你丢在人界身后，而是与道心一起被你背过了界壁。'
+                                : '你并不比谁更干净。只是到了最后，你还愿意背着这一身并不全然体面的来路，继续往更高处走。灵界迎来的不是神话，而是一个终于敢完整认下自身来路的修士。',
                         },
                         nextChapterId: -1,
                     });
@@ -2433,8 +2694,8 @@
                             id: 'renjie_zhizun',
                             title: '人界至尊',
                             description: debtsCleared
-                                ? '你最终没有立刻飞升。不是不能，而是不愿。旧账既然已被你亲手理到最后，便索性再留下来，把这个你曾吃尽苦头的人界整理成一个不至于让后来者一上来就被碾碎的样子。'
-                                : '你最终没有离开，而是把自己化作人界最高的一座山。有人敬你，有人惧你，但所有人都承认，那片天地最后得看你的脸色与决断。',
+                                ? '你明明可以走，最后却先选择留下。这不是贪恋权势，而是你终于有资格决定: 这个自己曾吃尽苦头的人界，值不值得亲手整一整。'
+                                : '你明明可以走，最后却先选择留下。有人敬你，有人惧你，但所有人都承认，那片天地最后得看你的脸色与决断。',
                         },
                         nextChapterId: -1,
                     });
@@ -2452,7 +2713,7 @@
                         ending: {
                             id: 'xiaoyao_sanxian',
                             title: '逍遥散仙',
-                            description: '你最终选了离开，却不是为了飞升。山海之间自有去处，宗门、名望与争夺都被你慢慢放下。别人偶尔在偏僻坊市或荒海孤岛见到你，只当那是个看透很多事后，终于肯替自己活一次的人。',
+                            description: '你不是输了，也不是倦了。你只是第一次真正替自己选了一种不用总向谁证明什么的活法。山海之间自有去处，宗门、名望与争夺都被你慢慢放下。',
                         },
                         nextChapterId: -1,
                     });
@@ -2472,7 +2733,7 @@
                         ending: {
                             id: 'taishang_wangqing',
                             title: '太上忘情',
-                            description: '你也走上了更高的路，而且比任何人都更干净利落。该舍的舍了，该断的断了，连最难斩的那一点迟疑也被你亲手磨平。很多年后旁人只会记得你的强与稳，很少有人知道你在最后一夜究竟差点想留下什么。',
+                            description: '你断得太干净，干净到几乎无懈可击。可真正让人不安的，正是连你自己都快想不起，当年差点舍不得的究竟是什么。',
                         },
                         nextChapterId: -1,
                     });
@@ -2490,7 +2751,7 @@
                         ending: {
                             id: 'yinguo_chanshen',
                             title: '因果缠身',
-                            description: '你最终还是走到了门前，可门并没有真正为你打开。不是天道专门审你，而是那些被你推迟到“以后再说”的人、债与旧事，在这一刻全都浮回神魂之外。你没有立刻陨落，却终于明白修仙从不是拖得够久就能把一切拖过去。',
+                            description: '你以为很多事只要拖得够久就会淡。直到走到门前才发现，淡掉的是表面，不是账。那些被你推迟到“以后再说”的人、债与旧事，在这一刻全都浮回神魂之外。',
                         },
                         nextChapterId: -1,
                     });
@@ -2508,7 +2769,7 @@
                         ending: {
                             id: 'fanxin_weisi',
                             title: '凡心未死',
-                            description: '门开了，你也知道自己只要再往前一步，许多牵扯都会被甩在人界身后。可你最终没有立刻踏出去。不是因为软弱，而是因为你一路走到这里，仍没有彻底忘记自己最早为何要修仙。所以你转身，决定再留一阵，把真正放不下的人与事先安顿好。',
+                            description: '门已经开了，你却没有立刻过去。那不是退缩。那是你终于能心平气和地承认: 我可以飞升，但这一次，我想先为自己决定留下。',
                         },
                         nextChapterId: -1,
                     });
@@ -2591,108 +2852,89 @@
         const routeName = getRouteName(state);
         const relations = state?.npcRelations || {};
         const location = chapter.location || '无名之地';
-        const echoes = [
-            beat('旁白', routeName === '正道'
-                ? '你这一步又替别人留了余地，后面再有人求到面前时，他们会更自然地把希望压在你身上。'
-                : routeName === '魔路'
-                    ? '你这一步先算收益的痕迹很重，后面旧人再看见你时，往往会先闻到那股不肯吃亏的狠意。'
-                    : routeName === '苟修'
-                        ? '你还是先给自己留了退路，后面很多局里你都会先看哪条路还能抽身。'
-                        : `${location} 这一段经历还没有定性，后面的章节会继续逼你表态。`),
-        ];
-
+        let text = '';
         switch (chapter.id) {
             case 2:
-                echoes.push(beat('旁白', flags.startPath === 'disciple'
+                text = flags.startPath === 'disciple'
                     ? '墨大夫这条线从这里开始不再只是师徒，而是逐步变成会反噬你的旧因果。'
-                    : '你对墨大夫的态度会一直影响神手谷后面的文本和关系走向。'));
+                    : '你对墨大夫的态度会一直影响神手谷后面的文本和关系走向。';
                 break;
             case 3:
-                echoes.push(beat('旁白', relations['厉飞雨'] >= 30
+                text = relations['厉飞雨'] >= 30
                     ? '厉飞雨会继续成为你在七玄门时期最直接的人情回声。'
-                    : '你和厉飞雨之间留下的分寸，会在后面章节里不断被重新提起。'));
+                    : '你和厉飞雨之间留下的分寸，会在后面章节里不断被重新提起。';
                 break;
             case 6:
-                echoes.push(beat('旁白', flags.defeatedMo
+                text = flags.defeatedMo
                     ? '墨居仁一死，墨府线和药渣线会开始分叉并持续回流。'
-                    : '这场摊牌的后果不会立刻结束，后续章节会反复提起它。'));
+                    : '这场摊牌的后果不会立刻结束，后续章节会反复提起它。';
                 break;
             case 8:
-                echoes.push(beat('旁白', relations['墨彩环'] >= 50
-                    ? '墨彩环会把你看成可以托付旧事的人，这会在中后期继续回响。'
-                    : '墨府的旧事没有散掉，只是暂时藏进你们的说话方式里。'));
+                text = '墨府这件事不会停在一宅白灯里。你如今说过的话、带走的东西和没说尽的真相，后面都会有人记着。';
                 break;
             case 9:
-                echoes.push(beat('旁白', flags.tookQuhunByForce
-                    ? '你是带着一层旧债把曲魂拖离墨府的，这会让凡俗线一直留着刺。'
-                    : flags.mendedMoHouseDebt
-                        ? '你补回的那笔账，会让墨府线在后面留下重新转暖的余地。'
-                        : flags.hasQuhun
-                            ? '曲魂会作为随从线继续出现，凡俗旧宅也会因此多一层阴影。'
-                            : '曲魂线的处理方式，会在后面影响你对“救人”和“用人”的理解。'));
+                text = '曲魂这一章真正留下的，不只是一个随从位，而是你以后还能不能把“人”和“可用之物”分清。';
                 break;
             case 12:
-                echoes.push(beat('旁白', flags.hasGreenBottle
+                text = flags.hasGreenBottle
                     ? '绿瓶的催熟能力从这里起不只是资源，而是你一路选择的放大器。'
-                    : '百药园的低调与激进，会直接决定你后面缺不缺材料。'));
+                    : '百药园的低调与激进，会直接决定你后面缺不缺材料。';
                 break;
             case 14:
-                echoes.push(beat('旁白', relations['南宫婉'] >= 50
-                    ? '南宫婉线会在禁地后继续延伸，直到后面的天南与飞升节点。'
-                    : '血色禁地这次选择，会持续影响你之后对盟友和机会的态度。'));
+                text = '血色禁地真正会定下的，不只是主药归谁，而是你第一次在活人、退路和机缘同时压来时，会先看哪一边。';
                 break;
             case 15:
-                echoes.push(beat('旁白', flags.acceptedNangongDebt
+                text = flags.acceptedNangongDebt
                     ? '你已经把南宫婉那条线认成了情债，后面再见她时，很多话都不会再只是试探。'
                     : flags.suppressedNangongFeelings
                         ? '你把心绪压进了更深处，可每次再见南宫婉，都得多用一分力气装作什么都没发生。'
                         : flags.cutNangongTies || flags.cutEmotion
                             ? '你嘴上说已把这层牵连斩断，可禁地那一夜留下的记忆，并不会因为一句“只认资源”就自己消失。'
-                            : '筑基成了，但这一章留下的情债处理方式，会一直追到终局前夜。'));
+                            : '筑基成了，但这一章留下的情债处理方式，会一直追到终局前夜。';
                 break;
             case 16:
-                echoes.push(beat('旁白', flags.enteredLihuayuanLineage
+                text = flags.enteredLihuayuanLineage
                     ? '令牌一接，师门给你的就不只是庇护，也是“什么时候该替谁负责”的分量。'
                     : flags.respectedLihuayuanButStayedIndependent
                         ? '你听懂了李化元说的秩序与索取，却仍给自己留了半步退路。后面很多人也会因此只肯信你半步。'
                         : flags.usedLihuayuanInfluencePragmatically || flags.learnsSecretively
                             ? '你借了门墙的势，却没把自己全交进去。李化元往后看你时，认可和提防会一起留下。'
-                            : '李化元这一章真正留下的，不是名分高低，而是你开始知道师门会向弟子索取什么。'));
+                            : '李化元这一章真正留下的，不是名分高低，而是你开始知道师门会向弟子索取什么。';
                 break;
             case 17:
-                echoes.push(beat('旁白', flags.yanFortObservedQuietly || flags.lowProfileBanquet
+                text = flags.yanFortObservedQuietly || flags.lowProfileBanquet
                     ? '燕家堡那一夜你没急着替任何人站队。后来再遇到笑里藏刀的场面，别人会先记得你很难被拖进别人的节奏。'
                     : flags.yanFortEstablishedPresence || flags.showedStrength
                         ? '燕家堡灯火最盛那一刻，你当面把场子压住了。此后很多人提到你，不会再只说“此子能打”，还会说你敢在桌上亮牌。'
                         : flags.yanFortNetworkBuilt || flags.builtBanquetNetwork
                             ? '燕家堡这一夜你没有赢下场面，却铺下了线。后面再有旧局与新局缠到一处时，这些人脉会比一时名声更像暗手。'
-                            : '燕家堡留下来的，不是宴席本身，而是你第一次被人按势力棋盘来放位置。'));
+                            : '燕家堡留下来的，不是宴席本身，而是你第一次被人按势力棋盘来放位置。';
                 break;
             case '16_feiyu_return':
-                echoes.push(beat('旁白', flags.helpedOldFriendAgain
+                text = flags.helpedOldFriendAgain
                     ? '厉飞雨没有给你大道理，只让你重新听见还有人先关心你是不是活着，而不是值不值得结交。'
                     : flags.keptDistanceFromOldFriend
                         ? '你把旧友情也停在半步之外，这会让后面很多“凡心未死”的回响更显得珍贵。'
-                        : '这场旧友重逢留下的不是战力，而是一句总会回来敲你的问话: 你还记不记得自己为什么出发。'));
+                        : '这场旧友重逢留下的不是战力，而是一句总会回来敲你的问话: 你还记不记得自己为什么出发。';
                 break;
             case 18:
-                echoes.push(beat('旁白', flags.warChoice === 'demonic'
+                text = flags.warChoice === 'demonic'
                     ? '魔路从这里真正开始有连续后果，后面几章会不断回看这次站位。'
                     : flags.warChoice === 'secluded'
                         ? '苟修线在大战里立住了，后面会更强调退路和生存。'
-                        : '正道线在大战里站住了，后面会继续考验你愿不愿意替别人扛事。'));
+                        : '正道线在大战里站住了，后面会继续考验你愿不愿意替别人扛事。';
                 break;
             case '18_nangong_return':
-                echoes.push(beat('旁白', flags.openlyAcknowledgedNangongImportance
+                text = flags.openlyAcknowledgedNangongImportance
                     ? '你终于不再把南宫婉那条线只往外推。后面再谈旧情与终局时，这会被算成你肯认人的一次。'
                     : flags.continuedToOweNangongSilently
                         ? '你承认亏欠，却还是把话压回心里。往后每次再见她，这层沉默都会比旁人更重。'
                         : flags.avoidedNangongAgain
                             ? '你又一次把真正重要的话转开了。后面若再选最冷的路，这会成为很难洗掉的一笔。'
-                            : '并肩之后留下的不是暧昧，而是有人真的看穿你之后，你还愿不愿承认。'));
+                            : '并肩之后留下的不是暧昧，而是有人真的看穿你之后，你还愿不愿承认。';
                 break;
             case 19:
-                echoes.push(beat('旁白', flags.mineChoice === 'hold'
+                text = flags.mineChoice === 'hold'
                     ? '灵矿里那次死守会一直跟着你。以后再有人谈起你，很多时候先说的不是修为，而是“那人曾在矿里替同门顶过一线”。'
                     : flags.mineChoice === 'rearGuard'
                         ? '你回头接应殿后同门那一步，会让很多旧人后来更愿意把命押在你身上。因为他们知道，你真到最后时未必先顾自己。'
@@ -2704,67 +2946,72 @@
                                     ? '你炸断矿道再退那一次，会让你后面的很多选择都更像同一种活法: 留活路，但不回头。'
                     : flags.mineChoice === 'soloEscape'
                         ? '你独自逃生的样子，矿里活下来的人和死在那里的人都会记得。以后若再说自己只是别无选择，这一步总会回来拦你。'
-                        : '你带队突围活着出来之后，旁人会更自然地把“跟着你也许能活”这件事当真。'));
+                        : '你带队突围活着出来之后，旁人会更自然地把“跟着你也许能活”这件事当真。';
                 break;
             case 20:
-                echoes.push(beat('旁白', flags.enteredStarSea
+                text = flags.enteredStarSea
                     ? '进入乱星海之后，你的旧路并没有断，只是换了一种海上的说法。'
-                    : '不管有没有立刻入海，天南和乱星海都会继续互相回响。'));
+                    : '不管有没有立刻入海，天南和乱星海都会继续互相回响。';
                 break;
             case 21:
-                echoes.push(beat('旁白', flags.starSeaStyle === 'hunter' || flags.starSeaHunterStart
+                text = flags.starSeaStyle === 'hunter' || flags.starSeaHunterStart
                     ? '你在星海先学会的是拿命开路。后来别人看你，不会只看来自哪里，还会看你敢不敢在最险的海路上先动。'
                     : flags.starSeaStyle === 'merchant' || flags.starSeaTraderStart
                         ? '你在星海先学会的是算契约、货路和消息。等虚天与旧账一起压过来时，这种先算清的习惯会处处露出来。'
                         : flags.starSeaStyle === 'secluded' || flags.starSeaSecludedStart
                             ? '你在星海先学会的是把自己藏稳。这条活法会一路影响你后面看待机缘、旧人和终局的方式。'
-                            : '初入星海真正留下的，不是风景，而是你被迫换了一套新的生存逻辑。'));
+                            : '初入星海真正留下的，不是风景，而是你被迫换了一套新的生存逻辑。';
                 break;
             case 22:
-                echoes.push(beat('旁白', flags.enteredVoidHeavenMapGame || flags.hasXuTianTu
+                text = flags.enteredVoidHeavenMapGame || flags.hasXuTianTu
                     ? '残图在手之后，别人要杀你的理由已经不需要完整证据。只要怀疑你知道得比他们多，就够把你拖进更大的局。'
                     : flags.soldFragmentMapForResources || flags.soldXuTianTu
                         ? '你卖出去的不只是纸片，也是别人通往那扇门的资格。换到手的是资源，留在心里的却是“危险只是换了个主人”。'
                         : flags.avoidedVoidHeavenCoreConflict || flags.avoidedXuTian
                             ? '你真正避开的不是宝，而是知道这扇门存在以后，还要装作与己无关的代价。'
-                            : '虚天残图这章留下的，不是普通机缘，而是“知道”本身会不会把你拖下水。'));
+                            : '虚天残图这章留下的，不是普通机缘，而是“知道”本身会不会把你拖下水。';
                 break;
             case '23_mocaihuan_return':
-                echoes.push(beat('旁白', flags.madeAmendsToMocaihuan
+                text = flags.madeAmendsToMocaihuan
                     ? '墨彩环这一笔不再只是“以后再补”。你这次是真的把旧账接回手里了，所以终局前看向嘉元城时，心里会少一层空白。'
                     : flags.admittedOldWrongToMocaihuan
                         ? '你承认了旧错，却也看清有些日子已经回不到原样。这会让后面的“旧账是否算清”不再只有黑白两面。'
                         : flags.checkedOnMocaihuanThenLeft
                             ? '你确认她安好后又离开了。往后若再说自己没有辜负凡俗旧人，这一步会先跳出来拦你。'
-                            : '这封来信真正留下的，不是重逢本身，而是你终于看见有人替你扛过的那些年。'));
+                            : '这封来信真正留下的，不是重逢本身，而是你终于看见有人替你扛过的那些年。';
                 break;
             case 23:
-                echoes.push(beat('旁白', flags.grabbedTreasure || flags.starSeaSeizedTreasureFirst
+                text = flags.grabbedTreasure || flags.starSeaSeizedTreasureFirst
                     ? '虚天殿前你先伸手去夺宝，这个动作会让很多后来者直接把你归进“关键时刻会先拿”的那类人。'
                     : flags.cooperatedAtXuTian || flags.rescuedFromXuTianEdge || flags.starSeaHeldAllianceTogether
                         ? '你在最窄的退路上先稳住了人，这会让虚天旧盟和南宫婉那条线在后面都更有分量。'
                         : flags.watchedXuTianFight || flags.secondHandBroker || flags.slippedPastXuTian || flags.starSeaWaitedForBestMoment
                             ? '你在虚天局里没有先把自己摆到明面，可活下来的人也因此更难彻底信你。因为他们都记得，你最会等别人先露底。'
-                            : '虚天殿真正留下的，不是宝物本身，而是最窄那一步里你到底更像哪一类人。'));
+                            : '虚天殿真正留下的，不是宝物本身，而是最窄那一步里你到底更像哪一类人。';
                 break;
             case 24:
-                echoes.push(beat('旁白', flags.returnedTiannanForSettlement
+                text = flags.returnedTiannanForSettlement
                     ? '你这次回来没有再绕路。嘉元城、黄枫谷和旧敌旧账都会记得，是你亲手把该清的那部分清到了明面上。'
                     : flags.returnedTiannanForBonds
                         ? '旧人看见的不是“你终于回来了”，而是你终于肯承认，有些人和承诺不能一直拖到以后。'
                         : flags.returnedTiannanButRemainedHidden || flags.returnedToSeclusion
                             ? '你回过天南，却没有把自己重新交给天南。旧人只来得及看见一道影子，更多话仍被你留在背后。'
-                            : '回到天南之后，嘉元城的旧屋、黄枫谷的门墙和禁地里的名字，都会轮番来认你。'));
+                            : '回到天南之后，嘉元城的旧屋、黄枫谷的门墙和禁地里的名字，都会轮番来认你。';
                 break;
             case 25:
-                echoes.push(beat('旁白', '门前最后认三样东西: 你和谁还没断干净，你把多少旧账清到了明面上，以及你这一生到底更像正道、魔路，还是苟修。'));
+                text = '门前最后认三样东西: 你和谁还没断干净，你把多少旧账清到了明面上，以及你这一生到底更像正道、魔道，还是苟修。';
                 break;
             default:
-                echoes.push(beat('旁白', `${location} 里发生过的这一步不会只留在原地，后面总会有人拿这里的事重新认你。`));
+                text = routeName === '正道'
+                    ? '你这一步多少替别人留了余地，后面再有人求到面前时，他们会更自然地把希望压在你身上。'
+                    : routeName === '魔路'
+                        ? '你这一步先算收益的痕迹很重，后面旧人再看见你时，往往会先闻到那股不肯吃亏的狠意。'
+                        : routeName === '苟修'
+                            ? '你还是先给自己留了退路，后面很多局里你都会先看哪条路还能抽身。'
+                            : `${location} 里发生过的这一步不会只留在原地，后面总会有人拿这里的事重新认你。`;
                 break;
         }
-
-        return echoes;
+        return [beat('旁白', text)];
     }
 
     STORY_CHAPTERS.forEach((chapter) => {
@@ -2787,6 +3034,7 @@
         NEGATIVE_ENCOUNTERS,
         LEVEL_STORY_EVENTS,
         STORY_CHAPTERS,
+        CHAPTER_ECHO_PACKS,
     };
 
     if (typeof module !== 'undefined' && module.exports) {

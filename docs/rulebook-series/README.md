@@ -31,28 +31,21 @@
 - `echo-system`：`回响系统`
 - `reward-risk-system`：`收益与负面系统`
 
-## 6. 历史草稿 / 迁移来源
-
-- `choice-system`：历史草稿与迁移占位页，原“暗选、明算”规则书已并入 `narrative-decision-system`。
-- `choice-system` 不再承担行为事实和实施契约职责，只保留迁移说明与旧概念映射。
-
-## 7. 阅读顺序
+## 6. 阅读顺序
 
 1. 先看 `narrative-decision-system/README.md`，确认当前分册定位与事实来源。
-2. 再按顺序阅读 `01-current-behavior.md`、`02-parameters-and-formulas.md`、`03-implementation-contract.md`、`04-change-worklog.md`。
-3. 若是从旧链接跳转过来，再看 `choice-system/README.md` 的迁移映射，不回旧目录维护正文。
-4. 最后回到本索引核对成熟度、迁移关系与后续扩册规则。
+2. 再按顺序阅读 `00-design-principles.md`、`01-current-behavior.md`、`02-parameters-and-formulas.md`、`03-implementation-contract.md`、`04-change-worklog.md`、`05-content-authoring-interface.md`。
+3. 最后看两个附录，核对状态矩阵、测试场景和设计审计清单。
+4. 回到本索引核对成熟度、分册边界与后续扩册规则。
 
-## 8. 维护规则
+## 7. 维护规则
 
 - 先改成熟分册，再改代码；改完代码后，再回填成熟分册与本索引。
 - 不要把只有一册成熟的系列，误写成“所有分册都已对齐”。
-- 不要把迁移来源页重新扩写成并行权威文档。
 - 新分册未成熟前，只能登记为计划中分册，不要预先生成空壳正文冒充完成。
 
-## 9. 同步规则
+## 8. 同步规则
 
 - 分册目录名变化时同步改索引。
 - 分册从 draft 升级为 mature 时同步改索引。
-- 历史草稿或迁移来源若继续保留，也要在索引里显式标注状态。
 - 若 `narrative-decision-system` 把部分内容迁给未来分册，必须同步更新本索引和分册 README 的交界说明。

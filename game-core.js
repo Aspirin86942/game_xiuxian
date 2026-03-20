@@ -15,6 +15,7 @@
         POSITIVE_ENCOUNTERS,
         NEGATIVE_ENCOUNTERS,
         STORY_CHAPTERS,
+        LEVEL_STORY_EVENTS,
     } = dataSource;
 
     const STORY_LOOKUP = new Map(STORY_CHAPTERS.map((chapter) => [chapter.id, chapter]));
@@ -22,6 +23,69 @@
 
     function clone(value) {
         return JSON.parse(JSON.stringify(value));
+    }
+
+    function createDefaultLevelStoryState() {
+        const events = {};
+        LEVEL_STORY_EVENTS.forEach((event) => {
+            events[event.id] = {
+                triggered: false,
+                completed: false,
+            };
+        });
+        return {
+            events,
+            currentEventId: null,
+        };
+    }
+
+    function normalizeStoryCursor(rawCursor) {
+        if (!rawCursor || typeof rawCursor !== 'object') {
+            return {
+                source: 'main',
+                storyId: null,
+                chapterId: null,
+                beatIndex: 0,
+                mode: 'idle',
+            };
+        }
+
+        const source = rawCursor.source === 'level' || rawCursor.source === 'ending' ? rawCursor.source : 'main';
+        const storyId = rawCursor.storyId ?? rawCursor.chapterId ?? null;
+        return {
+            source,
+            storyId,
+            chapterId: rawCursor.chapterId ?? storyId,
+            beatIndex: Number.isInteger(rawCursor.beatIndex) ? rawCursor.beatIndex : 0,
+            mode: rawCursor.mode === 'playing' || rawCursor.mode === 'choices' ? rawCursor.mode : 'idle',
+        };
+    }
+
+    function normalizeLevelStoryState(rawState) {
+        const nextState = createDefaultLevelStoryState();
+        if (!rawState || typeof rawState !== 'object') {
+            return nextState;
+        }
+
+        const sourceEvents = rawState.events && typeof rawState.events === 'object'
+            ? rawState.events
+            : rawState.byId && typeof rawState.byId === 'object'
+                ? rawState.byId
+                : {};
+
+        LEVEL_STORY_EVENTS.forEach((event) => {
+            const entry = sourceEvents[event.id] || {};
+            nextState.events[event.id] = {
+                triggered: Boolean(entry.triggered),
+                completed: Boolean(entry.completed),
+            };
+        });
+
+        if (rawState.currentEventId && nextState.events[rawState.currentEventId]) {
+            nextState.currentEventId = rawState.currentEventId;
+        }
+
+        return nextState;
     }
 
     function createInitialState() {
@@ -49,10 +113,13 @@
             },
             storyProgress: 0,
             storyCursor: {
+                source: 'main',
+                storyId: null,
                 chapterId: null,
                 beatIndex: 0,
                 mode: 'idle',
             },
+            levelStoryState: createDefaultLevelStoryState(),
             ending: null,
             currentLocation: '青牛镇',
             npcRelations: {
@@ -71,6 +138,7 @@
             ui: {
                 activeTab: 'cultivation',
                 logCollapsed: false,
+                profileCollapsed: true,
             },
             unreadStory: true,
         };
@@ -80,14 +148,14 @@
 
     function mergeSave(rawState) {
         const nextState = createInitialState();
-        if (!rawState || rawState.version !== 2) {
+        if (!rawState || typeof rawState !== 'object') {
             return nextState;
         }
 
         Object.assign(nextState, rawState);
         nextState.settings = { ...createInitialState().settings, ...(rawState.settings || {}) };
         nextState.ui = { ...createInitialState().ui, ...(rawState.ui || {}) };
-        nextState.storyCursor = { ...createInitialState().storyCursor, ...(rawState.storyCursor || {}) };
+        nextState.storyCursor = normalizeStoryCursor(rawState.storyCursor);
         nextState.playerStats = { ...createInitialState().playerStats, ...(rawState.playerStats || {}) };
         nextState.routeScores = { ...createInitialState().routeScores, ...(rawState.routeScores || {}) };
         nextState.npcRelations = { ...createInitialState().npcRelations, ...(rawState.npcRelations || {}) };
@@ -95,6 +163,7 @@
         nextState.inventory = { ...(rawState.inventory || {}) };
         nextState.logs = Array.isArray(rawState.logs) ? rawState.logs.slice(0, MAX_LOGS) : [];
         nextState.ending = rawState.ending || null;
+        nextState.levelStoryState = normalizeLevelStoryState(rawState.levelStoryState);
         recalculateState(nextState, false);
         return nextState;
     }
@@ -104,10 +173,14 @@
     }
 
     function setRealmScore(state, score) {
+        const previousScore = getRealmScore(state);
         const safeScore = Math.max(0, Math.min(score, (REALMS.length * 3) - 1));
         state.realmIndex = Math.floor(safeScore / 3);
         state.stageIndex = safeScore % 3;
         recalculateState(state, true);
+        if (safeScore > previousScore) {
+            queueLevelEventForRealm(state, safeScore);
+        }
     }
 
     function getRealmLabel(state) {
@@ -308,86 +381,233 @@
         return STORY_LOOKUP.get(chapterId) || null;
     }
 
-    function resolveChapter(chapter, state) {
-        if (!chapter) {
-            return null;
-        }
-        const beats = typeof chapter.beats === 'function' ? chapter.beats(state) : (chapter.beats || []);
-        const rawChoices = typeof chapter.choices === 'function' ? chapter.choices(state) : (chapter.choices || []);
-        const choices = rawChoices.map((choice) => ({
-            ...clone(choice),
-            disabled: !canAffordCosts(state, choice.costs),
-        }));
-        return { ...chapter, beats, choices };
+    function getLevelEventById(eventId) {
+        return LEVEL_STORY_EVENTS.find((event) => event.id === eventId) || null;
     }
 
-    function getCurrentChapter(state) {
-        if (state.ending) {
-            return null;
-        }
+    function getAvailableMainChapter(state) {
         const chapter = getChapterById(state.storyProgress);
         if (!chapter || !meetsRequirements(state, chapter.requirements)) {
             return null;
         }
-        return resolveChapter(chapter, state);
+        return chapter;
     }
 
-    function ensureStoryCursor(state) {
-        const chapter = getCurrentChapter(state);
-        if (!chapter) {
-            state.storyCursor = { chapterId: null, beatIndex: 0, mode: 'idle' };
+    function getPendingLevelEvents(state) {
+        const realmScore = getRealmScore(state);
+        const stateMap = state.levelStoryState && state.levelStoryState.events ? state.levelStoryState.events : {};
+        return LEVEL_STORY_EVENTS.filter((event) => {
+            if (event.realmScore > realmScore) {
+                return false;
+            }
+            const entry = stateMap[event.id] || {};
+            if (entry.completed || entry.triggered) {
+                return false;
+            }
+            return meetsRequirements(state, event.requirements);
+        });
+    }
+
+    function getAvailableLevelEvent(state) {
+        const realmScore = getRealmScore(state);
+        const pendingEvents = getPendingLevelEvents(state);
+        return pendingEvents.find((event) => event.realmScore === realmScore) || pendingEvents[0] || null;
+    }
+
+    function queueLevelEventForRealm(state, realmScore) {
+        const stateMap = state.levelStoryState && state.levelStoryState.events ? state.levelStoryState.events : {};
+        const pendingEvent = LEVEL_STORY_EVENTS.find((event) => {
+            if (event.realmScore !== realmScore) {
+                return false;
+            }
+            const entry = stateMap[event.id] || {};
+            if (entry.completed || entry.triggered) {
+                return false;
+            }
+            return meetsRequirements(state, event.requirements);
+        });
+
+        if (!pendingEvent) {
             return null;
         }
 
-        if (state.storyCursor.chapterId !== chapter.id) {
+        state.storyCursor = {
+            source: 'level',
+            storyId: pendingEvent.id,
+            chapterId: pendingEvent.id,
+            beatIndex: 0,
+            mode: 'playing',
+        };
+        state.levelStoryState.events[pendingEvent.id].triggered = true;
+        state.levelStoryState.currentEventId = pendingEvent.id;
+        state.currentLocation = pendingEvent.location || state.currentLocation;
+        state.unreadStory = true;
+        pushLog(state, `境界感悟浮现：${pendingEvent.title}`, 'breakthrough');
+        return pendingEvent;
+    }
+
+    function getStoryByCursor(state) {
+        const cursor = normalizeStoryCursor(state.storyCursor);
+        if (cursor.source === 'ending' || state.ending) {
+            return null;
+        }
+
+        if (cursor.source === 'level') {
+            return getLevelEventById(cursor.storyId);
+        }
+
+        return getChapterById(cursor.storyId ?? state.storyProgress);
+    }
+
+    function resolveStoryDefinition(definition, state, source) {
+        if (!definition) {
+            return null;
+        }
+        const beats = typeof definition.beats === 'function' ? definition.beats(state) : (definition.beats || []);
+        const rawChoices = typeof definition.choices === 'function' ? definition.choices(state) : (definition.choices || []);
+        const choices = rawChoices.map((choice, index) => {
+            const normalizedChoice = clone(choice);
+            if (!normalizedChoice.id) {
+                // 小境界事件允许用文本驱动定义，但运行期必须有稳定 id，避免选择和测试都落到 undefined。
+                normalizedChoice.id = `${definition.id}_choice_${index}`;
+            }
+            return {
+                ...normalizedChoice,
+                disabled: !canAffordCosts(state, normalizedChoice.costs),
+            };
+        });
+        return { ...definition, source, beats, choices };
+    }
+
+    function resolveChapter(chapter, state) {
+        return resolveStoryDefinition(chapter, state, 'main');
+    }
+
+    function getCurrentPlayableStory(state) {
+        if (state.ending) {
+            return null;
+        }
+
+        const cursor = normalizeStoryCursor(state.storyCursor);
+        if (cursor.mode === 'playing' || cursor.mode === 'choices') {
+            const currentStory = getStoryByCursor({ ...state, storyCursor: cursor });
+            if (currentStory && cursor.source !== 'level') {
+                const chapter = getAvailableMainChapter(state);
+                if (chapter && chapter.id === currentStory.id) {
+                    return resolveStoryDefinition(chapter, state, 'main');
+                }
+            }
+            if (currentStory && cursor.source === 'level') {
+                const stateMap = state.levelStoryState && state.levelStoryState.events ? state.levelStoryState.events : {};
+                const entry = stateMap[currentStory.id] || {};
+                if (!entry.completed) {
+                    return resolveStoryDefinition(currentStory, state, 'level');
+                }
+            }
+        }
+
+        const mainChapter = getAvailableMainChapter(state);
+        if (mainChapter) {
+            return resolveStoryDefinition(mainChapter, state, 'main');
+        }
+
+        const levelEvent = getAvailableLevelEvent(state);
+        if (levelEvent) {
+            return resolveStoryDefinition(levelEvent, state, 'level');
+        }
+
+        return null;
+    }
+
+    function ensureStoryCursor(state) {
+        if (state.ending) {
             state.storyCursor = {
-                chapterId: chapter.id,
+                source: 'ending',
+                storyId: null,
+                chapterId: null,
+                beatIndex: 0,
+                mode: 'idle',
+            };
+            return null;
+        }
+
+        const current = getCurrentPlayableStory(state);
+        if (!current) {
+            state.storyCursor = {
+                source: 'main',
+                storyId: null,
+                chapterId: null,
+                beatIndex: 0,
+                mode: 'idle',
+            };
+            state.levelStoryState.currentEventId = null;
+            return null;
+        }
+
+        const cursor = normalizeStoryCursor(state.storyCursor);
+        if (cursor.source !== current.source || cursor.storyId !== current.id || cursor.mode === 'idle') {
+            state.storyCursor = {
+                source: current.source,
+                storyId: current.id,
+                chapterId: current.id,
                 beatIndex: 0,
                 mode: 'playing',
             };
-            state.currentLocation = chapter.location || state.currentLocation;
+            if (current.source === 'level') {
+                state.levelStoryState.events[current.id].triggered = true;
+                state.levelStoryState.currentEventId = current.id;
+            } else {
+                state.levelStoryState.currentEventId = null;
+            }
+            state.currentLocation = current.location || state.currentLocation;
             state.unreadStory = true;
-            pushLog(state, `新剧情开启：第${chapter.id + 1}章《${chapter.title}》`, 'breakthrough');
+            const storyLabel = current.source === 'level' ? `小境界事件《${current.title}》` : `第${current.id + 1}章《${current.title}》`;
+            pushLog(state, `新剧情开启：${storyLabel}`, 'breakthrough');
         }
 
-        return resolveChapter(getChapterById(state.storyCursor.chapterId), state);
+        return resolveStoryDefinition(current, state, current.source);
     }
 
     function getStoryView(state) {
         if (state.ending) {
             return {
+                source: 'ending',
                 mode: 'ending',
+                story: null,
+                chapter: null,
                 ending: clone(state.ending),
             };
         }
 
-        const chapter = ensureStoryCursor(state);
-        if (!chapter) {
+        const story = ensureStoryCursor(state);
+        if (!story) {
             return null;
         }
 
         const visibleCount = state.storyCursor.mode === 'choices'
-            ? chapter.beats.length
-            : Math.min(chapter.beats.length, state.storyCursor.beatIndex + 1);
+            ? story.beats.length
+            : Math.min(story.beats.length, state.storyCursor.beatIndex + 1);
 
         return {
+            source: story.source,
             mode: state.storyCursor.mode,
-            chapter,
-            visibleBeats: chapter.beats.slice(0, visibleCount),
-            currentBeat: chapter.beats[Math.max(0, visibleCount - 1)] || null,
-            choices: state.storyCursor.mode === 'choices' ? chapter.choices : [],
+            story,
+            chapter: story,
+            visibleBeats: story.beats.slice(0, visibleCount),
+            currentBeat: story.beats[Math.max(0, visibleCount - 1)] || null,
+            choices: state.storyCursor.mode === 'choices' ? story.choices : [],
         };
     }
 
     function advanceStoryBeat(state) {
-        const chapter = ensureStoryCursor(state);
-        if (!chapter) {
+        const story = ensureStoryCursor(state);
+        if (!story) {
             return { ok: false, reason: 'no-story' };
         }
         if (state.storyCursor.mode === 'choices') {
             return { ok: true, mode: 'choices' };
         }
-        if (state.storyCursor.beatIndex < chapter.beats.length - 1) {
+        if (state.storyCursor.beatIndex < story.beats.length - 1) {
             state.storyCursor.beatIndex += 1;
             return { ok: true, mode: 'playing' };
         }
@@ -396,22 +616,22 @@
     }
 
     function skipStoryPlayback(state) {
-        const chapter = ensureStoryCursor(state);
-        if (!chapter) {
+        const story = ensureStoryCursor(state);
+        if (!story) {
             return { ok: false, reason: 'no-story' };
         }
-        state.storyCursor.beatIndex = Math.max(0, chapter.beats.length - 1);
+        state.storyCursor.beatIndex = Math.max(0, story.beats.length - 1);
         state.storyCursor.mode = 'choices';
         return { ok: true };
     }
 
     function chooseStoryOption(state, choiceId) {
-        const chapter = ensureStoryCursor(state);
-        if (!chapter || state.storyCursor.mode !== 'choices') {
+        const story = ensureStoryCursor(state);
+        if (!story || state.storyCursor.mode !== 'choices') {
             return { ok: false, error: '当前没有可选择的剧情选项。' };
         }
 
-        const choice = chapter.choices.find((item) => item.id === choiceId);
+        const choice = story.choices.find((item) => item.id === choiceId);
         if (!choice) {
             return { ok: false, error: '选项不存在。' };
         }
@@ -427,14 +647,37 @@
 
         if (choice.ending) {
             state.ending = clone(choice.ending);
-            state.storyCursor = { chapterId: null, beatIndex: 0, mode: 'idle' };
+            state.storyCursor = {
+                source: 'ending',
+                storyId: null,
+                chapterId: null,
+                beatIndex: 0,
+                mode: 'idle',
+            };
             state.storyProgress = -1;
             pushLog(state, `达成结局：${choice.ending.title}`, 'breakthrough');
             return { ok: true, ending: true };
         }
 
-        state.storyProgress = choice.nextChapterId;
-        state.storyCursor = { chapterId: null, beatIndex: 0, mode: 'idle' };
+        if (story.source === 'main' && choice.nextChapterId !== undefined) {
+            state.storyProgress = choice.nextChapterId;
+        }
+
+        if (story.source === 'level') {
+            const levelEntry = state.levelStoryState.events[story.id] || { triggered: true, completed: false };
+            levelEntry.triggered = true;
+            levelEntry.completed = true;
+            state.levelStoryState.events[story.id] = levelEntry;
+            state.levelStoryState.currentEventId = null;
+        }
+
+        state.storyCursor = {
+            source: 'main',
+            storyId: null,
+            chapterId: null,
+            beatIndex: 0,
+            mode: 'idle',
+        };
         ensureStoryCursor(state);
         return { ok: true };
     }
@@ -453,6 +696,13 @@
             return '结局已定，可重开体验另一条路。';
         }
         const chapter = getChapterById(state.storyProgress);
+        const mainReady = chapter && meetsRequirements(state, chapter.requirements);
+        if (!mainReady) {
+            const levelEvent = getAvailableLevelEvent(state);
+            if (levelEvent) {
+                return `下一条等级事件：${levelEvent.title}（${REALMS[Math.floor(levelEvent.realmScore / 3)].name}·${REALMS[Math.floor(levelEvent.realmScore / 3)].stages[levelEvent.realmScore % 3]}）`;
+            }
+        }
         if (!chapter) {
             return '暂无待触发剧情。';
         }
@@ -536,6 +786,27 @@
         if (state.flags.returnedToSeclusion) {
             echoes.push({ title: '藏锋之心', detail: '你开始主动回避公开的胜负，更在意“活着留下选择”。' });
         }
+        if (state.flags.hasSecretInfo) {
+            echoes.push({ title: '暗线消息', detail: '太南山换来的消息没有白费，它让你在宗门和海路两条线里都更懂得留后手。' });
+        }
+        if (state.flags.learnsSecretively) {
+            echoes.push({ title: '秘学旁听', detail: '你没有正面拜师，却依旧摸到李化元一脉的门道，这条线会一直影响你看待师门与自由。' });
+        }
+        if (state.flags.showedStrength) {
+            echoes.push({ title: '燕堡留名', detail: '燕家堡那次不再低调，后续很多场合都会先把你当成能压局的人。' });
+        }
+        if (state.flags.mineChoice === 'breakout') {
+            echoes.push({ title: '矿脉突围', detail: '你带队杀出去过一次，之后别人更容易把生路押在你身上。' });
+        }
+        if (state.flags.cooperatedAtXuTian) {
+            echoes.push({ title: '虚天旧盟', detail: '你在虚天殿留下的合作关系并没有断，它会继续影响后面的互信和结局色彩。' });
+        }
+        if (state.flags.hasXuTianTu) {
+            echoes.push({ title: '残图在手', detail: '虚天残图不只是机缘，更让你持续暴露在更大的觊觎与算计里。' });
+        }
+        if (state.flags.acceptedNangongPath) {
+            echoes.push({ title: '同路之约', detail: '你没有回避南宫婉那条线，所以终局之前很多话都不会再只停在心里。' });
+        }
         if (echoes.length === 0) {
             echoes.push({ title: '尚在起势', detail: '关键选择还不够多，继续推进剧情会看到更明显的回响。' });
         }
@@ -555,6 +826,21 @@
         }
         if (state.storyProgress >= 21 && state.flags.starSeaStyle === 'merchant') {
             stories.push({ title: '海路消息', detail: '商路会让你更早知道风险，也更早闻到钱味。', npc: '万小山' });
+        }
+        if (state.flags.hasSecretInfo) {
+            stories.push({ title: '黑市暗桩', detail: '太南山那条暗线仍然有用，后面可以继续借它探路或换资源。', npc: '万小山' });
+        }
+        if (state.flags.madeGardenConnections) {
+            stories.push({ title: '药园旧友', detail: '你在黄枫谷药园留过人情，药材与传话会更快朝你靠拢。', npc: '李化元' });
+        }
+        if (state.flags.learnsSecretively) {
+            stories.push({ title: '秘法旁注', detail: '你不在名分上拜入门墙，却还是接住了李化元留下的另一层指点。', npc: '李化元' });
+        }
+        if (state.flags.cooperatedAtXuTian) {
+            stories.push({ title: '虚天旧盟', detail: '虚天殿的合作没有散场，后续还能继续用这份信任换一条路。', npc: '南宫婉' });
+        }
+        if (state.flags.acceptedNangongPath) {
+            stories.push({ title: '婉约来信', detail: '你既然没有退开，南宫婉的回应也会越来越直接。', npc: '南宫婉' });
         }
         if (stories.length === 0) {
             stories.push({ title: '暂无显性支线', detail: '继续修炼或推进主线后，会解锁新的旁支回响。' });
@@ -637,6 +923,7 @@
             state.breakthroughBonus = 0;
             recalculateState(state, true);
             pushLog(state, `突破成功，当前境界：${getRealmLabel(state)}`, 'breakthrough');
+            queueLevelEventForRealm(state, getRealmScore(state));
             ensureStoryCursor(state);
             return { ok: true, success: true };
         }
@@ -747,6 +1034,7 @@
         ITEMS,
         LOCATIONS,
         NPCS,
+        LEVEL_STORY_EVENTS,
         createInitialState,
         mergeSave,
         recalculateState,
@@ -759,10 +1047,14 @@
         getLocationMeta,
         getAvailableSideStories,
         getNpcDialogue,
+        getAvailableMainChapter,
+        getAvailableLevelEvent,
+        getCurrentPlayableStory,
         getInventoryCount,
         formatCosts,
         getNextGoalText,
         getChapterById,
+        getLevelEventById,
         resolveChapter,
         ensureStoryCursor,
         getStoryView,

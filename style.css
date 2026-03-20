@@ -28,6 +28,7 @@ html,
 body {
     min-height: 100%;
     font-family: "STKaiti", "KaiTi", "Noto Serif SC", serif;
+    -webkit-text-size-adjust: 100%;
     background:
         radial-gradient(circle at 15% 20%, rgba(143, 106, 42, 0.18), transparent 30%),
         radial-gradient(circle at 80% 10%, rgba(51, 95, 83, 0.18), transparent 25%),
@@ -106,7 +107,6 @@ button {
     backdrop-filter: blur(14px);
 }
 
-.status-card,
 .card,
 .modal-panel {
     background: var(--paper);
@@ -116,27 +116,31 @@ button {
 }
 
 .status-card {
-    padding: 16px;
+    padding: 4px 0 6px;
     display: grid;
-    gap: 14px;
+    gap: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .status-overview {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 14px;
+    column-gap: 10px;
 }
 
-.hero-mark {
-    width: 56px;
-    height: 56px;
-    border-radius: 20px;
-    display: grid;
-    place-items: center;
-    background: linear-gradient(145deg, rgba(143, 106, 42, 0.18), rgba(159, 79, 54, 0.2));
-    color: var(--gold);
-    font-size: 1.7rem;
-    font-weight: 700;
+.status-copy {
+    min-width: 0;
+    display: block;
+    padding-right: 10px;
+    border-right: 1px solid rgba(54, 39, 26, 0.16);
+}
+
+.status-headline {
+    display: block;
 }
 
 .status-caption,
@@ -149,16 +153,52 @@ button {
     font-size: 0.72rem;
 }
 
-.status-copy h1,
 .card h2,
 .modal-panel h3 {
     font-size: 1.35rem;
     font-weight: 600;
 }
 
-.status-location {
+.status-copy h1 {
+    font-size: 0.92rem;
+    line-height: 1.2;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.status-summary {
+    display: grid;
+    grid-template-columns: auto;
+    row-gap: 2px;
+    justify-items: end;
+    min-width: max-content;
+}
+
+.summary-chip {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.summary-chip .metric-label {
+    font-size: 0.66rem;
+    color: var(--ink-light);
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: nowrap;
+}
+
+.summary-chip .metric-value {
+    font-size: 0.76rem;
+    font-weight: 600;
     color: var(--ink-soft);
-    margin-top: 2px;
+    white-space: nowrap;
 }
 
 .status-metrics {
@@ -204,7 +244,6 @@ button {
 .log-container::-webkit-scrollbar,
 .inventory-list::-webkit-scrollbar,
 .combat-log::-webkit-scrollbar,
-.story-history::-webkit-scrollbar,
 .side-story-list::-webkit-scrollbar {
     width: 6px;
 }
@@ -213,7 +252,6 @@ button {
 .log-container::-webkit-scrollbar-thumb,
 .inventory-list::-webkit-scrollbar-thumb,
 .combat-log::-webkit-scrollbar-thumb,
-.story-history::-webkit-scrollbar-thumb,
 .side-story-list::-webkit-scrollbar-thumb {
     border-radius: 999px;
     background: rgba(143, 106, 42, 0.35);
@@ -367,6 +405,7 @@ button {
 }
 
 .hint-text,
+.cultivation-meta,
 .auto-status,
 .story-meta,
 .location-desc,
@@ -374,6 +413,11 @@ button {
 .next-goal {
     color: var(--ink-soft);
     line-height: 1.65;
+}
+
+.cultivation-meta {
+    text-align: center;
+    letter-spacing: 0.02em;
 }
 
 .auto-panel {
@@ -425,7 +469,6 @@ button {
 .side-story-item,
 .npc-btn,
 .inventory-item,
-.story-history-item,
 .combat-entry {
     border-radius: var(--radius-md);
     border: 1px solid rgba(143, 106, 42, 0.12);
@@ -487,20 +530,31 @@ button {
 }
 
 .story-card {
-    grid-template-rows: auto auto auto minmax(0, auto) auto auto;
+    grid-template-rows: auto auto auto minmax(188px, auto) auto auto;
+}
+
+.story-progress {
+    justify-self: start;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(143, 106, 42, 0.14);
+    background: rgba(255, 255, 255, 0.64);
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
 }
 
 .story-reader {
-    min-height: 160px;
-    padding: 16px;
+    min-height: 188px;
+    padding: 18px;
     border-radius: var(--radius-md);
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.4)),
         radial-gradient(circle at top right, rgba(159, 79, 54, 0.08), transparent 36%);
     border: 1px solid rgba(159, 79, 54, 0.12);
     display: grid;
-    gap: 10px;
-    align-content: start;
+    gap: 12px;
+    align-content: center;
 }
 
 .story-speaker {
@@ -514,29 +568,16 @@ button {
     line-height: 1.9;
 }
 
-.story-history {
-    max-height: 168px;
-    overflow-y: auto;
-    display: grid;
-    gap: 8px;
-}
-
-.story-history-item {
-    padding: 10px 12px;
-    line-height: 1.65;
-}
-
-.story-history-item strong {
-    color: var(--ink-soft);
-    margin-right: 6px;
-}
-
 .story-controls,
 .confirm-actions,
 .settings-actions {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+}
+
+.story-controls > * {
+    flex: 1 1 0;
 }
 
 .story-choices {
@@ -780,54 +821,7 @@ button {
     color: var(--ink-soft);
 }
 
-@media (min-width: 760px) {
-    .game-frame {
-        width: min(100%, 980px);
-        height: min(100vh - 40px, 820px);
-        grid-template-columns: 300px 1fr;
-        grid-template-rows: auto 1fr auto;
-    }
-
-    .status-card {
-        grid-column: 1 / 2;
-        grid-row: 1 / 3;
-        align-content: start;
-        height: 100%;
-    }
-
-    .page-stack {
-        grid-column: 2 / 3;
-        grid-row: 1 / 3;
-        min-height: 0;
-    }
-
-    .bottom-nav {
-        grid-column: 1 / 3;
-    }
-
-    .page.active {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .page[data-page="cultivation"] .cultivation-card {
-        grid-column: 1 / 3;
-    }
-
-    .page[data-page="story"] .story-card {
-        grid-column: 1 / 2;
-    }
-
-    .page[data-page="story"] .story-side-card {
-        grid-column: 2 / 3;
-        align-content: start;
-    }
-
-    .page[data-page="adventure"] .location-card {
-        grid-column: 1 / 3;
-    }
-}
-
-@media (max-width: 430px) {
+@media all {
     .game-shell {
         padding: 0;
     }
@@ -836,24 +830,235 @@ button {
         width: 100vw;
         height: 100vh;
         border-radius: 0;
-        padding: 14px;
+        padding:
+            max(10px, env(safe-area-inset-top))
+            10px
+            calc(10px + env(safe-area-inset-bottom))
+            10px;
+        gap: 8px;
     }
 
-    .status-copy h1,
-    .card h2 {
-        font-size: 1.22rem;
+    .card {
+        padding: 10px;
+        gap: 10px;
+        border-radius: 18px;
+    }
+
+    .status-card {
+        padding: 4px 0 6px;
+    }
+
+    .eyebrow,
+    .mini-label {
+        font-size: 0.63rem;
+    }
+
+    .card h2,
+    .modal-panel h3 {
+        font-size: 1.08rem;
+    }
+
+    .page {
+        gap: 8px;
+    }
+
+    .cultivation-stage {
+        min-height: 142px;
+        padding: 10px 8px;
+        gap: 8px;
+    }
+
+    .main-button {
+        min-width: 156px;
+        min-height: 52px;
+        padding: 12px 22px;
+        font-size: 1rem;
+        letter-spacing: 0.04em;
+    }
+
+    .hint-text,
+    .cultivation-meta,
+    .auto-status,
+    .story-meta,
+    .story-progress,
+    .location-desc,
+    .combat-preview,
+    .next-goal {
+        font-size: 0.78rem;
+        line-height: 1.45;
+    }
+
+    .auto-panel {
+        padding: 8px 10px;
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .toggle-btn {
+        padding: 8px 12px;
+        gap: 8px;
+        font-size: 0.78rem;
+    }
+
+    .route-pill,
+    .echo-item,
+    .side-story-item,
+    .npc-btn,
+    .inventory-item,
+    .combat-entry {
+        padding: 10px 12px;
+        border-radius: 12px;
+    }
+
+    .route-pill p,
+    .echo-item p,
+    .side-story-item p,
+    .inventory-item p,
+    .confirm-panel p {
+        font-size: 0.8rem;
+        line-height: 1.45;
+    }
+
+    .story-card,
+    .story-side-card,
+    .location-card,
+    .combat-note-card,
+    .route-card {
+        gap: 8px;
+    }
+
+    .story-reader {
+        min-height: 148px;
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .story-speaker {
+        font-size: 0.8rem;
     }
 
     .story-line {
-        font-size: 1rem;
+        font-size: 0.98rem;
+        line-height: 1.72;
+    }
+
+    .story-controls,
+    .confirm-actions,
+    .settings-actions {
+        gap: 8px;
+    }
+
+    .primary-btn,
+    .ghost-btn,
+    .danger-btn,
+    .icon-btn,
+    .inventory-use-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    .story-choice-btn {
+        padding: 11px 12px;
+        font-size: 0.82rem;
+        line-height: 1.45;
+    }
+
+    .choice-cost {
+        margin-top: 4px;
+        font-size: 0.76rem;
+    }
+
+    .npc-list {
+        gap: 8px;
+    }
+
+    .npc-btn {
+        min-width: 100%;
     }
 
     .bottom-nav {
-        gap: 6px;
-        padding: 8px;
+        gap: 5px;
+        padding: 7px 7px calc(7px + env(safe-area-inset-bottom));
+        border-radius: 14px;
     }
 
     .nav-btn {
-        min-height: 48px;
+        min-height: 44px;
+        border-radius: 12px;
+        font-size: 0.76rem;
+    }
+
+    .nav-btn span {
+        display: block;
+        line-height: 1.1;
+    }
+
+    .nav-badge {
+        top: 2px;
+        right: 8px;
+        min-width: 16px;
+        height: 16px;
+        line-height: 16px;
+    }
+
+    .modal {
+        padding:
+            max(10px, env(safe-area-inset-top))
+            10px
+            calc(10px + env(safe-area-inset-bottom))
+            10px;
+    }
+
+    .modal-panel {
+        width: min(100%, 100%);
+        max-height: min(88vh, 640px);
+        padding: 12px;
+        gap: 10px;
+        border-radius: 18px;
+    }
+
+    .inventory-list,
+    .combat-log {
+        gap: 8px;
+    }
+
+    .settings-grid {
+        gap: 8px;
+    }
+
+    .setting-row {
+        padding: 10px 12px;
+        font-size: 0.82rem;
+    }
+
+    .dialogue-avatar {
+        width: 56px;
+        height: 56px;
+        font-size: 1.5rem;
+        border-radius: 18px;
+    }
+
+    .dialogue-text {
+        padding: 12px;
+        font-size: 0.84rem;
+        line-height: 1.65;
+    }
+
+    .combat-bars {
+        gap: 8px;
+    }
+
+    .combat-side {
+        gap: 6px;
+        font-size: 0.8rem;
+    }
+
+    .hp-bar {
+        height: 10px;
+    }
+
+    .combat-log {
+        min-height: 126px;
+        max-height: 220px;
     }
 }

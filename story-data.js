@@ -159,6 +159,336 @@
         { text: '你被妖气擦过经脉，心神一时难定。', cultivation: -24 },
     ];
 
+    function levelEvent(options) {
+        return {
+            id: options.id,
+            realmScore: options.realmScore,
+            title: options.title,
+            summary: options.summary,
+            requirements: options.requirements,
+            beats: options.beats,
+            choices: options.choices,
+            effects: options.effects || {},
+            once: options.once !== false,
+        };
+    }
+
+    const LEVEL_STORY_EVENTS = [
+        levelEvent({
+            id: 'qi_0',
+            realmScore: 0,
+            title: '炼气初期：吐纳识气',
+            summary: '第一口灵气入体，真正意义上的修仙开始了。',
+            requirements: { realmScoreAtLeast: 0 },
+            beats(state) {
+                return [
+                    beat('旁白', '你第一次清晰分辨出体内灵气的流向，呼吸也跟着沉下来。'),
+                    beat('旁白', state.flags.preparedWell ? '你想起出门前带上的干粮和柴米，心神也稳了几分。' : '没有人提醒你如何稳住气机，只能靠一次次吐纳试出来。'),
+                ];
+            },
+            choices(state) {
+                return [
+                    { text: '继续稳固根基', effects: { cultivation: 18, routeScores: { orthodox: 1 } } },
+                    { text: '趁机多试几次引气诀', effects: { cultivation: 10, routeScores: { secluded: 1 } } },
+                ];
+            },
+            effects: { cultivation: 15 },
+        }),
+        levelEvent({
+            id: 'qi_1',
+            realmScore: 1,
+            title: '炼气中期：经脉初通',
+            summary: '经脉开始顺畅，但心浮气躁也会更容易反噬。',
+            requirements: { realmScoreAtLeast: 1 },
+            beats(state) {
+                return [
+                    beat('旁白', '你开始能感觉到经脉中的细小阻滞，那不是疼，而是界限。'),
+                    beat('旁白', state.flags.lowProfile ? '你明白低调不是退缩，而是先保住经脉里这点火种。' : '你总想在更短时间里看到结果，反而更需要压住躁意。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '养气半日', effects: { cultivation: 22, routeScores: { secluded: 1 } } },
+                    { text: '强行多吐纳一轮', effects: { cultivation: 8, routeScores: { demonic: 1 } } },
+                ];
+            },
+            effects: { cultivation: 12 },
+        }),
+        levelEvent({
+            id: 'qi_2',
+            realmScore: 2,
+            title: '炼气后期：药火微成',
+            summary: '你开始能借外物补内息，但代价和风险也开始出现。',
+            requirements: { realmScoreAtLeast: 2 },
+            beats(state) {
+                return [
+                    beat('旁白', '灵草、丹药和你体内的气开始彼此勾连，像是试探，也像是协商。'),
+                    beat('旁白', state.flags.startPath === 'disciple' ? '墨大夫教你的不只是功法，还有怎么不让别人看出你在意什么。' : '你越来越清楚，修行最先改变的往往不是力量，而是耐心。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '守住药性，不贪快', effects: { cultivation: 26, routeScores: { orthodox: 1 } } },
+                    { text: '借绿瓶试一次催熟', effects: { cultivation: 16, routeScores: { secluded: 1 } } },
+                ];
+            },
+            effects: { cultivation: 18 },
+        }),
+        levelEvent({
+            id: 'ji_3',
+            realmScore: 3,
+            title: '筑基初期：骨脉重铸',
+            summary: '从这里开始，修行不再只是堆修为，而是重塑身体。',
+            requirements: { realmScoreAtLeast: 3 },
+            beats(state) {
+                return [
+                    beat('旁白', '筑基之后，你能明显感觉到筋骨比从前沉稳，连打坐都更像在扎根。'),
+                    beat('旁白', state.flags.hasGreenBottle ? '你知道那只绿瓶以后会越来越危险，也越来越值钱。' : '你第一次真切意识到，资源不足会比敌人更早把人逼到墙角。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '趁稳重夯实根基', effects: { cultivation: 34, routeScores: { orthodox: 1 } } },
+                    { text: '试着提速冲境', effects: { cultivation: 20, routeScores: { demonic: 1 } } },
+                ];
+            },
+            effects: { cultivation: 22 },
+        }),
+        levelEvent({
+            id: 'ji_4',
+            realmScore: 4,
+            title: '筑基中期：人情入局',
+            summary: '你开始发现，修仙界里最难躲开的不是劫，而是关系。',
+            requirements: { realmScoreAtLeast: 4 },
+            beats(state) {
+                return [
+                    beat('旁白', '当你能稳住筑基中期的气机时，很多人对你的态度也开始变化。'),
+                    beat('旁白', state.npcRelations['厉飞雨'] >= 30 ? '厉飞雨这条线还没断，他的信任会在后面不断回来找你。' : '有些人对你的态度开始模糊，恰恰说明你已不再是可以随便忽略的人。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '先处理好旧人情', effects: { relations: { '厉飞雨': 10 }, routeScores: { orthodox: 1 } } },
+                    { text: '把人情先记账', effects: { routeScores: { secluded: 1 } } },
+                ];
+            },
+            effects: { cultivation: 18 },
+        }),
+        levelEvent({
+            id: 'ji_5',
+            realmScore: 5,
+            title: '筑基后期：瓶颈见锋',
+            summary: '瓶颈开始显形，推进的代价也更明确。',
+            requirements: { realmScoreAtLeast: 5 },
+            beats(state) {
+                return [
+                    beat('旁白', '你在瓶颈边缘来回试探，像站在门槛上判断该不该抬脚。'),
+                    beat('旁白', state.routeScores.demonic > state.routeScores.orthodox ? '你越来越熟悉“先取再说”的习惯。' : '你更常想的是怎样把风险留在自己能承受的范围里。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '压住气机，等下一轮', effects: { cultivation: 28, routeScores: { secluded: 1 } } },
+                    { text: '借丹药强推一把', costs: { lingshi: 2 }, effects: { cultivation: 14, routeScores: { demonic: 1 } } },
+                ];
+            },
+            effects: { cultivation: 22 },
+        }),
+        levelEvent({
+            id: 'jin_6',
+            realmScore: 6,
+            title: '金丹初期：丹成一线',
+            summary: '金丹不是结束，而是你能否守住自己的开始。',
+            requirements: { realmScoreAtLeast: 6 },
+            beats(state) {
+                return [
+                    beat('旁白', '丹海中有了一点真正成形的东西，你对灵气的掌控也开始变得凌厉。'),
+                    beat('旁白', state.flags.savedNangong ? '南宫婉的名字不再只是禁地里的惊鸿一瞥，而会变成一条持续的线。' : '有些旧人你虽然暂时没再见，却仍在关键时刻影响你的判断。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '稳住丹心', effects: { cultivation: 40, routeScores: { orthodox: 1 } } },
+                    { text: '借斗法磨丹', effects: { cultivation: 26, routeScores: { demonic: 1 } } },
+                ];
+            },
+            effects: { cultivation: 24 },
+        }),
+        levelEvent({
+            id: 'jin_7',
+            realmScore: 7,
+            title: '金丹中期：宗门旧账',
+            summary: '你开始真正有资格参与宗门里的分量计算。',
+            requirements: { realmScoreAtLeast: 7 },
+            beats(state) {
+                return [
+                    beat('旁白', '进入金丹中期后，宗门、盟友、旧债全开始拿你当一个能被算进账本的人。'),
+                    beat('旁白', state.flags.liDisciple ? '李化元那一边的态度，开始从“照看”变成“期待”或“约束”。' : '你知道自己还没有完全站稳，所以每次抉择都更像押注。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '先回宗门压局势', effects: { routeScores: { orthodox: 2 } } },
+                    { text: '把旧账留给以后', effects: { routeScores: { secluded: 1 } } },
+                ];
+            },
+            effects: { cultivation: 28 },
+        }),
+        levelEvent({
+            id: 'jin_8',
+            realmScore: 8,
+            title: '金丹后期：禁地余波',
+            summary: '血色禁地的后果开始倒灌回你的日常。',
+            requirements: { realmScoreAtLeast: 8 },
+            beats(state) {
+                return [
+                    beat('旁白', '你已经能明显感觉到，禁地那次选择并没有结束，它只是换了一个更慢的方式发作。'),
+                    beat('旁白', state.flags.daoLvPromise ? '墨彩环的等待、南宫婉的态度、李化元的目光，这三条线开始一起压向你。' : '你知道自己越往后走，旧选择越会变成未来的路标。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '先清理旧债', effects: { cultivation: 30, routeScores: { orthodox: 1 } } },
+                    { text: '把余波当资源', effects: { cultivation: 22, routeScores: { demonic: 1 } } },
+                ];
+            },
+            effects: { cultivation: 24 },
+        }),
+        levelEvent({
+            id: 'yu_9',
+            realmScore: 9,
+            title: '元婴初期：神识初开',
+            summary: '当神识真正展开，很多藏起来的东西也会被你看见。',
+            requirements: { realmScoreAtLeast: 9 },
+            beats(state) {
+                return [
+                    beat('旁白', '你的神识开始能跨越更远的距离，很多过去看不见的因果也在此时浮现。'),
+                    beat('旁白', state.routeScores.secluded >= state.routeScores.orthodox ? '你越来越懂得如何把自己藏进安全范围里。' : '你开始更频繁地把“能不能帮别人”放进思考里。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '谨慎扩展神识', effects: { cultivation: 38, routeScores: { secluded: 1 } } },
+                    { text: '直接探查旧地', effects: { cultivation: 26, routeScores: { orthodox: 1 } } },
+                ];
+            },
+            effects: { cultivation: 30 },
+        }),
+        levelEvent({
+            id: 'yu_10',
+            realmScore: 10,
+            title: '元婴中期：海路与旧人',
+            summary: '海上势力让你意识到，旧人和新路会一起逼你表态。',
+            requirements: { realmScoreAtLeast: 10 },
+            beats(state) {
+                return [
+                    beat('旁白', '海路、商路、门路在你眼里开始有了差别，很多人也不再只看你是不是能打。'),
+                    beat('旁白', state.flags.enteredStarSea ? '乱星海那边的动静，开始透过风声影响你在天南的判断。' : '你还没真正走远，但你已经知道远方的势力迟早会来找你。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '先看海上态势', effects: { routeScores: { secluded: 1 } } },
+                    { text: '直接抢商机', effects: { routeScores: { demonic: 1 }, cultivation: 18 } },
+                ];
+            },
+            effects: { cultivation: 26 },
+        }),
+        levelEvent({
+            id: 'yu_11',
+            realmScore: 11,
+            title: '元婴后期：心魔回响',
+            summary: '你越强，心里那些没有解决的东西就越容易回头。',
+            requirements: { realmScoreAtLeast: 11 },
+            beats(state) {
+                return [
+                    beat('旁白', '元婴后期的修为让你更接近答案，也更容易听见自己心里的杂音。'),
+                    beat('旁白', state.routeScores.demonic > state.routeScores.orthodox ? '你已经习惯把“代价”放到后面算。' : '你开始更在意什么才算值得。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '静坐压心魔', effects: { cultivation: 34, routeScores: { orthodox: 1 } } },
+                    { text: '借杀意斩念', effects: { cultivation: 20, routeScores: { demonic: 1 } } },
+                ];
+            },
+            effects: { cultivation: 26 },
+        }),
+        levelEvent({
+            id: 'hs_12',
+            realmScore: 12,
+            title: '化神初期：一线天光',
+            summary: '化神之后，天地间的差距会变得格外清晰。',
+            requirements: { realmScoreAtLeast: 12 },
+            beats(state) {
+                return [
+                    beat('旁白', '当你踏进化神初期，很多曾经以为跨不过去的事都变成了可处理的问题。'),
+                    beat('旁白', state.flags.acceptedNangongPath ? '南宫婉的那条线，已经不只是情感，而是一种终局选择。' : '你开始意识到自己已经走到离飞升不远的位置。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '稳住天光', effects: { cultivation: 44, routeScores: { orthodox: 1 } } },
+                    { text: '借外力冲关', effects: { cultivation: 28, routeScores: { demonic: 1 } } },
+                ];
+            },
+            effects: { cultivation: 32 },
+        }),
+        levelEvent({
+            id: 'hs_13',
+            realmScore: 13,
+            title: '化神中期：旧人来信',
+            summary: '旧人的消息开始变成你必须回应的事。',
+            requirements: { realmScoreAtLeast: 13 },
+            beats(state) {
+                return [
+                    beat('旁白', '你不再轻易被境界压住，但信件、传闻和旧人还是能让你停一停。'),
+                    beat('旁白', state.npcRelations['墨彩环'] >= 50 ? '墨府那边的牵挂仍在，说明你当初没把所有路都走死。' : '你知道自己有些关系没有彻底处理完。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '回信安人心', effects: { relations: { '墨彩环': 20 }, routeScores: { orthodox: 1 } } },
+                    { text: '断信专修行', effects: { routeScores: { secluded: 1 }, cultivation: 16 } },
+                ];
+            },
+            effects: { cultivation: 24 },
+        }),
+        levelEvent({
+            id: 'hs_14',
+            realmScore: 14,
+            title: '化神后期：飞升前夜',
+            summary: '最后一层窗纸已经很薄，飞升、留世、散道都近在眼前。',
+            requirements: { realmScoreAtLeast: 14 },
+            beats(state) {
+                return [
+                    beat('旁白', '到了化神后期，你反而越能感觉到自己距离最后选择有多近。'),
+                    beat('旁白', state.routeScores.secluded >= state.routeScores.demonic ? '若你此时收手，你更像一个知道如何活下去的人。' : '若你此时再进一步，就意味着你愿意承担更大的因果。'),
+                ];
+            },
+            choices() {
+                return [
+                    { text: '准备飞升', effects: { routeScores: { orthodox: 1 }, cultivation: 56 } },
+                    { text: '继续压境', effects: { routeScores: { secluded: 1 }, cultivation: 30 } },
+                ];
+            },
+            effects: { cultivation: 40 },
+        }),
+    ];
+
+    LEVEL_STORY_EVENTS.forEach((event) => {
+        const originalChoices = event.choices;
+        event.choices = function normalizedChoices(state) {
+            const rawChoices = typeof originalChoices === 'function' ? originalChoices(state) : originalChoices;
+            return rawChoices.map((choice, index) => ({
+                ...choice,
+                id: choice.id || `${event.id}_choice_${index}`,
+                effects: choice.effects || {},
+                nextChapterId: choice.nextChapterId ?? null,
+            }));
+        };
+    });
+
     const STORY_CHAPTERS = [
         {
             id: 0,
@@ -1460,6 +1790,133 @@
         },
     ];
 
+    function getRouteName(state) {
+        const routes = state?.routeScores || {};
+        const ordered = [
+            ['orthodox', routes.orthodox || 0],
+            ['demonic', routes.demonic || 0],
+            ['secluded', routes.secluded || 0],
+        ].sort((left, right) => right[1] - left[1]);
+
+        if (ordered[0][1] <= 0) {
+            return '未定';
+        }
+
+        return ordered[0][0] === 'orthodox' ? '正道' : ordered[0][0] === 'demonic' ? '魔路' : '苟修';
+    }
+
+    function getChapterEchoes(chapter, state) {
+        const flags = state?.flags || {};
+        const routeName = getRouteName(state);
+        const relations = state?.npcRelations || {};
+        const location = chapter.location || '无名之地';
+        const echoes = [
+            beat('旁白', `这一章走完后，你对 ${location} 的理解不再只是地点，而是一段会反复回来的经历。`),
+            beat('旁白', routeName === '正道'
+                ? '你仍更愿意替别人留一条路，这会持续影响后面那些需要你表态的章节。'
+                : routeName === '魔路'
+                    ? '你开始更熟练地先算收益，这种习惯会让后面不少选择变得更冷。'
+                    : routeName === '苟修'
+                        ? '你更擅长藏锋和后撤，后面的剧情会更多写你如何保住退路。'
+                        : '你还没有定下明显路数，所以后续剧情会更频繁逼你表态。'),
+        ];
+
+        switch (chapter.id) {
+            case 2:
+                echoes.push(beat('旁白', flags.startPath === 'disciple'
+                    ? '墨大夫这条线从这里开始不再只是师徒，而是逐步变成会反噬你的旧因果。'
+                    : '你对墨大夫的态度会一直影响神手谷后面的文本和关系走向。'));
+                break;
+            case 3:
+                echoes.push(beat('旁白', relations['厉飞雨'] >= 30
+                    ? '厉飞雨会继续成为你在七玄门时期最直接的人情回声。'
+                    : '你和厉飞雨之间留下的分寸，会在后面章节里不断被重新提起。'));
+                break;
+            case 6:
+                echoes.push(beat('旁白', flags.defeatedMo
+                    ? '墨居仁一死，墨府线和药渣线会开始分叉并持续回流。'
+                    : '这场摊牌的后果不会立刻结束，后续章节会反复提起它。'));
+                break;
+            case 8:
+                echoes.push(beat('旁白', relations['墨彩环'] >= 50
+                    ? '墨彩环会把你看成可以托付旧事的人，这会在中后期继续回响。'
+                    : '墨府的旧事没有散掉，只是暂时藏进你们的说话方式里。'));
+                break;
+            case 9:
+                echoes.push(beat('旁白', flags.hasQuhun
+                    ? '曲魂会作为随从线继续出现，凡俗旧宅也会因此多一层阴影。'
+                    : '曲魂线的处理方式，会在后面影响你对“救人”和“用人”的理解。'));
+                break;
+            case 12:
+                echoes.push(beat('旁白', flags.hasGreenBottle
+                    ? '绿瓶的催熟能力从这里起不只是资源，而是你一路选择的放大器。'
+                    : '百药园的低调与激进，会直接决定你后面缺不缺材料。'));
+                break;
+            case 14:
+                echoes.push(beat('旁白', relations['南宫婉'] >= 50
+                    ? '南宫婉线会在禁地后继续延伸，直到后面的天南与飞升节点。'
+                    : '血色禁地这次选择，会持续影响你之后对盟友和机会的态度。'));
+                break;
+            case 15:
+                echoes.push(beat('旁白', flags.acceptedNangongHelp || flags.savedNangong
+                    ? '情债与筑基在这里捆成一体，后面每一次突破都还会牵出这段线。'
+                    : '这一步之后，你和南宫婉之间的回响会越来越明显。'));
+                break;
+            case 16:
+                echoes.push(beat('旁白', relations['李化元'] >= 30
+                    ? '李化元线会持续影响你在黄枫谷的立足方式。'
+                    : '李化元对你的评价高低，会继续决定你在宗门里的余地。'));
+                break;
+            case 18:
+                echoes.push(beat('旁白', flags.warChoice === 'demonic'
+                    ? '魔路从这里真正开始有连续后果，后面几章会不断回看这次站位。'
+                    : flags.warChoice === 'secluded'
+                        ? '苟修线在大战里立住了，后面会更强调退路和生存。'
+                        : '正道线在大战里站住了，后面会继续考验你愿不愿意替别人扛事。'));
+                break;
+            case 19:
+                echoes.push(beat('旁白', flags.mineChoice === 'hold'
+                    ? '矿脉死局会把你的忠义线往后推成更厚的回响。'
+                    : flags.mineChoice === 'soloEscape'
+                        ? '独自逃生会让你后面的文本更冷，也更现实。'
+                        : '带队突围会让你在后面章节里更常被当作能救局的人。'));
+                break;
+            case 20:
+                echoes.push(beat('旁白', flags.enteredStarSea
+                    ? '进入乱星海之后，你的旧路并没有断，只是换了一种海上的说法。'
+                    : '不管有没有立刻入海，天南和乱星海都会继续互相回响。'));
+                break;
+            case 22:
+                echoes.push(beat('旁白', flags.hasXuTianTu
+                    ? '虚天残图会把你拖进更大的局，后续的争夺与合作都会因此变得更具体。'
+                    : '你对虚天残图的处理方式，决定后面剧情是抢、卖，还是避。'));
+                break;
+            case 24:
+                echoes.push(beat('旁白', relations['南宫婉'] >= 60
+                    ? '重返天南后，南宫婉会继续作为终局分支的关键牵引。'
+                    : '回到天南之后，旧人与旧账仍然会轮番来找你。'));
+                break;
+            case 25:
+                echoes.push(beat('旁白', flags.ascendedToSpiritWorld || flags.stayedInMortalWorld || flags.becameLooseImmortal
+                    ? '飞升前后，你此前所有路线都会被重新总结成一个结局倾向。'
+                    : '直到最后一章，你的路数仍会决定你如何收束这段修仙路。'));
+                break;
+            default:
+                echoes.push(beat('旁白', '你已经能感觉到，这一章留下的东西会在后面以别的形式回来。'));
+                break;
+        }
+
+        return echoes;
+    }
+
+    STORY_CHAPTERS.forEach((chapter) => {
+        const originalBeats = chapter.beats;
+        chapter.beats = function enrichedBeats(state) {
+            const baseBeats = typeof originalBeats === 'function' ? originalBeats(state) : originalBeats;
+            return [...baseBeats, ...getChapterEchoes(chapter, state)];
+        };
+    });
+
     const StoryData = {
         STORAGE_KEY,
         CONFIG,
@@ -1470,6 +1927,7 @@
         NPCS,
         POSITIVE_ENCOUNTERS,
         NEGATIVE_ENCOUNTERS,
+        LEVEL_STORY_EVENTS,
         STORY_CHAPTERS,
     };
 

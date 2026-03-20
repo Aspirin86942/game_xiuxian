@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>灵光修仙传</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -12,31 +12,22 @@
         <div class="ink-orb ink-orb-right"></div>
 
         <main class="game-frame">
-            <header class="status-card">
+            <header class="status-card" id="status-card">
                 <div class="status-overview">
-                    <div class="hero-mark">灵</div>
                     <div class="status-copy">
-                        <p class="status-caption">凡尘之外，尚有一线天光</p>
-                        <h1 id="player-name">无名散修</h1>
-                        <p class="status-location" id="location-display">青牛镇</p>
+                        <div class="status-headline">
+                            <h1 id="player-name">无名散修</h1>
+                        </div>
                     </div>
-                </div>
-                <div class="status-metrics">
-                    <div class="metric-card">
-                        <span class="metric-label">境界</span>
-                        <strong class="metric-value" id="realm-display">炼气·初期</strong>
-                    </div>
-                    <div class="metric-card">
-                        <span class="metric-label">修为</span>
-                        <strong class="metric-value" id="cultivation-display">0 / 100</strong>
-                    </div>
-                    <div class="metric-card">
-                        <span class="metric-label">突破</span>
-                        <strong class="metric-value" id="breakthrough-rate">80%</strong>
-                    </div>
-                    <div class="metric-card">
-                        <span class="metric-label">路数</span>
-                        <strong class="metric-value" id="route-display">未定</strong>
+                    <div class="status-summary" id="status-summary">
+                        <div class="summary-chip">
+                            <span class="metric-label">境界</span>
+                            <strong class="metric-value" id="summary-realm-display">炼气·初期</strong>
+                        </div>
+                        <div class="summary-chip">
+                            <span class="metric-label">修为</span>
+                            <strong class="metric-value" id="summary-cultivation-display">0/100</strong>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -55,6 +46,7 @@
                             <div class="floating-text-container" id="floating-container"></div>
                             <button class="main-button" id="main-btn" type="button">吐纳聚气</button>
                             <p class="hint-text" id="hint-text">点击按钮开始修炼</p>
+                            <p class="cultivation-meta" id="breakthrough-inline">当前突破率：80%</p>
                         </div>
                         <div class="auto-panel" id="auto-panel">
                             <div>
@@ -99,13 +91,12 @@
                             <span class="story-meta" id="story-meta">静候机缘</span>
                         </div>
                         <p class="story-summary" id="story-summary">剧情会随着修为、关系与抉择逐步展开。</p>
+                        <div class="story-progress" id="story-progress">静候机缘</div>
 
                         <div class="story-reader" id="story-reader">
                             <div class="story-speaker" id="story-speaker">旁白</div>
                             <div class="story-line" id="story-line">前路未开。</div>
                         </div>
-
-                        <div class="story-history" id="story-history"></div>
 
                         <div class="story-controls">
                             <button class="primary-btn" id="story-continue-btn" type="button">继续</button>

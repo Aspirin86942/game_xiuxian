@@ -13,11 +13,9 @@
     function cacheElements() {
         [
             'player-name',
-            'location-display',
-            'realm-display',
-            'cultivation-display',
-            'breakthrough-rate',
-            'route-display',
+            'summary-realm-display',
+            'summary-cultivation-display',
+            'breakthrough-inline',
             'main-btn',
             'hint-text',
             'auto-panel',
@@ -30,9 +28,9 @@
             'story-title',
             'story-meta',
             'story-summary',
+            'story-progress',
             'story-speaker',
             'story-line',
-            'story-history',
             'story-continue-btn',
             'story-skip-btn',
             'story-choices',
@@ -179,15 +177,15 @@
     }
 
     function renderStatus() {
+        const realmLabel = GameCore.getRealmLabel(gameState);
+        const summaryCultivationText = `${gameState.cultivation}/${gameState.maxCultivation}`;
         elements.playerName.textContent = gameState.playerName;
-        elements.locationDisplay.textContent = gameState.currentLocation;
-        elements.realmDisplay.textContent = GameCore.getRealmLabel(gameState);
-        elements.cultivationDisplay.textContent = `${gameState.cultivation} / ${gameState.maxCultivation}`;
+        elements.summaryRealmDisplay.textContent = realmLabel;
+        elements.summaryCultivationDisplay.textContent = summaryCultivationText;
 
         const actualRate = Math.min(0.95, gameState.breakthroughRate + gameState.breakthroughBonus);
-        const bonusText = gameState.breakthroughBonus > 0 ? ` (+${Math.round(gameState.breakthroughBonus * 100)}%)` : '';
-        elements.breakthroughRate.textContent = `${Math.round(actualRate * 100)}%${bonusText}`;
-        elements.routeDisplay.textContent = GameCore.getRouteDisplay(gameState);
+        const bonusText = gameState.breakthroughBonus > 0 ? ` · 加成 +${Math.round(gameState.breakthroughBonus * 100)}%` : '';
+        elements.breakthroughInline.textContent = `当前突破率：${Math.round(actualRate * 100)}%${bonusText}`;
     }
 
     function renderTabs() {
@@ -205,11 +203,16 @@
 
     function renderCultivationPage() {
         const canBreakthrough = GameCore.canBreakthrough(gameState);
+        const storyView = GameCore.getStoryView(gameState);
         elements.mainBtn.textContent = canBreakthrough ? '渡劫突破' : '吐纳聚气';
         elements.mainBtn.classList.toggle('breakthrough', canBreakthrough);
-        elements.hintText.textContent = canBreakthrough
-            ? '修为已满，心神沉静后即可尝试突破。'
-            : `继续吐纳，还需 ${Math.max(0, gameState.maxCultivation - gameState.cultivation)} 点修为。`;
+        if (storyView && storyView.source === 'level' && storyView.mode !== 'ending') {
+            elements.hintText.textContent = `当前有小境界事件：${storyView.chapter.title}`;
+        } else {
+            elements.hintText.textContent = canBreakthrough
+                ? '修为已满，心神沉静后即可尝试突破。'
+                : `继续吐纳，还需 ${Math.max(0, gameState.maxCultivation - gameState.cultivation)} 点修为。`;
+        }
 
         const autoUnlocked = GameCore.canAutoCultivate(gameState);
         elements.autoPanel.style.display = autoUnlocked ? 'flex' : 'none';
@@ -248,12 +251,14 @@
             elements.storyTitle.textContent = '暂无新剧情';
             elements.storyMeta.textContent = '静候机缘';
             elements.storySummary.textContent = '当前没有满足条件的新章节，先去修炼或游历。';
+            elements.storyProgress.textContent = '暂无可翻阅章节';
             elements.storySpeaker.textContent = '旁白';
             elements.storyLine.textContent = '前路暂时沉默。';
-            elements.storyHistory.innerHTML = '';
             elements.storyChoices.innerHTML = '';
             elements.storyContinueBtn.disabled = true;
             elements.storySkipBtn.disabled = true;
+            elements.storyContinueBtn.textContent = '下一页';
+            elements.storySkipBtn.textContent = '跳至抉择';
             return;
         }
 
@@ -261,36 +266,46 @@
             elements.storyTitle.textContent = view.ending.title;
             elements.storyMeta.textContent = '终局';
             elements.storySummary.textContent = view.ending.description;
+            elements.storyProgress.textContent = '终局';
             elements.storySpeaker.textContent = '尾声';
             elements.storyLine.textContent = '这一段路已经走完。';
-            elements.storyHistory.innerHTML = '';
             elements.storyChoices.innerHTML = `
                 <button class="story-choice-btn" data-ending-action="reset" type="button">重新开始另一条路</button>
                 <button class="story-choice-btn" data-ending-action="export" type="button">导出当前结局存档</button>
             `;
             elements.storyContinueBtn.disabled = true;
             elements.storySkipBtn.disabled = true;
+            elements.storyContinueBtn.textContent = '下一页';
+            elements.storySkipBtn.textContent = '跳至抉择';
             return;
         }
 
-        elements.storyTitle.textContent = `第 ${view.chapter.id + 1} 章 · ${view.chapter.title}`;
-        elements.storyMeta.textContent = view.mode === 'choices' ? '抉择已开' : '逐句推进';
-        elements.storySummary.textContent = view.chapter.summary;
+        const isLevelStory = view.source === 'level';
+        const sourceLabel = isLevelStory ? '小境界事件' : `第 ${view.chapter.id + 1} 章`;
+        const realmLabel = isLevelStory ? ` · ${GameCore.getRealmLabel(gameState)}` : '';
+        const totalPages = view.story.beats.length;
+        const currentPage = Math.min(totalPages, gameState.storyCursor.beatIndex + 1);
+
+        elements.storyTitle.textContent = `${sourceLabel} · ${view.chapter.title}`;
+        elements.storyMeta.textContent = `${isLevelStory ? '悟境' : '主线'}${realmLabel}`;
+        elements.storySummary.textContent = isLevelStory
+            ? `${view.chapter.summary} 这一层会直接影响你的道心、资源或后续人情。`
+            : view.chapter.summary;
+        elements.storyProgress.textContent = view.mode === 'choices'
+            ? `第 ${totalPages} / ${totalPages} 页 · 抉择`
+            : `第 ${currentPage} / ${totalPages} 页`;
 
         if (view.currentBeat) {
             elements.storySpeaker.textContent = view.currentBeat.speaker;
             elements.storyLine.textContent = view.currentBeat.text;
         }
 
-        elements.storyHistory.innerHTML = view.visibleBeats.map((item) => `
-            <div class="story-history-item">
-                <strong>${item.speaker}</strong>${item.text}
-            </div>
-        `).join('');
-
         elements.storyContinueBtn.disabled = view.mode === 'choices';
         elements.storySkipBtn.disabled = view.mode === 'choices';
-        elements.storyContinueBtn.textContent = view.mode === 'choices' ? '等待抉择' : '继续';
+        elements.storyContinueBtn.textContent = view.mode === 'choices'
+            ? '等待抉择'
+            : '下一页';
+        elements.storySkipBtn.textContent = '跳至抉择';
 
         elements.storyChoices.innerHTML = view.choices.map((choice) => `
             <button
@@ -536,6 +551,8 @@
             reader.onload = (loadEvent) => {
                 try {
                     const parsed = JSON.parse(loadEvent.target.result);
+                    stopAutoCultivate();
+                    stopCombatLoop();
                     gameState = GameCore.mergeSave(parsed);
                     GameCore.ensureStoryCursor(gameState);
                     if (gameState.autoCultivate) {

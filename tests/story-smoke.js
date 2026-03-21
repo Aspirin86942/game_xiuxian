@@ -1,5 +1,6 @@
 const assert = require('assert');
 const GameCore = require('../game-core.js');
+const StoryData = require('../story-data.js');
 
 function satisfyMainChapter(state) {
     const chapter = GameCore.getChapterById(state.storyProgress);
@@ -153,6 +154,25 @@ function withInsertedChoices(choiceMap, overrides) {
         '23_mocaihuan_return': 'admit_old_wrong',
         ...(overrides || {}),
     };
+}
+
+function assertAuthoredBranchImpacts(chapterId, choices) {
+    const bannedFragments = [
+        '这一步没有立刻大声作响',
+        '等路再拐回来时',
+        '往后局势一紧',
+        '这一步会在后续',
+        '这一步会让你的',
+    ];
+    choices.forEach((choice) => {
+        const pack = StoryData.BRANCH_IMPACT_PACKS?.[chapterId]?.[choice.id];
+        assert(pack, `章节 ${chapterId} 选项 ${choice.id} 缺少显式 branchImpact`);
+        assert.strictEqual(choice.branchImpact.title, pack.title, `${chapterId}:${choice.id} 标题未命中显式文案`);
+        assert.strictEqual(choice.branchImpact.detail, pack.detail, `${chapterId}:${choice.id} 正文未命中显式文案`);
+        bannedFragments.forEach((fragment) => {
+            assert(!choice.branchImpact.detail.includes(fragment), `${chapterId}:${choice.id} 仍包含旧模板句`);
+        });
+    });
 }
 
 function testStoryCursorSwitching() {
@@ -1328,6 +1348,121 @@ function testBranchEchoes() {
     assert(secludedEndingView.ending.recapLines.some((line) => line.includes('逍遥散仙') || line.includes('来过却不住回去')));
 }
 
+function testExplicitBranchImpactCoverage() {
+    const seenKeys = new Set();
+    const scenarios = [
+        { chapterId: 0 },
+        { chapterId: 1 },
+        { chapterId: 2 },
+        { chapterId: 3 },
+        { chapterId: 4 },
+        { chapterId: 5 },
+        { chapterId: 6 },
+        { chapterId: 7 },
+        { chapterId: 8 },
+        { chapterId: 9 },
+        { chapterId: 9, configure(state) { state.npcRelations['墨彩环'] = 35; } },
+        { chapterId: 10 },
+        { chapterId: 11 },
+        { chapterId: 12 },
+        { chapterId: 13 },
+        { chapterId: 14 },
+        { chapterId: 15 },
+        { chapterId: 16 },
+        { chapterId: '16_feiyu_return' },
+        { chapterId: 17 },
+        { chapterId: 18 },
+        { chapterId: '18_nangong_return' },
+        { chapterId: 19 },
+        { chapterId: 19, configure(state) { state.flags.warChoice = 'orthodox'; } },
+        { chapterId: 19, configure(state) { state.flags.warChoice = 'demonic'; } },
+        { chapterId: 20 },
+        { chapterId: 21 },
+        { chapterId: 22 },
+        { chapterId: 23 },
+        { chapterId: 23, configure(state) { state.flags.soldXuTianTu = true; } },
+        { chapterId: 23, configure(state) { state.flags.avoidedXuTian = true; } },
+        { chapterId: '23_mocaihuan_return' },
+        { chapterId: 24 },
+        {
+            chapterId: 25,
+            configure(state) {
+                state.routeScores = { orthodox: 10, secluded: 1 };
+                state.flags.oldDebtsCleared = true;
+                state.npcRelations['南宫婉'] = 40;
+            },
+        },
+        {
+            chapterId: 25,
+            configure(state) {
+                state.routeScores = { demonic: 1 };
+                state.flags.heldSpiritMineLine = true;
+            },
+        },
+        {
+            chapterId: 25,
+            configure(state) {
+                state.routeScores = { secluded: 10 };
+            },
+        },
+        {
+            chapterId: 25,
+            configure(state) {
+                state.routeScores = { demonic: 2, secluded: 2 };
+                state.flags.suppressedNangongFeelings = true;
+                state.flags.executedDisabledEnemy = true;
+            },
+        },
+        {
+            chapterId: 25,
+            configure(state) {
+                state.routeScores = { demonic: 10 };
+                state.flags.lootedMoHouse = true;
+            },
+        },
+        {
+            chapterId: 25,
+            configure(state) {
+                state.routeScores = { orthodox: 1 };
+                state.flags.returnedTiannanForBonds = true;
+                state.npcRelations['墨彩环'] = 30;
+            },
+        },
+    ];
+
+    scenarios.forEach(({ chapterId, configure }) => {
+        const { view } = getChapterChoiceView(chapterId, configure);
+        assertAuthoredBranchImpacts(view.chapter.id, view.choices);
+        view.choices.forEach((choice) => seenKeys.add(`${view.chapter.id}:${choice.id}`));
+    });
+
+    const baseState = GameCore.createInitialState();
+    GameCore.LEVEL_STORY_EVENTS.forEach((event) => {
+        const choices = event.choices(baseState);
+        assertAuthoredBranchImpacts(event.id, choices);
+        choices.forEach((choice) => seenKeys.add(`${event.id}:${choice.id}`));
+    });
+
+    [
+        '9:repair_quhun',
+        '19:hold_the_line',
+        '19:rescue_rearguard',
+        '19:open_mine_gate',
+        '19:harvest_chaos',
+        '23:pull_ally_out',
+        '23:sell_route_info',
+        '23:slip_past_palace',
+        '25:lingjie_xianzun',
+        '25:renjie_zhizun',
+        '25:xiaoyao_sanxian',
+        '25:taishang_wangqing',
+        '25:yinguo_chanshen',
+        '25:fanxin_weisi',
+    ].forEach((key) => {
+        assert(seenKeys.has(key), `动态分支未被测试覆盖：${key}`);
+    });
+}
+
 testStoryCursorSwitching();
 testMainPathIntegrity();
 testMoHouseTreasurePathNoDeadlock();
@@ -1363,5 +1498,6 @@ testEndingEchoTextsStayReflective();
 testStringChapterLogsNoNaN();
 testStoryPagingState();
 testBranchEchoes();
+testExplicitBranchImpactCoverage();
 
 console.log('story smoke passed');

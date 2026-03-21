@@ -323,6 +323,653 @@
         },
     };
 
+    const BRANCH_IMPACT_PACKS = {
+        0: {
+            set_out_now: {
+                title: '残卷离灶',
+                detail: '你几乎没回头，旧屋的烟火就被你甩在了身后。后来每逢要在路和人之间立刻取舍，你都会先想起这回出门时那股硬下去的心。',
+            },
+            pack_and_leave: {
+                title: '柴米在后',
+                detail: '你终究还是先把灶台和祖母安顿了一遍，才肯把脚迈出去。这一步不显锋芒，却让你往后再谈大道时，总还记得凡人的日子也要有人收尾。',
+            },
+        },
+        1: {
+            keep_low_profile: {
+                title: '先学门槛',
+                detail: '你先把自己压进人群里，名字不急着往上送。后来很多险处你都能多活半步，靠的就是这时学会先看门槛再出声。',
+            },
+            show_drive: {
+                title: '门里先声',
+                detail: '你让人先记住了名字，也把自己提早摆上了别人的眼。往后每逢要抢一线机会，这股先让人看见的劲都会跟着你一起往前。',
+            },
+        },
+        2: {
+            become_disciple: {
+                title: '门下留名',
+                detail: '你终究还是站进了神手谷的门里。那声师徒当时并不显得沉重，后来很多回头路，都是从这里开始一寸寸合拢的。',
+            },
+            investigate_mo: {
+                title: '袖里藏针',
+                detail: '你行了弟子礼，心却没真正跪下去。从那时起，神手谷在你眼里就不只是师门，而更像一层总要亲手挑开的皮。',
+            },
+            stay_independent: {
+                title: '门外停步',
+                detail: '你没有接那条更近的路，神手谷也始终隔着半步。后来再想起这一节时，你先记住的不是错失，而是自己当时还肯替退路留一道缝。',
+            },
+        },
+        3: {
+            save_li: {
+                title: '药炉换命',
+                detail: '你替厉飞雨奔走那几趟，把旁人的生死第一次真背到肩上。后来再有人把求助递到你手里，你很难再完全装作没听见。',
+            },
+            warn_li: {
+                title: '话到唇边',
+                detail: '你把该说的说了，却没把自己整个人押进去。这会让你以后很会守分寸，也很难再轻易相信仅凭提醒就算尽了情义。',
+            },
+        },
+        4: {
+            collect_evidence: {
+                title: '药渣入袖',
+                detail: '你先忍住了摊牌的冲动，把能留下来的东西一件件收进手里。往后很多险局里，你都会比旁人更信证据，不信表面那层安稳。',
+            },
+            confront_early: {
+                title: '先问其心',
+                detail: '你把怀疑直接摆上了台面，屋里的空气也从那一刻开始变了味。后来再遇见笑着藏刀的人，你总会先想起这回先出声时对方眼里那点冷。',
+            },
+        },
+        5: {
+            keep_bottle: {
+                title: '瓶光藏袖',
+                detail: '绿瓶没再见天日，却从此贴着你往后每一步。你后来越走越会算资源，心里也一直记得有件东西一旦露白，就再难回到从前。',
+            },
+            trade_bottle_secret: {
+                title: '秘物作价',
+                detail: '你没把瓶子交出去，却先学会了让秘密替自己换路。自此之后，你会越来越懂得，消息和资源一样都能催熟人。',
+            },
+        },
+        6: {
+            strike_first: {
+                title: '先手见血',
+                detail: '你抢先把刀递出去，也把“等别人先出手”这条路一并斩了。后来很多生死一线里，你都比旁人更快，只是那份快也会先回来认你。',
+            },
+            bait_and_counter: {
+                title: '等他失手',
+                detail: '你把杀心压到最后一刻，等对方自己露出破绽。这会让你往后越来越信耐心本身也能伤人，而且往往伤得更深。',
+            },
+            escape_and_return: {
+                title: '退路反刃',
+                detail: '你先退了一步，再借那一步把人送进死局。后来你会越来越明白，真正可怕的从不是逃，而是连退路都能被你用成刀。',
+            },
+        },
+        7: {
+            keep_letter: {
+                title: '遗书压袖',
+                detail: '你把那封信与解药一起收好，等于把死人留下的账也一并背走。以后每逢旧事要不要认，你都会先想起袖里那张发脆的纸。',
+            },
+            burn_letter: {
+                title: '火里断章',
+                detail: '纸烧得很快，快到像替自己省了一层解释。可往后凡是想把旧因果一把烧净的时候，你都会记得灰烬里也藏着没烧完的名字。',
+            },
+            bury_mo: {
+                title: '土覆旧名',
+                detail: '你先让尸骨有了归处，才肯去算后面的利害。后来许多比人情更冷的选择来时，你心里总还留着这一铲土的分量。',
+            },
+        },
+        8: {
+            protect_mo_house: {
+                title: '墨府余灯',
+                detail: '你离开时，院里的灯还没灭，像一笔活人账被你亲手接住。后来再提墨府，你先想起的不是死人，而是那点逼你别只为自己补过的灯火。',
+            },
+            take_treasure_leave: {
+                title: '宅门旧刺',
+                detail: '你带走了最值钱的东西，也把墨府最后一点还能相信你的理由一起带走了。日后每逢再见旧宅残物，先扎你的往往不是赚到多少，而是那天屋里压着声的安静。',
+            },
+            promise_caihuan: {
+                title: '一句未完',
+                detail: '你没有立刻替这笔账收尾，却把它从“以后再说”说成了迟早要回来的事。有些承诺之所以重，不在于说得多响，而在于对方什么都没逼你，你却已开了口。',
+            },
+        },
+        9: {
+            take_quhun: {
+                title: '曲魂停顿',
+                detail: '你把一件可怕的东西留在了身边，也把“人”和“可用之物”那条线一起带上了路。后来每逢曲魂忽然像旧人那样停半息，你都会知道自己并非全然无感。',
+            },
+            repair_quhun: {
+                title: '残身留念',
+                detail: '你把曲魂留下，却不肯把它收成一件纯粹顺手的兵器。从那以后，凡是和禁魂、尸炼有关的东西，你都会比旁人多停半息。',
+            },
+            buy_back_trust: {
+                title: '封存之问',
+                detail: '你先把最重的那一下按住，没有急着替这件事定性。后来真正反复回来敲你的，不是曲魂本身，而是你当时故意没回答的那个问题。',
+            },
+            release_quhun: {
+                title: '火后余白',
+                detail: '法火烧起来时，屋里像忽然轻了一点，你也替自己留住了一道还能直视此事的缝。此后每逢再见傀儡与禁魂之物，你都会比旁人多停那一息。',
+            },
+        },
+        10: {
+            bid_token: {
+                title: '令牌到手',
+                detail: '你把灵石砸进场里，没给旁人留太多想象空间。往后每逢要争一个明面上的名额，你都会更信先把价码摆上去的硬气。',
+            },
+            buy_rumor: {
+                title: '暗线换令',
+                detail: '你没有正面跟人抢，而是让消息替自己开门。后来很多局里，你都会先问路数从谁嘴里漏出来，再决定要不要动手。',
+            },
+            watch_market: {
+                title: '袖中算盘',
+                detail: '你先把摊位、人脸和话头都记住，没有急着把手伸出去。往后许多比灵石更值钱的机会，都会从这份先看后买的耐心里长出来。',
+            },
+        },
+        11: {
+            join_yellow_maple: {
+                title: '令入宗门',
+                detail: '你拿着升仙令走进黄枫谷，也等于把自己递进了一套更大的秩序里。往后每次借到门墙之力，你都会记得这一步不是天降，而是亲自换来的。',
+            },
+            shop_other_sects: {
+                title: '门外试价',
+                detail: '你没有立刻把身家压给一家，而是先把各门各派的口风摸了个遍。后来再进局时，你总会比旁人多留一层“这话究竟值不值得信”的心眼。',
+            },
+            sell_token: {
+                title: '令牌折银',
+                detail: '你把能进门的东西换成了手里看得见的本钱。往后很多人再看你，都会先记得你连门票也敢拿来作价。',
+            },
+        },
+        12: {
+            farm_quietly: {
+                title: '药圃无声',
+                detail: '你把最要紧的东西都埋进土里，不让任何异样先长在脸上。后来越是能催熟命数的东西，你越知道得藏在无人看见的地方。',
+            },
+            push_growth: {
+                title: '药性催紧',
+                detail: '你让灵药一茬接一茬地往前赶，也把自己对快的依赖一并喂大了。往后只要见到能省年份的路子，你都会先闻到这时种下的那点急。',
+            },
+            build_connections: {
+                title: '药圃结线',
+                detail: '你一边侍弄灵药，一边把门里的人情悄悄串了起来。后来很多看似偶然的照应，都会回到这段你肯花心思养人的日子。',
+            },
+        },
+        13: {
+            go_solo: {
+                title: '独自入局',
+                detail: '你把底牌只留给自己，进禁地时连背影都显得更轻。往后每逢生死压到一起，你都会本能先把最关键的一张牌按回掌心。',
+            },
+            go_team: {
+                title: '结队求生',
+                detail: '你肯把生死与旁人系在一起，哪怕这样会让刀口变钝一些。后来很多人愿意在乱局里跟你站成一线，都是从这一步开始。',
+            },
+            prepare_heavy: {
+                title: '退路先埋',
+                detail: '你在真正进场前先把药阵与后路埋好，不肯拿命去赌一口气。往后别人说你稳，你都会先想起禁地前夜那些一寸寸补出来的退路。',
+            },
+        },
+        14: {
+            save_nangong: {
+                title: '禁地留名',
+                detail: '你慢了半息，却也正是这半息，让禁地往后再被提起时不只剩机缘与尸骨。后来很多人记住的不是你拿了什么，而是那时确实有人在最乱的时候回过头。',
+            },
+            watch_and_wait: {
+                title: '退路先成',
+                detail: '你活得最稳，也看得最清，像是先替自己把活路垫平了。禁地之后，你会越来越信退路，也更少指望别人真会在关键时替你回身。',
+            },
+            loot_in_chaos: {
+                title: '高效之险',
+                detail: '主药到手时，你先尝到的不是喜悦，而是自己出手越来越快的那点顺。往后再遇见同类局势，你都会知道这份高效既好用，也很危险。',
+            },
+            kill_for_gain: {
+                title: '高效成瘾',
+                detail: '你把更狠的那一步也一起跨过去了，留下来的不是痛快，而是自己已经知道会越来越快。第一次把清场当成路数以后，往后每一步都更难装作只是偶然。',
+            },
+        },
+        15: {
+            accept_nangong_debt: {
+                title: '有人算进未来',
+                detail: '你并没有因此变弱，只是从这一刻起，往后很多决定都不能再只按值不值来算。有人不是拖累，也不是工具，而是你一旦认了，就必须算进未来的人。',
+            },
+            suppress_nangong_feelings: {
+                title: '压久成影',
+                detail: '你把那点心绪压了下去，手很稳。可后来每次再见她，你都比平时更像无事发生，也正因为太像，才更显得那不是自然，而是刻意。',
+            },
+            cut_nangong_ties: {
+                title: '记忆未断',
+                detail: '你想把一切切得干净，可真正难斩的是已经进过心的那一瞬。往后只要她再出现一次，你就会知道自己当时斩掉的未必是情，更像是怕被牵住。',
+            },
+        },
+        16: {
+            become_li_disciple: {
+                title: '门墙在身',
+                detail: '令牌入手那一刻，你得到的不只是庇护，也第一次真正站进了某个秩序里。往后每当你借到师门之势时，都会想起这点：宗门给你的，从来不是白给。',
+            },
+            keep_free: {
+                title: '独立有价',
+                detail: '你既想听明白局势，也想留好退路。这没有错，只是从今以后，别人很难彻底把后背交给你，独立也就有了自己要补的价。',
+            },
+            learn_in_secret: {
+                title: '归属成筹码',
+                detail: '你做了最现实的选择，也让真正看得懂局的人更早防你。后来别人说你会做人时，你知道那不是夸温和，而是在说你连归属都能算成筹码。',
+            },
+        },
+        '16_feiyu_return': {
+            help_feiyu_again: {
+                title: '旧义回手',
+                detail: '你还是替旧友伸了手，像把很多年前那口没喝完的气重新接住。后来每逢想把凡俗旧日彻底丢干净时，厉飞雨这条线都会先把你拉回来。',
+            },
+            share_drink_and_part: {
+                title: '杯底留温',
+                detail: '你们只把酒喝到够认出彼此，没有再把各自的日子重新搅在一起。此后再忆起七玄门，你先想到的会是这点尚能克制的旧情。',
+            },
+            distance_from_feiyu: {
+                title: '酒盏停边',
+                detail: '你故意把旧友情停在杯沿，不让它再往心里走深。后来每逢有人从旧日追上来，你都更擅长先把门关在半开之间。',
+            },
+        },
+        17: {
+            stay_quiet_banquet: {
+                title: '笑里先看座次',
+                detail: '你没在桌上替谁开口，却也因此让更多人记住你很难被一句话拖下场。此后再入类似场合，你会先看座次、酒次和谁先笑，慢慢懂得有些杀机从不带血。',
+            },
+            show_strength_banquet: {
+                title: '威与债一起留下',
+                detail: '你把场面压住了，也把很多人的记恨一起压进了心里。后来每逢局面发烂，总会有人先想到你是不是又要直接掀桌，这既是威，也是债。',
+            },
+            trade_favors_banquet: {
+                title: '门路比风头久',
+                detail: '你没有赢下一夜的风头，却铺下了许多以后才会显出用处的门路。许多后面避开的坑和谈成的事，都会回到这晚你肯把耐心花在桌下。',
+            },
+        },
+        18: {
+            fight_for_sect: {
+                title: '可靠二字',
+                detail: '你不是不怕死，只是最后没有让“我能活”压过“他们会死”。大战之后，有人提你先说可靠，这两个字听上去简单，背后却是拿命换来的。',
+            },
+            fake_fight: {
+                title: '少数人的活路',
+                detail: '你没替宗门补完那道裂口，却把认定的人真带出了死局。往后活下来的人会记得，你不是肯为所有人负责的人，但对少数人，你会真的回头。',
+            },
+            defect_demonic: {
+                title: '底线后移',
+                detail: '你做得很快，快到几乎没有多余情绪。只要再遇见失去反抗能力的敌人，你都会清楚记得：第一次跨过去以后，后面会越来越容易。',
+            },
+        },
+        '18_nangong_return': {
+            acknowledge_nangong_importance: {
+                title: '正面认人',
+                detail: '你终于没有再把最重要的话往外推。这一步之后，她在你心里不再只是旧险旧债，而是真会改写你以后去留的人。',
+            },
+            owe_nangong_silently: {
+                title: '心债不言',
+                detail: '你把亏欠认下，却还是不肯让它见光。后来每次再见她，沉默都会比旁人听见的话更重。',
+            },
+            avoid_nangong_again: {
+                title: '话到门前',
+                detail: '你明明已经走到能说清的地方，却还是把最要紧的一句转开了。往后若再选最冷的路，这次回避都会先回来给你作证。',
+            },
+        },
+        19: {
+            hold_the_line: {
+                title: '一句压命',
+                detail: '你把一句“守住”压出去，等于把许多条命也一起压上了肩。后来再有人听你发话时，你会先记起矿脉里那种一出口就要有人拿命照做的分量。',
+            },
+            lead_breakout: {
+                title: '生路也算本事',
+                detail: '你放弃了死守，也放弃了体面上的全赢，却第一次真正明白带人活出来本身就是本事。往后你会越来越擅长判断，什么时候继续顶只是在给死人凑数。',
+            },
+            rescue_rearguard: {
+                title: '最后一段人命',
+                detail: '你没有把所有人都带出来，却把最容易被放弃的那一段也扛进了自己的账里。后来很多旧人愿意把命押在你身上，靠的就是你这一步还肯回头。',
+            },
+            sabotage_and_leave: {
+                title: '活路不回头',
+                detail: '你做的是能保自己脱身的干净选择，可真正拖住你的，是那些明知来得及多做一点却还是转身的瞬间。你后来越走越稳，也越清楚自己当时切断的并不只是追兵。',
+            },
+            escape_alone: {
+                title: '矿道背影',
+                detail: '你做的是最干净利落的选择，连犹豫都省了。很多年后你未必还记得那次带出了什么，却会记得矿道里那几道没来得及跟上的身影。',
+            },
+            open_mine_gate: {
+                title: '矿门改色',
+                detail: '你亲手把矿门那道线改了颜色，也让“同门”二字从此有了可交换的价。不管别人以后怎么论大势，这一门之开都会先替他们认你。',
+            },
+            harvest_chaos: {
+                title: '冷收益',
+                detail: '你在最乱的时候先数还能拿走什么，连尸骨都被看成台阶的一部分。后来许多人防的不是你的狠，而是你连死局都能看见收益。',
+            },
+        },
+        20: {
+            go_star_sea: {
+                title: '海上押命',
+                detail: '你没有在天南再多停一步，而是把命直接压进一片更陌生的海。后来很多去与留的关口，你都会先想起这一回是怎样亲手把旧岸推远的。',
+            },
+            go_for_profit: {
+                title: '先认风向',
+                detail: '你到新地方先找商路和消息，不肯只凭一腔孤勇下海。往后每进一盘更大的局，你都会先摸风向，再决定自己要站成货、站成人，还是站成刀。',
+            },
+            go_hide: {
+                title: '把身藏稳',
+                detail: '你没急着去认新世界，而是先让自己从它的眼里消失一阵。后来别人说你总能躲过第一波风浪，你会知道那是从这时学来的本事。',
+            },
+        },
+        21: {
+            hunt_monsters: {
+                title: '海上先活',
+                detail: '海上的第一课不是变强，而是知道每次出手都真可能把命丢在水里。后来你闻见海腥味，第一反应不再是远行，而是风向、妖潮和退路。',
+            },
+            run_trade: {
+                title: '风向先清',
+                detail: '你没有第一时间去抢最凶的活，却更早学会了什么该碰，什么连看都别多看。往后很多次避祸和寻路，都不是靠运气，而是靠你先把规则摸明白。',
+            },
+            seek_cave: {
+                title: '先把自己站稳',
+                detail: '你拒绝了海上的喧哗，也保住了在新地方最容易乱掉的心。别人都说你太稳，只有你自己知道，那时不是稳，是不想刚到新地便被人牵着走。',
+            },
+        },
+        22: {
+            collect_map: {
+                title: '知道也是代价',
+                detail: '你不是拿到了一张图，而是亲手把自己放进了一个知道太多就很难善终的局。此后只要有人笑着来谈交易，你都会先想他究竟是来买图还是来认刀。',
+            },
+            sell_map: {
+                title: '危险换了主人',
+                detail: '你把危险换成了资源，账面上这是赚，心里却未必真轻。后来每当你花掉那笔换来的东西，总会短短想一下：危险只是换了个主人。',
+            },
+            avoid_map: {
+                title: '收手知重',
+                detail: '你亲手放过了一扇很可能一生只开一次的门。往后你会更清楚自己是哪类修士：不是看见机缘就扑上去的人，而是能忍住不让更高把自己拖进必死局的人。',
+            },
+        },
+        23: {
+            grab_treasure: {
+                title: '先伸手的人',
+                detail: '你先动了，那一把就把所有还在维持的合作表面撕开。以后别人提起你在星海的名声时，会先记住你在最关键的时候从不等别人先伸手。',
+            },
+            cooperate_allies: {
+                title: '宝与命先看命',
+                detail: '你没有拿最先那一下，却把一群原本很容易散掉的人重新拉在了一起。在宝与命摆在一处时，你没有先选宝，活下来的人会记得这个。',
+            },
+            pull_ally_out: {
+                title: '裂隙边回头',
+                detail: '你没有冲进最亮的宝光里，而是把能救的人先接出来。你不是愿为所有人负责的人，可对少数认定的人，你会真的把他们带离最窄的裂隙。',
+            },
+            watch_last: {
+                title: '等得越准越冷',
+                detail: '你让别人先暴露，自己再找最优位，这很聪明，也让活下来的人以后更难彻底信你。你越来越擅长等，只是等得越准，有时也越容易把自己等冷。',
+            },
+            sell_route_info: {
+                title: '风暴也是货',
+                detail: '你没有拿最亮的那口宝，却把风暴也做成了买卖。很多人以后提起你，不会先说胆大，而会说你连大机缘都能拆成消息差去赚第二遍。',
+            },
+            slip_past_palace: {
+                title: '避开传说',
+                detail: '你绕开了最亮也最窄的那一口气，多数人不是死在争，而是死在舍不得不争。活下来的人未必看得懂你，却会记得你在最像传说的地方先把自己抽了出来。',
+            },
+        },
+        '23_mocaihuan_return': {
+            support_mocaihuan_longterm: {
+                title: '旧账归手',
+                detail: '你没有再把补偿说成一句将来的空话，而是把这笔账真正接回了手里。此后再想起嘉元城，心里少的不是愧意，而是那层总欠着没认的空白。',
+            },
+            admit_old_wrong: {
+                title: '旧错见光',
+                detail: '你把该认的错亲口认下，却没有再越过她如今的日子。后来很多关于补与不补的事，你都会记得承认并不等于重新占有。',
+            },
+            confirm_mocaihuan_safe: {
+                title: '看过便走',
+                detail: '你只是确认她安好，便把脚收了回来。往后若再说自己从未负人，这一步会先在心里轻轻拦你一下。',
+            },
+        },
+        24: {
+            returned_tiannan_for_settlement: {
+                title: '旧地认账',
+                detail: '你终于把那些拖了很多年的旧账翻到台面上，做完之后并没有想象中痛快，反倒像慢慢拔出一根埋太久的刺。后来你再提天南，它不再只是一个离开的地方，而是你真正回去认过账的旧地。',
+            },
+            returned_tiannan_for_bonds: {
+                title: '有人不能再拖',
+                detail: '你没有再把最重要的人往“以后再说”里推，这一步看似不大，实际上比许多杀伐决断都更难。你终于不能再假装自己的一生只需要对大道负责，因为你已亲手承认，有些人也该算进去。',
+            },
+            returned_tiannan_but_remained_hidden: {
+                title: '来过却不住回去',
+                detail: '你回来过，也处理了该处理的，却没有再把自己重新扔进旧名旧局里。你不是不认过去，只是不再让过去重新决定你现在是谁。',
+            },
+        },
+        25: {
+            lingjie_xianzun: {
+                title: '灵界仙尊',
+                detail: '你并不比谁更干净。只是到了最后，你还愿意背着这一身并不全然体面的来路，继续往更高处走。',
+            },
+            renjie_zhizun: {
+                title: '人界至尊',
+                detail: '你明明可以走，最后却先选择留下。这不是贪恋权势，而是你终于有资格决定这个人界值不值得亲手整一整。',
+            },
+            xiaoyao_sanxian: {
+                title: '逍遥散仙',
+                detail: '你不是输了，也不是倦了。你只是第一次真正替自己选了一种不用总向谁证明什么的活法。',
+            },
+            taishang_wangqing: {
+                title: '太上忘情',
+                detail: '你断得太干净，干净到几乎无懈可击。可真正让人不安的，是连你自己都快想不起当年差点舍不得的究竟是什么。',
+            },
+            yinguo_chanshen: {
+                title: '因果缠身',
+                detail: '你以为很多事只要拖得够久就会淡。直到走到门前才发现，淡掉的是表面，不是账。',
+            },
+            fanxin_weisi: {
+                title: '凡心未死',
+                detail: '门已经开了，你却没有立刻过去。那不是退缩，而是你终于肯承认这一次想先为自己决定留下。',
+            },
+        },
+        qi_0: {
+            stabilize_fast: {
+                title: '强把气留',
+                detail: '你没给惊惧留太多空隙，硬把第一缕灵气按在经脉里走完。后来每逢身体先喊疼、心却还想再逼一步时，这股不肯松手的劲都会先回来。',
+            },
+            observe_change: {
+                title: '先记这一缕',
+                detail: '你停下来记住那一点陌生的凉意，没有急着把它变成本事。此后很多关口，你都会比旁人更信体会本身也能救命。',
+            },
+            suppress_instinctively: {
+                title: '把门先关',
+                detail: '你几乎本能地把那缕气往回按，像在替凡人的自己多关一道门。后来再有更大的异变临身，你也总会先想收，再想进。',
+            },
+        },
+        qi_1: {
+            retry: {
+                title: '火里再试',
+                detail: '药火刚失手你就不肯退，非要把这处错摸个明白。往后很多险路上，你都会把“再试一次”当成比认输更顺手的本能。',
+            },
+            record_mistake: {
+                title: '灰里记错',
+                detail: '你先把失手的地方一笔笔记下来，没有让火气替你做主。后来很多本可翻车的地方，都是靠这时学会的记账心过的。',
+            },
+            grow_irritable: {
+                title: '火气入心',
+                detail: '你没怪药材，也没怪时机，只先把那股躁意压回自己身上。此后每逢天赋、门槛和资质这些字眼撞上来，这团火都比别处更容易复燃。',
+            },
+        },
+        qi_2: {
+            vow_not_to_be_weak: {
+                title: '针下立誓',
+                detail: '疼意最重的时候，你先记住的不是退，而是再也不想被逼到这一步。往后许多更狠的选择，都会从这句不肯再弱里长出影子。',
+            },
+            stop_and_breathe: {
+                title: '痛里换息',
+                detail: '你先停下来，把那股非要硬撑到底的劲松开一线。后来每逢只剩硬顶一条路时，你都会想起自己也曾在最疼的时候给过自己一口气。',
+            },
+            feel_retreat: {
+                title: '凡念回潮',
+                detail: '经脉如针时，你竟先想起了还能回头做凡人的那点旧日子。此后大道再亮，这一点退意也会时不时提醒你，你并非天生只认向前。',
+            },
+        },
+        ji_3: {
+            accept_change: {
+                title: '旧骨脱壳',
+                detail: '你没有跟旧我纠缠太久，任由那层凡俗的壳慢慢退下去。往后每次境界再变，你都会比旁人更早接受“人已经不是旧人”这件事。',
+            },
+            feel_unsettled: {
+                title: '新身未稳',
+                detail: '你看着旧我退远，心里先起的不是喜，而是一阵空。后来每逢更上一层楼，你都比旁人更容易先问一句：那原来的我还剩多少。',
+            },
+            treat_as_upgrade: {
+                title: '把身作梯',
+                detail: '你把这场脱胎当成理所当然的一步上升，几乎没给自己留惊惧。此后凡是能让人更高一层的东西，你都会更容易把代价也一并视作应当。',
+            },
+        },
+        ji_4: {
+            accept_and_remember: {
+                title: '收情记账',
+                detail: '你接了这份善意，却没让自己忘了它背后的用意。后来很多人情来往，你都会先记得情分，也记得价码。',
+            },
+            decline_all: {
+                title: '门外收伞',
+                detail: '你把所有伸来的手都挡在门外，不肯先欠任何一份人情。往后你能活得更清，也更容易在最需要人时发现自己身边空得太快。',
+            },
+            reverse_observe: {
+                title: '借礼看人',
+                detail: '你顺着人情往回看，把对方的心思先摸了个轮廓。此后再有人笑着示好，你总会先看那层笑里藏没藏别的东西。',
+            },
+        },
+        ji_5: {
+            face_the_thorn: {
+                title: '刺上留眼',
+                detail: '你没有急着把那点硌心的地方磨平，而是先低头看清它长在何处。后来再逢心障、旧伤和未了因果，你都更难骗自己说“它其实不在”。',
+            },
+            force_break: {
+                title: '硬骨撞关',
+                detail: '你不肯停，像用整副骨头去顶那道看不见的门。往后许多本可缓一步的地方，你都会更先信蛮力能替你开路。',
+            },
+            wait_it_out: {
+                title: '把锋收回',
+                detail: '你往后退了半步，没有急着和那道心障正面见血。此后每逢最想立刻求成的时候，这一步都会提醒你，不是每一根刺都非得当场拔出来。',
+            },
+        },
+        jin_6: {
+            accept_loneliness: {
+                title: '丹成孤席',
+                detail: '你认了强者终要独坐这一层冷意，没有再去替它找热闹的名字。后来很多比热闹更高的地方，你都会走得更稳，也更冷。',
+            },
+            think_of_old_people: {
+                title: '旧人入丹',
+                detail: '金丹既成，你先想起的却不是自己更高了，而是谁还留在旧路上。往后哪怕站得再高，旧人也总能在某些夜里把你从云上轻轻拽一下。',
+            },
+            press_down_emptiness: {
+                title: '把空压平',
+                detail: '你把那点空意直接压进修为里，不肯让它抬头。此后每逢境界再涨、心却没跟上，那层被压过的空都会先回来。',
+            },
+        },
+        jin_7: {
+            clear_old_debts: {
+                title: '旧账见天',
+                detail: '你主动把那些拖久了的名字翻到光下，不再让它们在暗处发霉。往后再回看来路，你心里会更重，却少了一层说不清的混浊。',
+            },
+            delay: {
+                title: '账页压底',
+                detail: '你把旧账重新压回了案底，像先替自己争一口缓气。后来只要有旧人旧地重新浮出来，这摞没翻完的账就会比别的东西更先响。',
+            },
+            sort_by_value: {
+                title: '把人分价',
+                detail: '你先问谁更值得处理，再问该不该处理。此后很多人再靠近你时，都会更容易被你下意识摆上秤。',
+            },
+        },
+        jin_8: {
+            accept_reputation: {
+                title: '名字先行',
+                detail: '你先接受了名字替你开路这回事，没有再假装自己只是路过。后来很多门会主动为你让开，可你也越来越难再藏回无名处。',
+            },
+            fear_reputation: {
+                title: '名到人惊',
+                detail: '你的名字先到了，你反而先起了防心。往后每逢旁人凭名声来认你，你都更容易先想：他们认的究竟是不是我。',
+            },
+            use_reputation: {
+                title: '借名压席',
+                detail: '你主动拿名声去压场，也等于承认它已经能替你动手。此后每次别人先因名字后退半步，你都会知道这层借来的势终究也要你自己承担。',
+            },
+        },
+        yu_9: {
+            adapt: {
+                title: '目光出鞘',
+                detail: '你很快适应了神识外放，好像眼睛忽然多出了一层更薄的刃。往后你会越来越难只按别人给你的表面去看人和局。',
+            },
+            restrain: {
+                title: '把线收回',
+                detail: '你明明能看得更远，却先学着把那根无形的线收回自己体内。后来面对能随意越界的力量时，你都会先记得克制不是吃亏。',
+            },
+            enjoy_control: {
+                title: '掌中铺开',
+                detail: '周围一切都像在掌心里徐徐铺开，这种可控让你先尝到快意。往后许多需要放手的时候，你都会比旁人更难立刻松开。',
+            },
+        },
+        yu_10: {
+            accept_solitude: {
+                title: '长夜自守',
+                detail: '漫长海路把人从喧哗里一层层刮净，你先学会了陪自己走完。后来很多只能独自扛的夜，你都会比从前更稳。',
+            },
+            remember_someone: {
+                title: '夜里有人',
+                detail: '海面太黑时，你心里却还会亮起一个能信半分的人影。此后哪怕隔着再远的海和年头，这一点被想起过的暖意也不会全散。',
+            },
+            prefer_it: {
+                title: '孤夜成性',
+                detail: '你发现自己并不讨厌这种长夜，甚至愿它更久一点。后来别人再说你冷，你会知道那不是一夜长成，而是从海上这一程开始。',
+            },
+        },
+        yu_11: {
+            answer_it: {
+                title: '当面答它',
+                detail: '你没有急着拔剑，而是先听那心魔把话说完。往后再遇见最像自己的恶念时，你会更知道该先认哪一句是真的。',
+            },
+            crush_it: {
+                title: '把影打碎',
+                detail: '你不肯给那东西多一口气，抬手就把它压回碎裂里。此后很多该慢慢认的心结，也更容易被你先用力按成沉默。',
+            },
+            stay_silent: {
+                title: '让它照见',
+                detail: '你一句也不答，只任那影子把你照了个通透。后来很多真正难解的关口前，你都会先习惯与沉默对坐。',
+            },
+        },
+        hs_12: {
+            accept_high_not_full: {
+                title: '天高未满',
+                detail: '你承认更高并不等于更圆满，没有急着替这点空缺找借口。后来再遇到看似登顶的时刻，你都会比别人更早想到还差一点。',
+            },
+            seek_next_goal: {
+                title: '更上一阶',
+                detail: '天光刚开，你就先去找下一个更高的台阶。往后凡是能让你再进一步的东西，都会比“此刻已够”更容易打动你。',
+            },
+            stay_alert: {
+                title: '高处留醒',
+                detail: '你没有被破境的亮意完全淹住，还给那点空留了警惕。此后越站上高处，你越不敢忘了脚下也会有空声。',
+            },
+        },
+        hs_13: {
+            return_now: {
+                title: '见信回身',
+                detail: '信一到，你便把许多别的事都往后压了压。后来再说自己只认大道不认旧人时，这次回身都会先把你拦住。',
+            },
+            stabilize_first: {
+                title: '先稳此身',
+                detail: '你没有被旧信一下拉回去，而是先把眼前局势按稳。往后每逢旧情旧债扑上来，你都会更本能地先守住当下的站位。',
+            },
+            put_away: {
+                title: '信收入袖',
+                detail: '你把信收起来，没有让它当场改写去向。后来许多真正重要的话和人，也会被你这样先放进袖里，再慢慢变重。',
+            },
+        },
+        hs_14: {
+            carry_all_forward: {
+                title: '带着来路',
+                detail: '你终于肯承认这一身来路不能只挑好看的带上去。门前真正让你站稳的，不是忘得干净，而是你还敢把这些都算成自己。',
+            },
+            higher_above_all: {
+                title: '高处断尘',
+                detail: '你觉得只要更高，许多名字与牵扯都该自行落下。往后若真一步跨出，这股“把一切留在脚下”的心也会先替你定色。',
+            },
+            consider_staying: {
+                title: '门前留步',
+                detail: '门已在前，你却第一次认真想过留下。此后别人再说你只会向上，你也知道自己曾在最高处为人间停过一步。',
+            },
+        },
+    };
+
     const PROMISE_LABELS = Object.freeze({
         protect: '保全',
         probe: '试探',
@@ -1103,37 +1750,47 @@
 
     function normalizeChoice(choice, fallbackId, context = {}) {
         const normalizedId = choice.id || fallbackId;
-        const tradeoff = normalizeTradeoff(choice.tradeoff, choice);
+        const authoredBranchImpact = BRANCH_IMPACT_PACKS[context.chapterId ?? normalizedId]?.[normalizedId] || null;
+        const preparedChoice = authoredBranchImpact
+            ? {
+                ...choice,
+                branchImpact: {
+                    ...(authoredBranchImpact || {}),
+                    ...(choice.branchImpact || {}),
+                },
+            }
+            : choice;
+        const tradeoff = normalizeTradeoff(preparedChoice.tradeoff, preparedChoice);
         const sourceType = context.sourceType || 'main';
         const chapterId = context.chapterId ?? normalizedId;
         const chapterTitle = context.chapterTitle || '';
         const chapterSummary = context.chapterSummary || '';
         const echoPack = CHAPTER_ECHO_PACKS[chapterId]?.[normalizedId] || null;
-        const promiseType = inferPromiseType({ ...choice, id: normalizedId });
-        const riskTier = inferRiskTier({ ...choice, id: normalizedId }, tradeoff);
+        const promiseType = inferPromiseType({ ...preparedChoice, id: normalizedId });
+        const riskTier = inferRiskTier({ ...preparedChoice, id: normalizedId }, tradeoff);
         const promiseLabel = PROMISE_LABELS[promiseType];
         const riskLabel = RISK_LABELS[riskTier];
         const immediateFallbackTitle = echoPack?.immediate?.title || `${promiseLabel}已定`;
         const immediateFallbackDetail = echoPack?.immediate?.detail
-            || `你选择了“${choice.text}”。这一步已经把“${promiseLabel}”写进当前章节，并会继续影响后续关系、路线或终局。`;
-        const immediateResult = normalizeImmediateResult(choice.immediateResult || echoPack?.immediate, immediateFallbackTitle, immediateFallbackDetail);
-        const branchImpact = normalizeBranchImpact(choice, {
+            || `你选择了“${preparedChoice.text}”。这一步已经把“${promiseLabel}”写进当前章节，并会继续影响后续关系、路线或终局。`;
+        const immediateResult = normalizeImmediateResult(preparedChoice.immediateResult || echoPack?.immediate, immediateFallbackTitle, immediateFallbackDetail);
+        const branchImpact = normalizeBranchImpact(preparedChoice, {
             chapterId,
             chapterTitle,
             chapterSummary,
             sourceType,
         }, echoPack, promiseLabel, riskLabel);
-        const longTermHint = buildLongTermHint(choice, riskLabel, promiseLabel, echoPack);
-        const visibleCostLabel = buildVisibleCostLabel(choice, promiseLabel, riskLabel);
+        const longTermHint = buildLongTermHint(preparedChoice, riskLabel, promiseLabel, echoPack);
+        const visibleCostLabel = buildVisibleCostLabel(preparedChoice, promiseLabel, riskLabel);
         const defaultPressureDelta = riskTier === 'perilous'
-            ? Math.max(1, Math.min(3, Math.floor((tradeoff.tribulationGain || 0) - 1 + (choice.ending ? 1 : 0))))
+            ? Math.max(1, Math.min(3, Math.floor((tradeoff.tribulationGain || 0) - 1 + (preparedChoice.ending ? 1 : 0))))
             : 0;
 
         return {
-            ...choice,
+            ...preparedChoice,
             id: normalizedId,
-            effects: choice.effects || {},
-            nextChapterId: choice.nextChapterId ?? null,
+            effects: preparedChoice.effects || {},
+            nextChapterId: preparedChoice.nextChapterId ?? null,
             tradeoff,
             promiseType,
             promiseLabel,
@@ -1143,10 +1800,10 @@
             branchImpact,
             immediateResult,
             longTermHint,
-            pressureDelta: Math.max(0, Math.min(3, Math.floor(choice.pressureDelta ?? defaultPressureDelta))),
-            resolveDelta: Math.max(0, Math.min(3, Math.floor(choice.resolveDelta ?? tradeoff.battleWillGain ?? 0))),
-            delayedEchoes: normalizeDelayedEchoes(choice, chapterId, normalizedId, sourceType, echoPack, longTermHint, promiseLabel),
-            endingSeeds: normalizeEndingSeeds(choice, normalizedId, sourceType, promiseType, longTermHint),
+            pressureDelta: Math.max(0, Math.min(3, Math.floor(preparedChoice.pressureDelta ?? defaultPressureDelta))),
+            resolveDelta: Math.max(0, Math.min(3, Math.floor(preparedChoice.resolveDelta ?? tradeoff.battleWillGain ?? 0))),
+            delayedEchoes: normalizeDelayedEchoes(preparedChoice, chapterId, normalizedId, sourceType, echoPack, longTermHint, promiseLabel),
+            endingSeeds: normalizeEndingSeeds(preparedChoice, normalizedId, sourceType, promiseType, longTermHint),
         };
     }
 
@@ -1489,10 +2146,10 @@
             requirements: { storyProgress: 0 },
             beats() {
                 return [
-                    beat('旁白', '越国边角的青牛镇，夜里只听得见风吹茅檐。'),
-                    beat('旁白', '你在山道上捡到一名垂死老道，对方把一册残缺《引气诀》塞进你怀里。'),
+                    beat('旁白', '越国边角的青牛镇，夜里只听得见风吹茅檐。土路被薄霜压得发亮，村口老槐的影子斜斜挂在土墙上，连犬吠都像隔着一层冷雾。'),
+                    beat('旁白', '你在山道旁救下一名垂死老道，对方半身都是泥水，血腥气混着山间湿冷草气扑在衣袖上。他临死前仍死死攥着你手腕，把一册残缺《引气诀》塞进你怀里。'),
                     beat('老道', '资质未必是路，肯熬，才可能见路。'),
-                    beat('旁白', '几个月后，你体内终于生出一缕暖流，也听说七玄门正在收徒。'),
+                    beat('旁白', '几个月后，灶火、柴烟和清晨山雾陪着你把那几页残卷反复读烂，你体内终于生出一缕暖流。也正是在这个冬尽春来之际，你听说七玄门正在收徒。'),
                 ];
             },
             choices() {
@@ -1520,10 +2177,10 @@
             requirements: { storyProgress: 1 },
             beats(state) {
                 return [
-                    beat('旁白', '七玄门山门不算宏阔，却已是青牛镇少年们想都不敢想的地方。'),
+                    beat('旁白', '七玄门山门不算宏阔，却已是青牛镇少年心中不敢妄望之地。青石长阶被晨雾浸得微湿，山门内药香和松脂气顺着风往下飘，连守门弟子的衣角都带着镇上少见的整肃气。'),
                     beat('张长老', '灵根驳杂，资质寻常，若入门，只能从杂役做起。'),
-                    beat('旁白', state.flags.preparedWell ? '你把路上备好的干粮分给同来少年，倒让几名执事多看了你一眼。' : '你没有多余的话，只在众人退缩时安静地把手按在测灵石上。'),
-                    beat('旁白', '最终你被留下，去了药园做杂役。'),
+                    beat('旁白', state.flags.preparedWell ? '你把路上备好的干粮分给同来少年，晨风里一时间只剩纸包摩挲和人群压低的道谢声，倒让几名执事多看了你一眼。' : '你没有多余的话，只在众人退缩时安静地把手按在测灵石上。石面冰凉，周围少年的呼吸声忽然全都近了。'),
+                    beat('旁白', '最终你被留下，去了药园做杂役。进门那日正逢午后薄阳照在药圃的湿土上，成排药架泛着青色水光，你第一次觉得自己像是真的跨进了另一个世界。'),
                 ];
             },
             choices() {
@@ -1551,10 +2208,10 @@
             requirements: { storyProgress: 2, cultivationAtLeast: 60 },
             beats() {
                 return [
-                    beat('旁白', '药园一株百年灵参被你照料得精神异常，也把墨大夫的目光引了过来。'),
+                    beat('旁白', '药园一株百年灵参被你照料得生机格外旺盛，也把墨大夫的目光引了过来。清晨露水还挂在叶尖，药圃深处的土气和苦涩药香混在一起，那株灵参在一片灰绿里显得格外醒目。'),
                     beat('墨大夫', '你手稳，心也稳，来我神手谷做亲传，比留在药园强得多。'),
-                    beat('旁白', '他递来一本《长春功》，纸页泛黄，封皮上全是旧指印。'),
-                    beat('旁白', '你知道这是机会，也可能是陷阱。'),
+                    beat('旁白', '他递来一本《长春功》，纸页泛黄，封皮上全是旧指印。药室窗缝里漏进来的冷风把纸角吹得轻轻发响，那几道旧折痕像早有人把它翻烂了又收回去。'),
+                    beat('旁白', '神手谷四下静得过分，连药炉里的火都压着声响。你知道这是机会，也可能是陷阱，而修行路上的机缘与陷阱，很多时候原本就是一体两面。'),
                 ];
             },
             choices() {
@@ -1603,10 +2260,10 @@
             requirements: { storyProgress: 3, realmScoreAtLeast: 1 },
             beats(state) {
                 return [
-                    beat('旁白', '厉飞雨病势反复，门里却没人真愿意替他担这份麻烦。'),
+                    beat('旁白', '厉飞雨病势反复，门里却没人真愿意替他担这份牵连。屋里药味苦得发沉，窗纸被夜风吹得一鼓一鼓，榻边那盏油灯烧得极低，像随时都会熄。'),
                     beat('厉飞雨', '我若不是急着求成，也不会把自己熬成这副样子。'),
-                    beat('旁白', state.flags.startPath === 'disciple' ? '你手里正好有墨大夫给的药方，心里也清楚这药方未必干净。' : '你没有现成法子，只能在药房、执事与传闻之间来回打听。'),
-                    beat('旁白', '救，还是不救，会把你和他绑在一起。'),
+                    beat('旁白', state.flags.startPath === 'disciple' ? '你手里正好有墨大夫给的药方，纸页边角还带着药室里那股陈旧草木气。可你心里也清楚，这药方未必干净，甚至可能比病本身更早把人拖进局里。' : '你没有现成法子，只能在药房、执事与传闻之间来回打听。白日里你听的是规矩，夜里听的却是病房外压低的闲话，越打听，越知此事绝不止一张药方那么简单。'),
+                    beat('旁白', '救，还是不救，会把你和他绑在一起。灯影落在墙上时，你忽然明白，人情这种东西一旦伸手接住，就很难再说自己只是恰好路过。'),
                 ];
             },
             choices() {
@@ -1644,10 +2301,10 @@
             requirements: { storyProgress: 4, realmScoreAtLeast: 1 },
             beats(state) {
                 return [
-                    beat('旁白', '先后失踪的药童越来越多，神手谷夜里的门也越来越紧。'),
-                    beat('旁白', state.flags.helpedLi ? '厉飞雨偷偷塞给你一张名单，名字后面全是空白。' : '你从残药和脚印里拼出一条不完整的线索。'),
-                    beat('旁白', '密室里泛着绿光，丹炉边缘却沾着不该属于药材的血色。'),
-                    beat('旁白', '你已经知道，再装作没看见，只会把自己也送进去。'),
+                    beat('旁白', '先后失踪的药童越来越多，神手谷夜里的门也越来越紧。入夜后的山谷没有虫鸣，只有风穿过木廊和药架时发出的细响，静得像有人提前把活气都压下去了。'),
+                    beat('旁白', state.flags.helpedLi ? '厉飞雨偷偷塞给你一张名单，纸角被他攥得发皱，名字后面全是空白。那空白比任何供词都更叫人心底发寒，因为你一眼就看出，后面本该还有更多人。' : '你从残药和脚印里拼出一条不完整的线索。潮湿石地上的泥印一深一浅，像有人曾想把来路擦掉，却没来得及把所有痕迹都抹平。'),
+                    beat('旁白', '密室里泛着绿光，丹炉边缘却沾着不该属于药材的血色。火光一跳，那抹暗红就从铜壁上浮出来，连空气里都混着焦苦药味和铁锈似的腥气。'),
+                    beat('旁白', '你已经知道，再装作没看见，只会把自己也送进去。神手谷的夜色从这一刻起不再只是山中夜色，而像一层罩下来的盖子，逼你尽快决定，是先握住证据，还是直接去惊动谷中最危险的人。'),
                 ];
             },
             choices() {
@@ -3672,6 +4329,7 @@
         POSITIVE_ENCOUNTERS,
         NEGATIVE_ENCOUNTERS,
         CHAPTER_ECHO_PACKS,
+        BRANCH_IMPACT_PACKS,
         LEVEL_STORY_EVENTS,
         STORY_CHAPTERS,
     };

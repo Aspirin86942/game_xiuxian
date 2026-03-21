@@ -3,8 +3,8 @@ const http = require('http');
 const path = require('path');
 const { URL } = require('url');
 
-const HOST = '127.0.0.1';
-const PORT = 4173;
+const HOST = process.env.HOST || '127.0.0.1';
+const PORT = Number(process.env.PORT || 4173);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
 const CONTENT_TYPES = {

@@ -44,12 +44,29 @@ function playToChoices(state) {
 }
 
 function topUpCosts(state, choice) {
-    if (!choice || !choice.costs) {
+    if (!choice) {
         return;
     }
-    Object.entries(choice.costs).forEach(([itemId, amount]) => {
-        state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, amount);
+
+    const sources = [];
+    if (choice.costs) {
+        sources.push(choice.costs);
+    }
+    if (choice.requirements?.items) {
+        sources.push(choice.requirements.items);
+    }
+
+    sources.forEach((costs) => {
+        Object.entries(costs).forEach(([itemId, amount]) => {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, amount);
+        });
     });
+
+    if (choice.requirements?.flagsAll) {
+        Object.entries(choice.requirements.flagsAll).forEach(([flagName, value]) => {
+            state.flags[flagName] = value;
+        });
+    }
 }
 
 function assertNoNegativeInventory(state) {

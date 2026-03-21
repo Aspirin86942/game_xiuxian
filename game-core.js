@@ -27,6 +27,12 @@
     const DECISION_HISTORY_LIMIT = 64;
     const ENDING_SEED_LIMIT = 4;
     const PRESSURE_COLLAPSE_THRESHOLD = 9;
+    const TRAINING_GAIN_PER_LINGSHI = 10;
+    const TRAINING_BATCHES = Object.freeze({
+        '1': 1,
+        '10': 10,
+        max: Number.POSITIVE_INFINITY,
+    });
     const STORY_CONSEQUENCE_LIMITS = Object.freeze({
         battleWill: 8,
         tribulation: 42,
@@ -37,6 +43,12 @@
         { id: 'critical', label: '濒危', min: 6, max: 8 },
         { id: 'collapse', label: '失控', min: PRESSURE_COLLAPSE_THRESHOLD, max: STORY_CONSEQUENCE_LIMITS.tribulation },
     ]);
+    const EXPEDITION_EVENT_WEIGHTS = Object.freeze({
+        battle: 45,
+        resource: 35,
+        risk: 12,
+        clue: 8,
+    });
 
     function clone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -342,7 +354,6 @@
             breakthroughRate: CONFIG.baseBreakthroughRate,
             breakthroughBonus: 0,
             logs: [],
-            autoCultivate: false,
             inventory: {},
             playerStats: {
                 hp: 100,
@@ -412,6 +423,9 @@
         nextState.recovery = normalizeRecoveryState(rawState.recovery);
         nextState.storyConsequences = normalizeStoryConsequences(rawState.storyConsequences);
         nextState.ui = { ...defaultState.ui, ...(rawState.ui || {}) };
+        if (nextState.ui.activeTab === 'adventure') {
+            nextState.ui.activeTab = 'cultivation';
+        }
         nextState.storyCursor = normalizeStoryCursor(rawState.storyCursor);
         nextState.playerStats = { ...defaultState.playerStats, ...(rawState.playerStats || {}) };
         nextState.routeScores = { ...defaultState.routeScores, ...(rawState.routeScores || {}) };
@@ -429,6 +443,7 @@
         nextState.logs = Array.isArray(rawState.logs) ? rawState.logs.slice(0, MAX_LOGS) : [];
         nextState.ending = rawState.ending || null;
         nextState.levelStoryState = normalizeLevelStoryState(rawState.levelStoryState);
+        delete nextState.autoCultivate;
         recalculateState(nextState, false);
         return nextState;
     }
@@ -1829,28 +1844,82 @@
         };
     }
 
-    function cultivate(state, isAuto, rng) {
-        const random = rng || Math.random;
-        const baseGain = Math.floor(random() * (CONFIG.clickGainMax - CONFIG.clickGainMin + 1)) + CONFIG.clickGainMin;
-        const gain = isAuto ? Math.max(1, Math.floor(baseGain * CONFIG.autoGainRatio)) : baseGain;
-        state.cultivation = Math.min(state.maxCultivation, state.cultivation + gain);
+    function getMaxTrainableLingshi(state) {
+        const currentLingshi = getInventoryCount(state, 'lingshi');
+        const remainingCultivation = Math.max(0, state.maxCultivation - state.cultivation);
+        if (remainingCultivation <= 0 || currentLingshi <= 0) {
+            return 0;
+        }
+        return Math.min(currentLingshi, Math.ceil(remainingCultivation / TRAINING_GAIN_PER_LINGSHI));
+    }
 
-        const encounterRoll = random();
-        const encounterPool = encounterRoll < (isAuto ? CONFIG.autoEncounterChance : CONFIG.encounterChance);
-        let encounter = null;
-        if (encounterPool) {
-            const isPositive = random() > 0.42;
-            const sourcePool = isPositive ? POSITIVE_ENCOUNTERS : NEGATIVE_ENCOUNTERS;
-            encounter = clone(sourcePool[Math.floor(random() * sourcePool.length)]);
-            applyEffects(state, encounter);
-            pushLog(state, encounter.text, isPositive ? 'good' : 'bad');
+    function getTrainingPreview(state, batchKey = '1') {
+        if (canBreakthrough(state)) {
+            return {
+                ok: false,
+                batchKey,
+                stonesSpent: 0,
+                gain: 0,
+                error: '当前修为已满，请先尝试突破。',
+            };
         }
 
-        if (!isAuto) {
-            pushLog(state, `吐纳聚气，修为 +${gain}`, 'normal');
+        const configuredBatch = TRAINING_BATCHES[batchKey];
+        if (configuredBatch === undefined) {
+            return {
+                ok: false,
+                batchKey,
+                stonesSpent: 0,
+                gain: 0,
+                error: '未知的闭关批次。',
+            };
         }
 
-        return { gain, encounter };
+        const maxTrainableLingshi = getMaxTrainableLingshi(state);
+        if (maxTrainableLingshi <= 0) {
+            return {
+                ok: false,
+                batchKey,
+                stonesSpent: 0,
+                gain: 0,
+                error: '灵石不足，无法闭关。',
+            };
+        }
+
+        const requestedBatch = Number.isFinite(configuredBatch)
+            ? configuredBatch
+            : maxTrainableLingshi;
+        const stonesSpent = Math.max(0, Math.min(requestedBatch, maxTrainableLingshi));
+        return {
+            ok: stonesSpent > 0,
+            batchKey,
+            stonesSpent,
+            gain: stonesSpent * TRAINING_GAIN_PER_LINGSHI,
+            remainingCultivation: Math.max(0, state.maxCultivation - state.cultivation),
+            error: stonesSpent > 0 ? '' : '灵石不足，无法闭关。',
+        };
+    }
+
+    function trainWithLingshi(state, batchKey = '1') {
+        const preview = getTrainingPreview(state, batchKey);
+        if (!preview.ok) {
+            return { ok: false, error: preview.error, stonesSpent: 0, gain: 0, batchKey };
+        }
+
+        const changed = changeItem(state, 'lingshi', -preview.stonesSpent);
+        if (!changed) {
+            return { ok: false, error: '灵石不足，无法闭关。', stonesSpent: 0, gain: 0, batchKey };
+        }
+
+        state.cultivation = Math.min(state.maxCultivation, state.cultivation + preview.gain);
+        pushLog(state, `闭关炼化灵石 ${preview.stonesSpent} 枚，修为 +${preview.gain}`, 'normal');
+        return {
+            ok: true,
+            batchKey,
+            stonesSpent: preview.stonesSpent,
+            gain: preview.gain,
+            cultivation: state.cultivation,
+        };
     }
 
     function canBreakthrough(state) {
@@ -1893,6 +1962,98 @@
         state.breakthroughBonus = 0;
         pushLog(state, `突破失败，修为受损 ${penalty}`, 'fail');
         return { ok: true, success: false, penalty };
+    }
+
+    function chooseExpeditionEventType(random) {
+        const totalWeight = Object.values(EXPEDITION_EVENT_WEIGHTS).reduce((sum, value) => sum + value, 0);
+        let remainingWeight = random() * totalWeight;
+        const orderedKeys = ['battle', 'resource', 'risk', 'clue'];
+        for (const key of orderedKeys) {
+            remainingWeight -= EXPEDITION_EVENT_WEIGHTS[key];
+            if (remainingWeight < 0) {
+                return key;
+            }
+        }
+        return 'resource';
+    }
+
+    function getExpeditionReward(state, divisor, minimum) {
+        return Math.max(minimum, Math.ceil(state.maxCultivation / divisor));
+    }
+
+    function resolveExpedition(state, rng) {
+        const random = rng || Math.random;
+        const eventType = chooseExpeditionEventType(random);
+        const location = getLocationMeta(state);
+
+        if (eventType === 'battle') {
+            const combatState = beginCombat(state, random);
+            const summary = `你在 ${location.name} 察觉妖气，遭遇 ${combatState.monster.name}。`;
+            pushLog(state, summary, 'normal');
+            return {
+                ok: true,
+                type: 'battle',
+                summary,
+                combatState,
+            };
+        }
+
+        if (eventType === 'resource') {
+            const lingshiGain = getExpeditionReward(state, 80, 2);
+            changeItem(state, 'lingshi', lingshiGain);
+            const summary = `你在 ${location.name} 搜得灵石 ${lingshiGain} 枚，可带回洞府闭关。`;
+            pushLog(state, summary, 'good');
+            return {
+                ok: true,
+                type: 'resource',
+                summary,
+                lingshiGain,
+            };
+        }
+
+        if (eventType === 'risk') {
+            const lingshiLoss = Math.min(getInventoryCount(state, 'lingshi'), getExpeditionReward(state, 140, 1));
+            const hpLoss = Math.max(1, Math.round(state.playerStats.maxHp * 0.12));
+            if (lingshiLoss > 0) {
+                changeItem(state, 'lingshi', -lingshiLoss);
+            }
+            state.playerStats.hp = Math.max(1, state.playerStats.hp - hpLoss);
+            const summary = lingshiLoss > 0
+                ? `你在 ${location.name} 遭阵雾扰乱，折损灵石 ${lingshiLoss} 枚，气血 -${hpLoss}。`
+                : `你在 ${location.name} 被煞气所伤，气血 -${hpLoss}。`;
+            pushLog(state, summary, 'bad');
+            return {
+                ok: true,
+                type: 'risk',
+                summary,
+                lingshiLoss,
+                hpLoss,
+            };
+        }
+
+        const sideStories = getAvailableSideStories(state);
+        if (sideStories.length <= 0) {
+            const fallbackGain = getExpeditionReward(state, 80, 2);
+            changeItem(state, 'lingshi', fallbackGain);
+            const summary = `你在 ${location.name} 未寻得新线索，却顺手带回灵石 ${fallbackGain} 枚。`;
+            pushLog(state, summary, 'good');
+            return {
+                ok: true,
+                type: 'resource',
+                summary,
+                lingshiGain: fallbackGain,
+            };
+        }
+
+        const clue = sideStories[Math.floor(random() * sideStories.length)];
+        const summary = `你在 ${location.name} 听闻线索「${clue.title}」，可前往剧情与游历页继续查看。`;
+        pushLog(state, summary, 'normal');
+        return {
+            ok: true,
+            type: 'clue',
+            summary,
+            clueTitle: clue.title,
+        };
     }
 
     function canAutoCultivate(state) {
@@ -2141,9 +2302,9 @@
 
     function settleCombat(state, combatState, victory, random) {
         if (victory) {
-            const cultivationGain = Math.min(state.maxCultivation - state.cultivation, Math.floor(combatState.monster.maxHp * 1.7));
-            state.cultivation += cultivationGain;
-            pushLog(state, `游历击败 ${combatState.monster.name}，修为 +${cultivationGain}`, 'good');
+            const lingshiGain = getExpeditionReward(state, 90, 3);
+            changeItem(state, 'lingshi', lingshiGain);
+            pushLog(state, `游历击败 ${combatState.monster.name}，灵石 +${lingshiGain}`, 'good');
 
             const dropCount = Math.floor(random() * 2) + 1;
             const drops = [];
@@ -2154,14 +2315,21 @@
                 drops.push({ itemId, quantity });
                 pushLog(state, `游历掉落 ${ITEMS[itemId].name} x${quantity}`, 'good');
             }
-            return { cultivationGain, drops };
+            // 保留主线灵石经济，但胜利后不强行覆盖回合里已经结算出的真实血量。
+            state.playerStats.hp = Math.max(1, Math.min(state.playerStats.maxHp, state.playerStats.hp));
+            return { lingshiGain, drops };
         }
 
-        const cultivationLoss = Math.floor(state.cultivation * 0.18);
-        state.cultivation = Math.max(0, state.cultivation - cultivationLoss);
+        const lingshiLoss = Math.min(getInventoryCount(state, 'lingshi'), Math.max(1, Math.floor(getExpeditionReward(state, 90, 3) / 2)));
+        if (lingshiLoss > 0) {
+            changeItem(state, 'lingshi', -lingshiLoss);
+        }
         state.playerStats.hp = Math.max(1, Math.round(state.playerStats.maxHp * 0.2));
-        pushLog(state, `游历失利，损失修为 ${cultivationLoss}`, 'fail');
-        return { cultivationLoss, drops: [] };
+        const summary = lingshiLoss > 0
+            ? `游历失利，折损灵石 ${lingshiLoss}`
+            : '游历失利，未能带回额外灵石';
+        pushLog(state, summary, 'fail');
+        return { lingshiLoss, drops: [] };
     }
 
     function serializeState(state) {
@@ -2220,10 +2388,11 @@
         advanceStoryBeat,
         skipStoryPlayback,
         chooseStoryOption,
-        cultivate,
+        getTrainingPreview,
+        trainWithLingshi,
+        resolveExpedition,
         canBreakthrough,
         attemptBreakthrough,
-        canAutoCultivate,
         isSupportedSaveData,
         touchSaveTimestamp,
         resolveOfflineCultivation,

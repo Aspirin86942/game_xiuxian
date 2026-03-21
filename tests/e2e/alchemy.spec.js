@@ -30,12 +30,12 @@ test('战斗中不能切入丹炉页', async ({ page }) => {
         randomValue: 0,
     });
 
-    await page.click(selectors.tabs.adventure);
-    await page.click(selectors.adventure.button);
+    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('出门游历');
+    await page.click(selectors.cultivation.mainButton);
     await waitForModalShown(page, selectors.combat.modal);
 
     await page.locator(selectors.tabs.alchemy).evaluate((button) => button.click());
 
     await expect.poll(() => dialogMessage).toContain('战斗中不可分心炼丹。');
-    await expect(page.locator(selectors.pages.adventure)).toHaveClass(/active/);
+    await expect(page.locator(selectors.pages.cultivation)).toHaveClass(/active/);
 });

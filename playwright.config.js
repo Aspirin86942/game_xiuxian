@@ -1,5 +1,8 @@
 const { defineConfig } = require('@playwright/test');
 
+const E2E_PORT = 4174;
+const BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
+
 module.exports = defineConfig({
     testDir: './tests/e2e',
     timeout: 30_000,
@@ -10,7 +13,7 @@ module.exports = defineConfig({
     forbidOnly: !!process.env.CI,
     reporter: 'list',
     use: {
-        baseURL: 'http://127.0.0.1:4173',
+        baseURL: BASE_URL,
         browserName: 'chromium',
         viewport: {
             width: 375,
@@ -25,10 +28,9 @@ module.exports = defineConfig({
         video: 'off',
     },
     webServer: {
-        command: 'node tests/serve-static.js',
-        url: 'http://127.0.0.1:4173',
-        reuseExistingServer: !process.env.CI,
+        command: `node -e "process.env.PORT='${E2E_PORT}'; require('./tests/serve-static.js')"`,
+        url: BASE_URL,
+        reuseExistingServer: false,
         timeout: 120_000,
     },
 });
-

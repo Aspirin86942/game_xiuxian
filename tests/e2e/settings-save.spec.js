@@ -4,13 +4,14 @@ const { test, expect } = require('@playwright/test');
 const GameCore = require('../../game-core.js');
 const selectors = require('./helpers/selectors');
 const { openGame, readSave, waitForModalShown } = require('./helpers/harness');
-const { createCustomSaveScenario, createLegacySaveScenario } = require('./helpers/saveFactory');
+const { createAdventureTabSaveScenario, createCustomSaveScenario, createLegacySaveScenario } = require('./helpers/saveFactory');
 
 test('设置开关在刷新后保留', async ({ page }) => {
     await openGame(page);
 
     await page.click(selectors.tabs.settings);
     await waitForModalShown(page, selectors.settings.modal);
+    await expect(page.locator(selectors.settings.saveModeNote)).toContainText('完整导出 / 导入');
 
     await page.uncheck(selectors.settings.audioToggle);
     await page.uncheck(selectors.settings.musicToggle);
@@ -74,7 +75,7 @@ test('存档可导出、重开并重新导入恢复', async ({ page }, testInfo)
     expect(save.settings.musicEnabled).toBe(scenario.expectedState.musicEnabled);
 });
 
-test('导入旧版存档时阻断并提示，且不污染当前进度', async ({ page }, testInfo) => {
+test('导入 v5 旧存档时会自动补齐并升级到当前版本', async ({ page }, testInfo) => {
     const scenario = createCustomSaveScenario();
     const legacyScenario = createLegacySaveScenario();
     const legacyPath = testInfo.outputPath('legacy-save-v4.json');
@@ -86,23 +87,42 @@ test('导入旧版存档时阻断并提示，且不污染当前进度', async ({
     await page.click(selectors.tabs.settings);
     await waitForModalShown(page, selectors.settings.modal);
 
-    const dialogPromise = page.waitForEvent('dialog');
     const [fileChooser] = await Promise.all([
         page.waitForEvent('filechooser'),
         page.click(selectors.settings.importButton),
     ]);
     await fileChooser.setFiles(legacyPath);
 
-    const dialog = await dialogPromise;
-    expect(dialog.message()).toContain(legacyScenario.expectedAlertFragment);
-    expect(dialog.message()).toContain(`升级到 v${GameCore.SAVE_VERSION}`);
-    await dialog.accept();
-
-    await expect(page.locator(selectors.status.playerName)).toHaveText(scenario.expectedState.playerName);
-    await expect(page.locator(selectors.status.realm)).toHaveText(scenario.expectedState.realmLabel);
+    await expect(page.locator(selectors.status.playerName)).toHaveText(legacyScenario.expectedState.playerName);
+    await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
 
     const save = await readSave(page);
     expect(save.version).toBe(GameCore.SAVE_VERSION);
-    expect(save.playerName).toBe(scenario.expectedState.playerName);
-    expect(save.inventory.lingshi).toBe(scenario.expectedState.lingshi);
+    expect(save.playerName).toBe(legacyScenario.expectedState.playerName);
+    expect(save.ui.activeTab).toBe(legacyScenario.expectedState.activeTab);
+    expect(save.recovery).toBeTruthy();
+    expect(save.recovery.lastCheckedAt).toBeGreaterThan(0);
+});
+
+test('导入旧的 adventure 页签存档后，会自动落到修行页', async ({ page }, testInfo) => {
+    const scenario = createAdventureTabSaveScenario();
+    const savePath = testInfo.outputPath('adventure-tab-save.json');
+    fs.writeFileSync(savePath, scenario.serialized, 'utf8');
+
+    await openGame(page);
+    await page.click(selectors.tabs.settings);
+    await waitForModalShown(page, selectors.settings.modal);
+
+    const [fileChooser] = await Promise.all([
+        page.waitForEvent('filechooser'),
+        page.click(selectors.settings.importButton),
+    ]);
+    await fileChooser.setFiles(savePath);
+
+    await expect(page.locator(selectors.status.playerName)).toHaveText(scenario.expectedPlayerName);
+    await expect(page.locator(selectors.pages.cultivation)).toHaveClass(/active/);
+    await expect(page.locator('[data-tab="adventure"]')).toHaveCount(0);
+
+    const save = await readSave(page);
+    expect(save.ui.activeTab).toBe('cultivation');
 });

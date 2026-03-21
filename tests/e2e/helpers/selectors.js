@@ -3,13 +3,13 @@ module.exports = {
         playerName: '#player-name',
         realm: '#summary-realm-display',
         cultivation: '#summary-cultivation-display',
+        lingshi: '#summary-lingshi-display',
         activePage: '.page.active',
     },
     tabs: {
         cultivation: '[data-tab="cultivation"]',
         alchemy: '[data-tab="alchemy"]',
         story: '[data-tab="story"]',
-        adventure: '[data-tab="adventure"]',
         inventory: '[data-action="inventory"]',
         settings: '[data-action="settings"]',
     },
@@ -17,13 +17,13 @@ module.exports = {
         cultivation: '.page[data-page="cultivation"]',
         alchemy: '.page[data-page="alchemy"]',
         story: '.page[data-page="story"]',
-        adventure: '.page[data-page="adventure"]',
     },
     cultivation: {
         mainButton: '#main-btn',
         hint: '#hint-text',
         rate: '#breakthrough-inline',
-        offlineSummary: '#offline-summary-text',
+        trainCost: '#train-cost-text',
+        batchButton: (batchKey) => `[data-train-batch="${batchKey}"]`,
     },
     story: {
         title: '#story-title',
@@ -43,11 +43,12 @@ module.exports = {
         list: '#alchemy-list',
         craftButton: (recipeId) => `[data-craft-recipe-id="${recipeId}"]`,
     },
-    adventure: {
-        button: '#adventure-btn',
+    journey: {
         preview: '#combat-preview',
+        locationTitle: '#location-title',
+        locationDesc: '#location-desc',
         npcs: '#location-npcs',
-        battlePrep: '#battle-prep-summary',
+        clues: '#side-story-list',
     },
     inventory: {
         modal: '#inventory-modal',
@@ -67,13 +68,7 @@ module.exports = {
         resetButton: '#reset-btn',
         confirmResetButton: '#confirm-reset',
         cancelResetButton: '#cancel-reset',
-    },
-    offline: {
-        modal: '#offline-modal',
-        duration: '#offline-duration-text',
-        gain: '#offline-gain-text',
-        current: '#offline-current-text',
-        closeButton: '#close-offline-modal',
+        saveModeNote: '#save-mode-note',
     },
     combat: {
         modal: '#combat-modal',

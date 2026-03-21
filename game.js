@@ -2,6 +2,7 @@
     const STORAGE_KEY = StoryData.STORAGE_KEY;
     const { ITEMS } = StoryData;
     const TRAINING_BATCH_KEYS = ['1', '10', 'max'];
+    const MAX_IMPORT_FILE_BYTES = 256 * 1024;
 
     let gameState = GameCore.createInitialState();
     let combatState = null;
@@ -182,6 +183,9 @@
 
     function getUnsupportedSaveMessage(rawState) {
         const versionText = Number.isFinite(rawState?.version) ? `v${rawState.version}` : '未知版本';
+        if (Number.isFinite(rawState?.version) && rawState.version > GameCore.SAVE_VERSION) {
+            return `检测到更高版本存档（${versionText}），当前主循环仅支持 v${GameCore.MIN_SUPPORTED_SAVE_VERSION} - v${GameCore.SAVE_VERSION}。`;
+        }
         return `检测到旧版存档（${versionText}），当前主循环已升级到 v${GameCore.SAVE_VERSION}。`;
     }
 
@@ -852,6 +856,10 @@
         input.addEventListener('change', (event) => {
             const [file] = event.target.files || [];
             if (!file) {
+                return;
+            }
+            if (file.size > MAX_IMPORT_FILE_BYTES) {
+                window.alert(`导入失败：存档文件过大，请控制在 ${Math.floor(MAX_IMPORT_FILE_BYTES / 1024)} KB 以内。`);
                 return;
             }
             const reader = new FileReader();

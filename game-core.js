@@ -298,6 +298,39 @@
         };
     }
 
+    function normalizeRealmState(rawRealmIndex, rawStageIndex) {
+        const safeRealmIndex = Number.isFinite(rawRealmIndex) ? Math.floor(rawRealmIndex) : 0;
+        const safeStageIndex = Number.isFinite(rawStageIndex) ? Math.floor(rawStageIndex) : 0;
+        const safeScore = Math.max(0, Math.min((REALMS.length * 3) - 1, (safeRealmIndex * 3) + safeStageIndex));
+        return {
+            realmIndex: Math.floor(safeScore / 3),
+            stageIndex: safeScore % 3,
+        };
+    }
+
+    function normalizeActiveTab(rawTab) {
+        return rawTab === 'alchemy' || rawTab === 'story'
+            ? rawTab
+            : 'cultivation';
+    }
+
+    function normalizeInventoryState(rawInventory) {
+        if (!rawInventory || typeof rawInventory !== 'object') {
+            return {};
+        }
+
+        return Object.entries(rawInventory).reduce((result, [itemId, rawValue]) => {
+            if (!Number.isFinite(rawValue)) {
+                return result;
+            }
+            const nextValue = Math.max(0, Math.floor(rawValue));
+            if (nextValue > 0) {
+                result[itemId] = nextValue;
+            }
+            return result;
+        }, {});
+    }
+
     function normalizeLevelStoryState(rawState) {
         const nextState = createDefaultLevelStoryState();
         if (!rawState || typeof rawState !== 'object') {
@@ -423,15 +456,13 @@
         nextState.recovery = normalizeRecoveryState(rawState.recovery);
         nextState.storyConsequences = normalizeStoryConsequences(rawState.storyConsequences);
         nextState.ui = { ...defaultState.ui, ...(rawState.ui || {}) };
-        if (nextState.ui.activeTab === 'adventure') {
-            nextState.ui.activeTab = 'cultivation';
-        }
+        nextState.ui.activeTab = normalizeActiveTab(nextState.ui.activeTab);
         nextState.storyCursor = normalizeStoryCursor(rawState.storyCursor);
         nextState.playerStats = { ...defaultState.playerStats, ...(rawState.playerStats || {}) };
         nextState.routeScores = { ...defaultState.routeScores, ...(rawState.routeScores || {}) };
         nextState.npcRelations = { ...defaultState.npcRelations, ...(rawState.npcRelations || {}) };
         nextState.flags = { ...(rawState.flags || {}) };
-        nextState.inventory = { ...(rawState.inventory || {}) };
+        nextState.inventory = normalizeInventoryState(rawState.inventory);
         nextState.chapterChoices = { ...(rawState.chapterChoices || {}) };
         nextState.recentChoiceEcho = rawState.recentChoiceEcho && typeof rawState.recentChoiceEcho === 'object'
             ? { chapterId: rawState.recentChoiceEcho.chapterId ?? null, choiceId: rawState.recentChoiceEcho.choiceId ?? null }
@@ -443,8 +474,20 @@
         nextState.logs = Array.isArray(rawState.logs) ? rawState.logs.slice(0, MAX_LOGS) : [];
         nextState.ending = rawState.ending || null;
         nextState.levelStoryState = normalizeLevelStoryState(rawState.levelStoryState);
+        nextState.playerName = typeof rawState.playerName === 'string' && rawState.playerName.trim()
+            ? rawState.playerName
+            : defaultState.playerName;
+        nextState.currentLocation = typeof rawState.currentLocation === 'string' && rawState.currentLocation
+            ? rawState.currentLocation
+            : defaultState.currentLocation;
+        Object.assign(nextState, normalizeRealmState(rawState.realmIndex, rawState.stageIndex));
+        nextState.cultivation = Number.isFinite(rawState.cultivation) ? Math.floor(rawState.cultivation) : 0;
+        nextState.breakthroughBonus = Number.isFinite(rawState.breakthroughBonus)
+            ? Math.max(0, rawState.breakthroughBonus)
+            : 0;
         delete nextState.autoCultivate;
         recalculateState(nextState, false);
+        nextState.cultivation = Math.max(0, Math.min(nextState.maxCultivation, nextState.cultivation));
         return nextState;
     }
 
@@ -551,7 +594,8 @@
         state.breakthroughRate = Math.max(0.12, CONFIG.baseBreakthroughRate - (state.realmIndex * realm.rateDrop));
 
         const previousMaxHp = state.playerStats.maxHp || 100;
-        const hpRatio = previousMaxHp > 0 ? state.playerStats.hp / previousMaxHp : 1;
+        const rawHpRatio = previousMaxHp > 0 ? state.playerStats.hp / previousMaxHp : 1;
+        const hpRatio = Number.isFinite(rawHpRatio) ? rawHpRatio : 1;
         const baseHp = 100 + (state.realmIndex * 48) + (state.stageIndex * 18);
         const passiveBonuses = getInventoryPassiveBonuses(state);
         const battleWillBonuses = getBattleWillBonuses(state);
@@ -2337,7 +2381,13 @@
     }
 
     function isSupportedSaveData(rawState) {
-        return Boolean(rawState && typeof rawState === 'object' && Number.isFinite(rawState.version) && rawState.version >= MIN_SUPPORTED_SAVE_VERSION);
+        return Boolean(
+            rawState
+            && typeof rawState === 'object'
+            && Number.isFinite(rawState.version)
+            && rawState.version >= MIN_SUPPORTED_SAVE_VERSION
+            && rawState.version <= SAVE_VERSION
+        );
     }
 
     function getPressureStatusText(state) {

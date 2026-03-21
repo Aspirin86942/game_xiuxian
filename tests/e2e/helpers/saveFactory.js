@@ -73,6 +73,54 @@ function formatRenderedStoryProgress(state) {
         : `第 ${currentPage} / ${totalPages} 页`;
 }
 
+function playCurrentStoryToChoices(state) {
+    GameCore.ensureStoryCursor(state);
+    let view = GameCore.getStoryView(state);
+    while (view && view.mode === 'playing') {
+        GameCore.advanceStoryBeat(state);
+        view = GameCore.getStoryView(state);
+    }
+    return view;
+}
+
+function pickAvailableChoice(view, preferredId) {
+    if (!view || !Array.isArray(view.choices) || view.choices.length === 0) {
+        return null;
+    }
+    return view.choices.find((choice) => choice.id === preferredId && !choice.disabled)
+        || view.choices.find((choice) => !choice.disabled)
+        || view.choices[0];
+}
+
+function createChoiceState(chapterId, configure) {
+    const state = GameCore.createInitialState();
+    state.storyProgress = chapterId;
+    state.ui.activeTab = 'story';
+    GameCore.LEVEL_STORY_EVENTS.forEach((event) => {
+        state.levelStoryState.events[event.id] = { triggered: true, completed: true };
+    });
+    state.storyCursor = {
+        source: 'main',
+        storyId: null,
+        chapterId: null,
+        beatIndex: 0,
+        mode: 'idle',
+    };
+    if (configure) {
+        configure(state);
+    }
+    satisfyChapterRequirements(state, chapterId);
+    GameCore.ensureStoryCursor(state);
+    GameCore.skipStoryPlayback(state);
+    return state;
+}
+
+function fillInventoryWithSamples(state, limit = 18) {
+    Object.keys(StoryData.ITEMS).slice(0, limit).forEach((itemId, index) => {
+        state.inventory[itemId] = Math.max(1, index + 1);
+    });
+}
+
 function createSerializedState(mutator) {
     const state = GameCore.createInitialState();
     if (mutator) {
@@ -389,6 +437,210 @@ function createAdventureTabSaveScenario() {
     };
 }
 
+function createJourneyScenario() {
+    const { state, serialized } = createSerializedState((draft) => {
+        draft.playerName = '闭环样本';
+        draft.inventory.juqidan = 1;
+        draft.inventory.lingshi = 0;
+        draft.cultivation = draft.maxCultivation - 40;
+        draft.ui.activeTab = 'cultivation';
+    });
+
+    const afterResource = cloneState(state);
+    const resourceResult = GameCore.resolveExpedition(afterResource, () => 0.5);
+
+    const afterTraining = cloneState(afterResource);
+    GameCore.trainWithLingshi(afterTraining, '10');
+
+    const afterItemUse = cloneState(afterTraining);
+    GameCore.useItem(afterItemUse, 'juqidan');
+
+    const afterBreakthrough = cloneState(afterItemUse);
+    GameCore.attemptBreakthrough(afterBreakthrough, () => 0);
+
+    const afterStoryProgress = cloneState(afterBreakthrough);
+    const levelView = playCurrentStoryToChoices(afterStoryProgress);
+    const levelChoice = pickAvailableChoice(levelView);
+    GameCore.chooseStoryOption(afterStoryProgress, levelChoice.id);
+
+    const mainView = playCurrentStoryToChoices(afterStoryProgress);
+    const mainChoice = pickAvailableChoice(mainView, 'set_out_now');
+    GameCore.chooseStoryOption(afterStoryProgress, mainChoice.id);
+    afterStoryProgress.ui.activeTab = 'story';
+    const exportedState = cloneState(afterStoryProgress);
+
+    const continuedState = cloneState(exportedState);
+    const continuedView = playCurrentStoryToChoices(continuedState);
+    const continuationChoice = pickAvailableChoice(continuedView, 'keep_low_profile');
+    GameCore.chooseStoryOption(continuedState, continuationChoice.id);
+    continuedState.ui.activeTab = 'story';
+
+    return {
+        serialized,
+        itemId: 'juqidan',
+        trainBatch: '10',
+        resourceRandomValue: 0.5,
+        levelChoiceId: levelChoice.id,
+        mainChoiceId: mainChoice.id,
+        continuationChoiceId: continuationChoice.id,
+        expectedAfterResource: {
+            summary: resourceResult.summary,
+            lingshi: afterResource.inventory.lingshi || 0,
+            cultivationText: `${afterResource.cultivation}/${afterResource.maxCultivation}`,
+            mainButtonText: '闭关修炼',
+        },
+        expectedAfterItemUse: {
+            cultivationText: `${afterItemUse.cultivation}/${afterItemUse.maxCultivation}`,
+            inventoryCount: afterItemUse.inventory.juqidan || 0,
+            mainButtonText: '渡劫突破',
+        },
+        expectedAfterTraining: {
+            cultivationText: `${afterTraining.cultivation}/${afterTraining.maxCultivation}`,
+            lingshi: afterTraining.inventory.lingshi || 0,
+            mainButtonText: '出门游历',
+        },
+        expectedAfterBreakthrough: {
+            realmLabel: GameCore.getRealmLabel(afterBreakthrough),
+            cultivationText: `${afterBreakthrough.cultivation}/${afterBreakthrough.maxCultivation}`,
+        },
+        expectedExportedState: {
+            version: GameCore.SAVE_VERSION,
+            playerName: exportedState.playerName,
+            realmIndex: exportedState.realmIndex,
+            stageIndex: exportedState.stageIndex,
+            storyProgress: exportedState.storyProgress,
+            chapterChoices: exportedState.chapterChoices,
+            cultivationText: `${exportedState.cultivation}/${exportedState.maxCultivation}`,
+            lingshi: exportedState.inventory.lingshi || 0,
+        },
+        expectedContinuedState: {
+            storyProgress: continuedState.storyProgress,
+            chapterChoices: continuedState.chapterChoices,
+            pressureText: GameCore.getPressureStatusText(continuedState),
+            decisionHistoryLength: continuedState.decisionHistory.length,
+            cultivationText: `${continuedState.cultivation}/${continuedState.maxCultivation}`,
+            realmLabel: GameCore.getRealmLabel(continuedState),
+        },
+    };
+}
+
+function createInvalidSaveFixtures() {
+    const { state } = createSerializedState((draft) => {
+        draft.playerName = '异常样本';
+        draft.inventory.juqidan = 1;
+        draft.inventory.lingshi = 20;
+        draft.ui.activeTab = 'story';
+    });
+    const baseState = cloneState(state);
+
+    const missingFields = {
+        version: GameCore.SAVE_VERSION,
+        playerName: baseState.playerName,
+    };
+    const typeErrors = {
+        ...cloneState(baseState),
+        cultivation: 'bad-data',
+        realmIndex: 'oops',
+        stageIndex: 99,
+        playerStats: {
+            hp: 'bad-hp',
+        },
+        inventory: {
+            lingshi: 'NaN',
+            juqidan: -3,
+        },
+        ui: {
+            activeTab: 'inventory',
+        },
+    };
+    const semanticInvalid = {
+        ...cloneState(baseState),
+        cultivation: -999,
+        realmIndex: 99,
+        stageIndex: 99,
+        playerStats: {
+            ...baseState.playerStats,
+            hp: -20,
+        },
+        inventory: {
+            ...baseState.inventory,
+            lingshi: -9,
+            juqidan: 2,
+        },
+        storyCursor: {
+            source: 'main',
+            storyId: 'missing',
+            chapterId: 'missing',
+            beatIndex: -8,
+            mode: 'choices',
+        },
+    };
+    const numericExtremes = {
+        ...cloneState(baseState),
+        cultivation: Number.MAX_SAFE_INTEGER,
+        realmIndex: Number.MAX_SAFE_INTEGER,
+        stageIndex: Number.MAX_SAFE_INTEGER,
+        playerStats: {
+            ...baseState.playerStats,
+            hp: Number.MAX_SAFE_INTEGER,
+        },
+        inventory: {
+            ...baseState.inventory,
+            lingshi: Number.MAX_SAFE_INTEGER,
+            juqidan: Number.MAX_SAFE_INTEGER,
+        },
+        storyCursor: {
+            source: 'ending',
+            storyId: 'bad-ending',
+            chapterId: 'bad-ending',
+            beatIndex: Number.MAX_SAFE_INTEGER,
+            mode: 'choices',
+        },
+    };
+
+    return {
+        validBase: GameCore.serializeState(baseState),
+        emptySave: '',
+        nonJson: 'not-json-save',
+        truncatedJson: '{"version": 6, "playerName": "坏档"',
+        missingFields: JSON.stringify(missingFields, null, 2),
+        typeErrors: JSON.stringify(typeErrors, null, 2),
+        semanticInvalid: JSON.stringify(semanticInvalid, null, 2),
+        numericExtremes: JSON.stringify(numericExtremes, null, 2),
+        unsupportedLegacy: JSON.stringify({
+            ...cloneState(baseState),
+            version: GameCore.MIN_SUPPORTED_SAVE_VERSION - 1,
+        }, null, 2),
+        futureVersion: JSON.stringify({
+            ...cloneState(baseState),
+            version: GameCore.SAVE_VERSION + 1,
+        }, null, 2),
+        oversizedField: JSON.stringify({
+            ...cloneState(baseState),
+            playerName: '超'.repeat(140_000),
+        }),
+    };
+}
+
+function createLongChoiceScenario() {
+    const state = createChoiceState(0, (draft) => {
+        fillInventoryWithSamples(draft, 30);
+    });
+    const view = GameCore.getStoryView(state);
+    const longestChoice = [...view.choices]
+        .filter((choice) => !choice.disabled)
+        .sort((left, right) => right.text.length - left.text.length)[0];
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: longestChoice.id,
+        choiceText: longestChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedChoiceCount: view.choices.length,
+        inventoryItemCount: Object.keys(state.inventory).length,
+    };
+}
+
 module.exports = {
     STORAGE_KEY,
     createFreshScenario,
@@ -403,4 +655,7 @@ module.exports = {
     createCustomSaveScenario,
     createLegacySaveScenario,
     createAdventureTabSaveScenario,
+    createJourneyScenario,
+    createInvalidSaveFixtures,
+    createLongChoiceScenario,
 };

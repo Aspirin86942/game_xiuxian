@@ -35,3 +35,11 @@ def test_ui_contract_smoke() -> None:
 
 def test_offline_smoke() -> None:
     run_node_script("offline-smoke.js")
+
+
+def test_save_resilience_smoke() -> None:
+    run_node_script("save-resilience-smoke.js")
+
+
+def test_rng_replay_smoke() -> None:
+    run_node_script("rng-replay-smoke.js")

@@ -1,3 +1,26 @@
+const tabSelectorMap = {
+    cultivation: '[data-tab="cultivation"]',
+    alchemy: '[data-tab="alchemy"]',
+    story: '[data-tab="story"]',
+    inventory: '[data-action="inventory"]',
+    settings: '[data-action="settings"]',
+};
+
+const modalCloseSelectorMap = {
+    'inventory-modal': '#close-inventory',
+    'settings-modal': '#close-settings',
+    'dialogue-modal': '#close-dialogue',
+    'confirm-modal': '#cancel-reset',
+};
+
+const modalBodySelectorMap = {
+    'inventory-modal': '#inventory-modal .modal-panel',
+    'settings-modal': '#settings-modal .modal-panel',
+    'dialogue-modal': '#dialogue-modal .dialogue-text',
+    'combat-modal': '#combat-modal .combat-log',
+    'confirm-modal': '#confirm-modal .modal-panel',
+};
+
 module.exports = {
     status: {
         playerName: '#player-name',
@@ -7,11 +30,11 @@ module.exports = {
         activePage: '.page.active',
     },
     tabs: {
-        cultivation: '[data-tab="cultivation"]',
-        alchemy: '[data-tab="alchemy"]',
-        story: '[data-tab="story"]',
-        inventory: '[data-action="inventory"]',
-        settings: '[data-action="settings"]',
+        ...tabSelectorMap,
+    },
+    nav: {
+        tabList: '.bottom-nav',
+        tab: (tabId) => tabSelectorMap[tabId] || `[data-tab="${tabId}"], [data-action="${tabId}"]`,
     },
     pages: {
         cultivation: '.page[data-page="cultivation"]',
@@ -32,6 +55,8 @@ module.exports = {
         continueButton: '#story-continue-btn',
         skipButton: '#story-skip-btn',
         choices: '#story-choices',
+        choiceButtons: '#story-choices .story-choice-btn',
+        choice: (choiceId) => `#story-choices [data-choice-id="${choiceId}"]`,
         pressure: '#story-pressure',
         endingChain: '#story-ending-chain',
         goal: '#story-goal',
@@ -74,5 +99,9 @@ module.exports = {
         modal: '#combat-modal',
         title: '#combat-title',
         log: '#combat-log',
+    },
+    modal: {
+        body: (modalId) => modalBodySelectorMap[modalId] || `#${modalId} .modal-panel`,
+        close: (modalId) => modalCloseSelectorMap[modalId] || `#${modalId} .icon-btn`,
     },
 };

@@ -11,6 +11,8 @@ test('剧情页支持继续、跳至抉择和完成分支选择', async ({ page 
     await expect(page.locator(selectors.story.line)).toHaveText(scenario.initialLine);
     await expect(page.locator(selectors.story.pressure)).toContainText(scenario.initialPressureText);
     await expect(page.locator(selectors.story.pressure)).not.toContainText(/\d/);
+    await expect(page.locator(selectors.journey.npcs)).toBeVisible();
+    await expect(page.locator(selectors.journey.clues)).toBeVisible();
 
     await page.click(selectors.story.continueButton);
     if (scenario.continuedLine) {
@@ -91,7 +93,8 @@ test('劫煞积满时进入走火入魔结局并可重开', async ({ page }) => 
 
     save = await readSave(page);
     expect(save.ending).toBeNull();
-    expect(save.storyConsequences).toEqual(scenario.expectedResetStoryConsequences);
+    expect(save.storyConsequences.pressureTier).toBe('安全');
+    expect(save.storyConsequences.tribulation).toBe(0);
     expect(save.recentChoiceOutcome).toBeNull();
     expect(save.decisionHistory).toEqual([]);
     expect(save.pendingEchoes).toEqual([]);

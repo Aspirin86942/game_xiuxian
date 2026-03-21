@@ -28,6 +28,10 @@
                             <span class="metric-label">修为</span>
                             <strong class="metric-value" id="summary-cultivation-display">0/100</strong>
                         </div>
+                        <div class="summary-chip">
+                            <span class="metric-label">灵石</span>
+                            <strong class="metric-value" id="summary-lingshi-display">0</strong>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -37,27 +41,37 @@
                     <article class="card cultivation-card">
                         <div class="card-header">
                             <div>
-                                <p class="eyebrow">静室</p>
-                                <h2>吐纳聚气</h2>
+                                <p class="eyebrow">修行</p>
+                                <h2>闭关与游历</h2>
                             </div>
                             <button class="ghost-btn" id="toggle-log-btn" type="button">札记</button>
                         </div>
                         <div class="cultivation-stage">
                             <div class="floating-text-container" id="floating-container"></div>
-                            <button class="main-button" id="main-btn" type="button">吐纳聚气</button>
-                            <p class="hint-text" id="hint-text">点击按钮开始修炼</p>
+                            <button class="main-button" id="main-btn" type="button">闭关修炼</button>
+                            <p class="hint-text" id="hint-text">先去游历赚些灵石，再回来闭关修炼。</p>
                             <p class="cultivation-meta" id="breakthrough-inline">当前突破率：80%</p>
                         </div>
-                        <div class="auto-panel" id="auto-panel">
-                            <div class="auto-copy">
-                                <p class="mini-label">挂机吐纳</p>
-                                <p class="auto-status" id="auto-status-text">筑基期后解锁自动吐纳</p>
-                                <p class="offline-summary" id="offline-summary-text">离线收益仅在开启自动吐纳后生效，最多累计 8 小时。</p>
+                        <div class="training-panel" id="training-panel">
+                            <div class="training-copy">
+                                <p class="mini-label">闭关批次</p>
+                                <p class="training-cost" id="train-cost-text">每枚灵石可炼化 10 点修为。</p>
                             </div>
-                            <button class="toggle-btn" id="auto-toggle-btn" type="button">
-                                <span class="toggle-dot"></span>
-                                <span id="auto-toggle-text">自动吐纳：关</span>
-                            </button>
+                            <div class="training-batches" id="train-batch-controls">
+                                <button class="training-batch-btn active" data-train-batch="1" type="button">1 枚</button>
+                                <button class="training-batch-btn" data-train-batch="10" type="button">10 枚</button>
+                                <button class="training-batch-btn" data-train-batch="max" type="button">尽数闭关</button>
+                            </div>
+                        </div>
+                        <div class="expedition-panel">
+                            <div class="expedition-head">
+                                <div>
+                                    <p class="mini-label">行旅</p>
+                                    <h3 id="location-title">青牛镇</h3>
+                                </div>
+                            </div>
+                            <p class="location-desc" id="location-desc">边陲小镇，风里仍有炊烟味。</p>
+                            <div class="combat-preview" id="combat-preview">游历可能获得灵石、遭遇战斗、折损气血，或打听剧情线索。</div>
                         </div>
                     </article>
 
@@ -119,53 +133,26 @@
                         <div class="story-ending-chain" id="story-ending-chain"></div>
                         <div class="next-goal" id="story-goal"></div>
                     </article>
-                </section>
-
-                <section class="page" data-page="adventure">
-                    <article class="card location-card">
+                    <article class="card story-support-card">
                         <div class="card-header">
                             <div>
-                                <p class="eyebrow">行旅</p>
-                                <h2 id="location-title">青牛镇</h2>
+                                <p class="eyebrow">人物与线索</p>
+                                <h2>同行回响</h2>
                             </div>
-                            <button class="primary-btn compact" id="adventure-btn" type="button">出门游历</button>
                         </div>
-                        <p class="location-desc" id="location-desc">边陲小镇，风里仍有炊烟味。</p>
                         <div class="npc-list" id="location-npcs"></div>
-                    </article>
-
-                    <article class="card side-story-card">
-                        <div class="card-header">
-                            <div>
-                                <p class="eyebrow">支线</p>
-                                <h2>可触发事件</h2>
-                            </div>
-                        </div>
                         <div class="side-story-list" id="side-story-list"></div>
-                    </article>
-
-                    <article class="card combat-note-card">
-                        <div class="card-header">
-                            <div>
-                                <p class="eyebrow">战备</p>
-                                <h2>战斗概况</h2>
-                            </div>
-                        </div>
-                        <div class="combat-preview" id="combat-preview">当前无战斗。</div>
                     </article>
                 </section>
             </section>
 
             <nav class="bottom-nav">
                 <button class="nav-btn active" data-tab="cultivation" type="button">
-                    <span>修炼</span>
+                    <span>修行</span>
                 </button>
                 <button class="nav-btn" data-tab="story" type="button">
                     <span>剧情</span>
                     <span class="nav-badge" id="story-badge">新</span>
-                </button>
-                <button class="nav-btn" data-tab="adventure" type="button">
-                    <span>游历</span>
                 </button>
                 <button class="nav-btn" data-action="inventory" type="button">
                     <span>储物</span>
@@ -216,6 +203,7 @@
                 <button class="ghost-btn" id="import-btn" type="button">导入存档</button>
                 <button class="danger-btn" id="reset-btn" type="button">重开</button>
             </div>
+            <p class="settings-note" id="save-mode-note">当前为纯单机自由模式：支持完整导出 / 导入，不保证平衡或回档一致性。</p>
         </div>
     </div>
 
@@ -230,33 +218,6 @@
             </div>
             <div class="dialogue-avatar" id="dialogue-avatar">人</div>
             <div class="dialogue-text" id="dialogue-text"></div>
-        </div>
-    </div>
-
-    <div class="modal" id="offline-modal">
-        <div class="modal-panel offline-panel">
-            <div class="modal-header">
-                <div>
-                    <p class="eyebrow">挂机收益</p>
-                    <h3>闭关归来</h3>
-                </div>
-            </div>
-            <p class="offline-copy">你离开期间，洞府灵气仍在缓缓运转，替你攒下了一截修为。</p>
-            <div class="offline-metrics">
-                <article class="offline-metric">
-                    <span>离线时长</span>
-                    <strong id="offline-duration-text">离线 0 小时 0 分</strong>
-                </article>
-                <article class="offline-metric">
-                    <span>离线收益</span>
-                    <strong id="offline-gain-text">修为 +0</strong>
-                </article>
-                <article class="offline-metric">
-                    <span>当前修为</span>
-                    <strong id="offline-current-text">0/100</strong>
-                </article>
-            </div>
-            <button class="primary-btn" id="close-offline-modal" type="button">收下收益</button>
         </div>
     </div>
 

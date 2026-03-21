@@ -8,9 +8,7 @@ function cloneState(state) {
 }
 
 function setRealmScore(state, score) {
-    const safeScore = Math.max(0, Math.min(score, (GameCore.REALMS.length * 3) - 1));
-    state.realmIndex = Math.floor(safeScore / 3);
-    state.stageIndex = safeScore % 3;
+    GameCore.setRealmScore(state, score);
     GameCore.recalculateState(state, true);
 }
 
@@ -62,7 +60,10 @@ function formatRenderedStoryTitle(state) {
 
 function formatRenderedStoryProgress(state) {
     const view = GameCore.getStoryView(state);
-    if (!view || view.mode === 'ending') {
+    if (!view) {
+        return '暂无可翻阅章节';
+    }
+    if (view.mode === 'ending') {
         return '终局';
     }
     const totalPages = view.story.beats.length;
@@ -70,29 +71,6 @@ function formatRenderedStoryProgress(state) {
     return view.mode === 'choices'
         ? `第 ${totalPages} / ${totalPages} 页 · 抉择`
         : `第 ${currentPage} / ${totalPages} 页`;
-}
-
-function formatOfflineDuration(durationMs) {
-    const totalMinutes = Math.max(0, Math.floor(durationMs / 60000));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours} 小时 ${minutes} 分`;
-}
-
-function getOfflineCapHours() {
-    return Math.floor(StoryData.CONFIG.offlineCultivateMaxDurationMs / (60 * 60 * 1000));
-}
-
-function formatOfflineSummary(state, autoUnlocked) {
-    const trainingState = state.offlineTraining || {};
-    if (!trainingState.lastGain || trainingState.lastGain <= 0) {
-        return autoUnlocked
-            ? `离线收益仅在开启自动吐纳后生效，最多累计 ${getOfflineCapHours()} 小时。`
-            : `筑基期后解锁自动吐纳与离线收益，最多累计 ${getOfflineCapHours()} 小时。`;
-    }
-
-    const cappedText = trainingState.wasCapped ? `，已按 ${getOfflineCapHours()} 小时封顶` : '';
-    return `上次离线吐纳 ${formatOfflineDuration(trainingState.lastEffectiveDurationMs)}，修为 +${trainingState.lastGain}${cappedText}`;
 }
 
 function createSerializedState(mutator) {
@@ -116,22 +94,36 @@ function createFreshScenario() {
     };
 }
 
-function createBreakthroughScenario() {
+function createTrainingScenario() {
     const { state, serialized } = createSerializedState((draft) => {
-        draft.cultivation = draft.maxCultivation;
-        draft.breakthroughBonus = 0.2;
+        draft.inventory.lingshi = 12;
+        draft.cultivation = draft.maxCultivation - 20;
         draft.ui.activeTab = 'cultivation';
     });
-    const previewState = cloneState(state);
-    GameCore.attemptBreakthrough(previewState, () => 0.01);
+
+    const afterTraining = cloneState(state);
+    GameCore.trainWithLingshi(afterTraining, '10');
+
+    const afterBreakthrough = cloneState(afterTraining);
+    GameCore.attemptBreakthrough(afterBreakthrough, () => 0);
+
     return {
         serialized,
-        initialRealmLabel: GameCore.getRealmLabel(state),
-        expectedRealmLabel: GameCore.getRealmLabel(previewState),
-        expectedState: {
-            realmIndex: previewState.realmIndex,
-            stageIndex: previewState.stageIndex,
-            cultivation: previewState.cultivation,
+        initialState: {
+            cultivationText: `${state.cultivation}/${state.maxCultivation}`,
+            lingshi: state.inventory.lingshi,
+            realmLabel: GameCore.getRealmLabel(state),
+        },
+        afterTraining: {
+            cultivationText: `${afterTraining.cultivation}/${afterTraining.maxCultivation}`,
+            lingshi: afterTraining.inventory.lingshi,
+            mainButtonText: '渡劫突破',
+        },
+        afterBreakthrough: {
+            realmLabel: GameCore.getRealmLabel(afterBreakthrough),
+            cultivationText: `${afterBreakthrough.cultivation}/${afterBreakthrough.maxCultivation}`,
+            realmIndex: afterBreakthrough.realmIndex,
+            stageIndex: afterBreakthrough.stageIndex,
         },
     };
 }
@@ -143,8 +135,8 @@ function createStoryScenario() {
 
     const initialView = GameCore.getStoryView(state);
     const secondBeatState = cloneState(state);
-    const advanceResult = GameCore.advanceStoryBeat(secondBeatState);
-    const continuedView = advanceResult.ok ? GameCore.getStoryView(secondBeatState) : initialView;
+    GameCore.advanceStoryBeat(secondBeatState);
+    const continuedView = GameCore.getStoryView(secondBeatState);
 
     const choiceState = cloneState(state);
     GameCore.skipStoryPlayback(choiceState);
@@ -200,12 +192,12 @@ function createTribulationEndingScenario() {
         GameCore.ensureStoryCursor(draft);
         GameCore.skipStoryPlayback(draft);
     });
+
     const choiceView = GameCore.getStoryView(state);
     const selectedChoice = choiceView.choices.find((choice) => choice.id === 'kill_for_gain');
     const previewState = cloneState(state);
     GameCore.chooseStoryOption(previewState, 'kill_for_gain');
     const endingView = GameCore.getStoryView(previewState);
-
     const impact = GameCore.getEchoes(previewState)[0] || { title: '', detail: '', meta: '' };
 
     return {
@@ -227,60 +219,52 @@ function createTribulationEndingScenario() {
         expectedTribulationValue: previewState.storyConsequences.tribulation,
         expectedResetRealmLabel: '炼气·初期',
         expectedResetCultivationText: '0/100',
-        expectedResetStoryConsequences: {
-            battleWill: 0,
-            tribulation: 0,
-            pressureTier: '安全',
-            pressureTrend: '平稳',
-        },
     };
 }
 
-function createLegacySaveScenario() {
-    const { state } = createSerializedState((draft) => {
-        draft.playerName = '旧版档案';
-        draft.ui.activeTab = 'story';
+function createResourceExpeditionScenario() {
+    const { state, serialized } = createSerializedState((draft) => {
+        draft.inventory.lingshi = 0;
+        draft.cultivation = 40;
+        draft.ui.activeTab = 'cultivation';
     });
-    const legacyState = cloneState(state);
-    legacyState.version = 4;
-    delete legacyState.decisionHistory;
-    delete legacyState.pendingEchoes;
-    delete legacyState.endingSeeds;
-    if (legacyState.storyConsequences) {
-        delete legacyState.storyConsequences.pressureTier;
-        delete legacyState.storyConsequences.pressureTrend;
-    }
+
+    const previewState = cloneState(state);
+    const result = GameCore.resolveExpedition(previewState, () => 0.5);
+
     return {
-        serialized: JSON.stringify(legacyState),
-        expectedAlertFragment: '检测到旧版存档（v4）',
+        serialized,
+        expectedSummary: result.summary,
+        expectedLingshi: previewState.inventory.lingshi,
+        expectedCultivationText: `${previewState.cultivation}/${previewState.maxCultivation}`,
     };
 }
 
 function createCombatScenario() {
     const { state, serialized } = createSerializedState((draft) => {
-        setRealmScore(draft, 9);
-        draft.inventory.feijian = 1;
-        draft.inventory.hujian = 1;
-        draft.inventory.quhun = 1;
+        setRealmScore(draft, 6);
+        draft.inventory.lingshi = 0;
+        draft.inventory.juqidan = 1;
         draft.currentLocation = '黄枫谷';
-        draft.cultivation = Math.max(0, draft.maxCultivation - 40);
-        draft.ui.activeTab = 'adventure';
-        GameCore.recalculateState(draft, true);
+        draft.cultivation = 80;
+        draft.ui.activeTab = 'cultivation';
     });
+
     const previewState = cloneState(state);
-    const combatState = GameCore.beginCombat(previewState, () => 0);
+    const expedition = GameCore.resolveExpedition(previewState, () => 0);
     let result = null;
     while (!result || !result.finished) {
-        result = GameCore.resolveCombatRound(previewState, combatState, () => 0);
+        result = GameCore.resolveCombatRound(previewState, expedition.combatState, () => 0);
     }
+
     return {
         serialized,
-        expectedMonsterName: combatState.monster.name,
-        expectedVictory: result.victory,
+        expectedMonsterName: expedition.combatState.monster.name,
+        expectedSummary: previewState.logs[0].message,
         expectedState: {
             cultivation: previewState.cultivation,
-            playerHp: previewState.playerStats.hp,
-            inventory: previewState.inventory,
+            lingshi: previewState.inventory.lingshi || 0,
+            hp: previewState.playerStats.hp,
         },
     };
 }
@@ -288,7 +272,7 @@ function createCombatScenario() {
 function createConsumableScenario() {
     const { state, serialized } = createSerializedState((draft) => {
         draft.inventory.juqidan = 2;
-        draft.cultivation = 0;
+        draft.cultivation = draft.maxCultivation - 10;
         draft.ui.activeTab = 'cultivation';
     });
     const previewState = cloneState(state);
@@ -316,6 +300,7 @@ function createCustomSaveScenario() {
     return {
         serialized,
         expectedState: {
+            version: 6,
             playerName: state.playerName,
             realmLabel: GameCore.getRealmLabel(state),
             cultivationText: `${state.cultivation}/${state.maxCultivation}`,
@@ -327,72 +312,42 @@ function createCustomSaveScenario() {
     };
 }
 
-function createOfflineSettlementScenario(options = {}) {
-    const {
-        nowMs = 1_710_000_000_000,
-        offlineMs = 2 * 60 * 60 * 1000,
-        realmScore = 11,
-        cultivation = 500,
-        autoCultivate = true,
-    } = options;
-
-    const { state, serialized } = createSerializedState((draft) => {
-        setRealmScore(draft, realmScore);
-        draft.cultivation = cultivation;
-        draft.autoCultivate = autoCultivate;
-        draft.ui.activeTab = 'cultivation';
-        draft.offlineTraining = {
-            ...draft.offlineTraining,
-            lastSavedAt: nowMs - offlineMs,
-            lastSettlementAt: null,
-            lastDurationMs: 0,
-            lastEffectiveDurationMs: 0,
-            lastGain: 0,
-            wasCapped: false,
-        };
+function createLegacySaveScenario() {
+    const { state } = createSerializedState((draft) => {
+        draft.playerName = '旧版档案';
+        draft.ui.activeTab = 'story';
     });
-
-    const previewState = cloneState(state);
-    const settlement = GameCore.resolveOfflineCultivation(previewState, nowMs);
-    const expectedDurationText = settlement.wasCapped
-        ? `离线 ${formatOfflineDuration(settlement.durationMs)}，按 ${formatOfflineDuration(settlement.effectiveDurationMs)} 结算`
-        : `离线 ${formatOfflineDuration(settlement.effectiveDurationMs)}`;
-
+    const legacyState = cloneState(state);
+    legacyState.version = 5;
     return {
-        serialized,
-        nowMs,
-        expectedState: {
-            applied: settlement.applied,
-            gain: settlement.gain,
-            durationText: expectedDurationText,
-            cultivationText: `${previewState.cultivation}/${previewState.maxCultivation}`,
-            cultivation: previewState.cultivation,
-            maxCultivation: previewState.maxCultivation,
-            realmLabel: GameCore.getRealmLabel(previewState),
-            realmIndex: previewState.realmIndex,
-            stageIndex: previewState.stageIndex,
-            wasCapped: settlement.wasCapped,
-            offlineSummaryText: formatOfflineSummary(previewState, GameCore.canAutoCultivate(previewState)),
-        },
-        initialState: {
-            cultivationText: `${state.cultivation}/${state.maxCultivation}`,
-            cultivation: state.cultivation,
-            realmLabel: GameCore.getRealmLabel(state),
-            realmIndex: state.realmIndex,
-            stageIndex: state.stageIndex,
-        },
+        serialized: JSON.stringify(legacyState),
+        expectedAlertFragment: '检测到旧版存档（v5）',
+    };
+}
+
+function createAdventureTabSaveScenario() {
+    const { state } = createSerializedState((draft) => {
+        draft.playerName = '游历旧页签档';
+        draft.ui.activeTab = 'adventure';
+        draft.currentLocation = '黄枫谷';
+        draft.inventory.lingshi = 0;
+    });
+    return {
+        serialized: GameCore.serializeState(state),
+        expectedPlayerName: state.playerName,
     };
 }
 
 module.exports = {
     STORAGE_KEY,
     createFreshScenario,
-    createBreakthroughScenario,
+    createTrainingScenario,
     createStoryScenario,
     createTribulationEndingScenario,
-    createLegacySaveScenario,
+    createResourceExpeditionScenario,
     createCombatScenario,
     createConsumableScenario,
     createCustomSaveScenario,
-    createOfflineSettlementScenario,
+    createLegacySaveScenario,
+    createAdventureTabSaveScenario,
 };

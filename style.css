@@ -437,6 +437,63 @@ button {
     letter-spacing: 0.02em;
 }
 
+.training-panel {
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(51, 95, 83, 0.1);
+    display: grid;
+    gap: 10px;
+}
+
+.training-copy {
+    display: grid;
+    gap: 4px;
+}
+
+.training-cost {
+    color: var(--ink-soft);
+    line-height: 1.55;
+    font-size: 0.82rem;
+}
+
+.training-batches {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.training-batch-btn {
+    min-height: 38px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--ink-soft);
+    border: 1px solid rgba(143, 106, 42, 0.16);
+    transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+.training-batch-btn.active {
+    background: rgba(51, 95, 83, 0.12);
+    color: var(--jade);
+    border-color: rgba(51, 95, 83, 0.18);
+    font-weight: 700;
+}
+
+.expedition-panel {
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.56);
+    border: 1px solid rgba(143, 106, 42, 0.12);
+    display: grid;
+    gap: 8px;
+}
+
+.expedition-head h3 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
 .auto-panel {
     padding: 12px 14px;
     border-radius: var(--radius-md);
@@ -717,7 +774,7 @@ button {
 
 .bottom-nav {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     padding: 10px;
     background: rgba(250, 244, 234, 0.84);
@@ -901,6 +958,12 @@ button {
     background: rgba(255, 255, 255, 0.6);
 }
 
+.settings-note {
+    color: var(--ink-soft);
+    line-height: 1.6;
+    font-size: 0.82rem;
+}
+
 .dialogue-panel {
     text-align: center;
 }
@@ -1060,6 +1123,35 @@ button {
         align-items: flex-start;
     }
 
+    .training-panel {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .training-cost {
+        font-size: 0.76rem;
+        line-height: 1.45;
+    }
+
+    .training-batches {
+        gap: 6px;
+    }
+
+    .training-batch-btn {
+        min-height: 34px;
+        padding: 7px 8px;
+        font-size: 0.76rem;
+    }
+
+    .expedition-panel {
+        padding: 8px 10px;
+        gap: 6px;
+    }
+
+    .expedition-head h3 {
+        font-size: 0.92rem;
+    }
+
     .toggle-btn {
         padding: 8px 12px;
         gap: 8px;
@@ -1205,6 +1297,11 @@ button {
     .setting-row {
         padding: 10px 12px;
         font-size: 0.82rem;
+    }
+
+    .settings-note {
+        font-size: 0.76rem;
+        line-height: 1.5;
     }
 
     .dialogue-avatar {

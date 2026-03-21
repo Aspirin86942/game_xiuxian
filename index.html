@@ -41,8 +41,8 @@
                     <article class="card cultivation-card">
                         <div class="card-header">
                             <div>
-                                <p class="eyebrow">静室</p>
-                                <h2>吐纳聚气</h2>
+                                <p class="eyebrow">修行</p>
+                                <h2>闭关与游历</h2>
                             </div>
                             <button class="ghost-btn" id="toggle-log-btn" type="button">札记</button>
                         </div>
@@ -62,6 +62,16 @@
                                 <button class="training-batch-btn" data-train-batch="10" type="button">10 枚</button>
                                 <button class="training-batch-btn" data-train-batch="max" type="button">尽数闭关</button>
                             </div>
+                        </div>
+                        <div class="expedition-panel">
+                            <div class="expedition-head">
+                                <div>
+                                    <p class="mini-label">行旅</p>
+                                    <h3 id="location-title">青牛镇</h3>
+                                </div>
+                            </div>
+                            <p class="location-desc" id="location-desc">边陲小镇，风里仍有炊烟味。</p>
+                            <div class="combat-preview" id="combat-preview">游历可能获得灵石、遭遇战斗、折损气血，或打听剧情线索。</div>
                         </div>
                     </article>
 
@@ -123,53 +133,26 @@
                         <div class="story-ending-chain" id="story-ending-chain"></div>
                         <div class="next-goal" id="story-goal"></div>
                     </article>
-                </section>
-
-                <section class="page" data-page="adventure">
-                    <article class="card location-card">
+                    <article class="card story-support-card">
                         <div class="card-header">
                             <div>
-                                <p class="eyebrow">行旅</p>
-                                <h2 id="location-title">青牛镇</h2>
+                                <p class="eyebrow">人物与线索</p>
+                                <h2>同行回响</h2>
                             </div>
-                            <button class="primary-btn compact" id="adventure-btn" type="button">出门游历</button>
                         </div>
-                        <p class="location-desc" id="location-desc">边陲小镇，风里仍有炊烟味。</p>
                         <div class="npc-list" id="location-npcs"></div>
-                    </article>
-
-                    <article class="card side-story-card">
-                        <div class="card-header">
-                            <div>
-                                <p class="eyebrow">支线</p>
-                                <h2>可触发事件</h2>
-                            </div>
-                        </div>
                         <div class="side-story-list" id="side-story-list"></div>
-                    </article>
-
-                    <article class="card combat-note-card">
-                        <div class="card-header">
-                            <div>
-                                <p class="eyebrow">战备</p>
-                                <h2>战斗概况</h2>
-                            </div>
-                        </div>
-                        <div class="combat-preview" id="combat-preview">当前无战斗。</div>
                     </article>
                 </section>
             </section>
 
             <nav class="bottom-nav">
                 <button class="nav-btn active" data-tab="cultivation" type="button">
-                    <span>修炼</span>
+                    <span>修行</span>
                 </button>
                 <button class="nav-btn" data-tab="story" type="button">
                     <span>剧情</span>
                     <span class="nav-badge" id="story-badge">新</span>
-                </button>
-                <button class="nav-btn" data-tab="adventure" type="button">
-                    <span>游历</span>
                 </button>
                 <button class="nav-btn" data-action="inventory" type="button">
                     <span>储物</span>

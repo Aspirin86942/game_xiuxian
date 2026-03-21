@@ -99,3 +99,45 @@
 - `01-current-behavior.md`
 - `02-parameters-and-formulas.md`
 - `03-implementation-contract.md`
+
+### `[2026-03-21] 修炼页与游历页收敛为单页修行入口`
+
+#### 改动内容
+
+- 删除独立 `adventure` 页面与底部“游历”页签。
+- 把当前地点、最近一次游历摘要与战斗概况收进修行主卡。
+- 把 NPC 主动对话入口与线索 / 支线列表迁入剧情页。
+- 把主按钮语义收敛为“出门游历 / 闭关修炼 / 渡劫突破”三态。
+
+#### 改动原因
+
+- 新主循环已经不再需要“修炼页”和“游历页”分开承载核心操作，双页切换会拉长主循环路径。
+- 当前实现目标更接近“一个修行入口，按资源状态自动决定下一步”，因此需要同步精简 UI 和测试契约。
+
+#### 预期玩家体验 / 用户体验变化
+
+- 玩家默认停留在一个“修行”页中，缺灵石时直接出门游历，有灵石时直接闭关，修为满时直接突破。
+- 剧情页额外承接人物关系与线索摘要，不再让主循环页同时承担过多支线入口。
+
+#### 是否影响旧状态 / 旧存档 / 旧客户端
+
+- 是
+- 若是，影响点：
+  - 旧 `version = 6` 存档若写入 `ui.activeTab = 'adventure'`，加载后会自动映射到 `cultivation`。
+  - 不升存档版本，不改数值字段与资源闭环。
+
+#### 是否需要同步更新测试
+
+- 是
+- 若是，需要更新：
+  - `tests/ui-contract-smoke.js`
+  - `tests/offline-smoke.js`
+  - `tests/e2e/navigation.spec.js`
+  - `tests/e2e/adventure.spec.js`
+  - `tests/e2e/settings-save.spec.js`
+
+#### 需要同步更新的文档
+
+- `README.md`
+- `01-current-behavior.md`
+- `03-implementation-contract.md`

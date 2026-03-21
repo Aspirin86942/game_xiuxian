@@ -10,8 +10,8 @@
 - 主循环状态入口：`game-core.js` 中的 `createInitialState()`、`mergeSave()`、`recalculateState()`。
 - 修炼入口：`game-core.js` 中的 `trainWithLingshi()`、`attemptBreakthrough()`。
 - 游历入口：`game-core.js` 中的 `resolveExpedition()`、`beginCombat()`、`resolveCombatRound()`。
-- 页面交互入口：`game.js` 中的 `renderCultivationPage()`、`renderAdventurePage()`、`handleCultivate()`、`startAdventure()`、`exportSave()`、`importSave()`。
-- DOM 结构入口：`index.html` 中的修炼页、游历页、设置页与战斗弹层。
+- 页面交互入口：`game.js` 中的 `renderCultivationPage()`、`renderStoryPage()`、`handleCultivate()`、`startAdventure()`、`exportSave()`、`importSave()`。
+- DOM 结构入口：`index.html` 中的修行页、剧情页、设置页与战斗弹层。
 
 ## 3. 稳定数据契约
 
@@ -46,12 +46,14 @@
 
 ## 5. 稳定 UI 契约
 
-- 修炼页必须继续保留一个主按钮，但其语义变为“闭关修炼 / 渡劫突破”二选一。
+- 修行页必须继续保留一个主按钮，但其语义固定为“出门游历 / 闭关修炼 / 渡劫突破”三态切换。
 - 顶栏必须展示当前灵石数量，不能让玩家在主循环里看不到主要资源。
-- 修炼页必须展示批量闭关控件与当前批次成本说明。
-- 游历页必须展示最近一次游历摘要，不能只保留“点击即战斗”的旧提示。
+- 修行页必须展示批量闭关控件与当前批次成本说明。
+- 修行页必须展示当前地点与最近一次游历摘要，不能只保留“点击即战斗”的旧提示。
+- 剧情页必须承接 NPC 主动对话入口与线索 / 支线列表。
 - 设置页必须展示“纯单机自由，完整导出/导入，不保证平衡”的提示。
 - 自动吐纳、离线收益摘要与离线收益弹层不得继续保留在 UI 中。
+- 独立 `adventure` 页签、独立 `adventure` 页面与独立游历按钮不得继续保留在 UI 中。
 
 ## 6. 禁止项
 
@@ -74,7 +76,10 @@
   - `version = 6` 的完整导出 / 导入必须保持主状态一致。
 - UI 契约测试：
   - 顶栏灵石摘要存在。
-  - 修炼页存在批量闭关控件。
+  - 修行页存在批量闭关控件。
+  - 修行页主按钮存在三态切换。
+  - 独立 `adventure` 页签和页面已删除。
+  - 旧 `ui.activeTab = 'adventure'` 读档后会回落到 `cultivation`。
   - 设置页存在单机自由存档提示。
   - 自动吐纳与离线收益锚点已删除。
 - 行为测试：

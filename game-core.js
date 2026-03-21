@@ -398,6 +398,9 @@
         nextState.settings = { ...createInitialState().settings, ...(rawState.settings || {}) };
         nextState.storyConsequences = normalizeStoryConsequences(rawState.storyConsequences);
         nextState.ui = { ...createInitialState().ui, ...(rawState.ui || {}) };
+        if (nextState.ui.activeTab === 'adventure') {
+            nextState.ui.activeTab = 'cultivation';
+        }
         nextState.storyCursor = normalizeStoryCursor(rawState.storyCursor);
         nextState.playerStats = { ...createInitialState().playerStats, ...(rawState.playerStats || {}) };
         nextState.routeScores = { ...createInitialState().routeScores, ...(rawState.routeScores || {}) };

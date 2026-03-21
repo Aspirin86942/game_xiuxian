@@ -1,65 +1,28 @@
 (function () {
     const STORAGE_KEY = StoryData.STORAGE_KEY;
-    const { ITEMS, LOCATIONS } = StoryData;
+    const { ITEMS } = StoryData;
+    const TRAINING_BATCH_KEYS = ['1', '10', 'max'];
 
     let gameState = GameCore.createInitialState();
     let combatState = null;
-    let autoCultivateTimer = null;
     let combatTimer = null;
     let audioContext = null;
-    let pendingOfflineSettlement = null;
+    let selectedTrainBatch = '1';
 
     const elements = {};
-
-    function getOfflineCapHours() {
-        const capMs = Number.isFinite(StoryData.CONFIG.offlineCultivateMaxDurationMs)
-            ? StoryData.CONFIG.offlineCultivateMaxDurationMs
-            : 8 * 60 * 60 * 1000;
-        return Math.max(1, Math.floor(capMs / (60 * 60 * 1000)));
-    }
-
-    function formatOfflineDuration(durationMs) {
-        const totalMinutes = Math.max(0, Math.floor(durationMs / 60000));
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        return `${hours} 小时 ${minutes} 分`;
-    }
-
-    function getOfflineRuleText(autoUnlocked) {
-        const capHours = getOfflineCapHours();
-        return autoUnlocked
-            ? `离线收益仅在开启自动吐纳后生效，最多累计 ${capHours} 小时。`
-            : `筑基期后解锁自动吐纳与离线收益，最多累计 ${capHours} 小时。`;
-    }
-
-    function getOfflineSummaryText(autoUnlocked) {
-        const trainingState = gameState.offlineTraining || {};
-        if (!trainingState.lastGain || trainingState.lastGain <= 0) {
-            return getOfflineRuleText(autoUnlocked);
-        }
-
-        const cappedText = trainingState.wasCapped ? `，已按 ${getOfflineCapHours()} 小时封顶` : '';
-        return `上次离线吐纳 ${formatOfflineDuration(trainingState.lastEffectiveDurationMs)}，修为 +${trainingState.lastGain}${cappedText}`;
-    }
-
-    function dismissOfflineSettlement() {
-        pendingOfflineSettlement = null;
-        hideModal(elements.offlineModal);
-    }
 
     function cacheElements() {
         [
             'player-name',
             'summary-realm-display',
             'summary-cultivation-display',
+            'summary-lingshi-display',
             'breakthrough-inline',
             'main-btn',
             'hint-text',
-            'auto-panel',
-            'auto-status-text',
-            'auto-toggle-btn',
-            'auto-toggle-text',
-            'offline-summary-text',
+            'training-panel',
+            'train-cost-text',
+            'train-batch-controls',
             'floating-container',
             'toggle-log-btn',
             'log-container',
@@ -81,7 +44,6 @@
             'location-desc',
             'location-npcs',
             'side-story-list',
-            'adventure-btn',
             'combat-preview',
             'story-badge',
             'inventory-modal',
@@ -94,11 +56,7 @@
             'export-btn',
             'import-btn',
             'reset-btn',
-            'offline-modal',
-            'offline-duration-text',
-            'offline-gain-text',
-            'offline-current-text',
-            'close-offline-modal',
+            'save-mode-note',
             'dialogue-modal',
             'dialogue-name',
             'dialogue-avatar',
@@ -123,12 +81,14 @@
 
         elements.pages = Array.from(document.querySelectorAll('.page'));
         elements.navButtons = Array.from(document.querySelectorAll('.nav-btn'));
+        elements.trainingBatchButtons = Array.from(document.querySelectorAll('[data-train-batch]'));
     }
 
     function initAudio() {
         if (audioContext || !gameState.settings.audioEnabled) {
             return;
         }
+
         const Ctx = window.AudioContext || window.webkitAudioContext;
         if (!Ctx) {
             return;
@@ -140,10 +100,12 @@
         if (!gameState.settings.audioEnabled) {
             return;
         }
+
         initAudio();
         if (!audioContext) {
             return;
         }
+
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
         oscillator.type = 'sine';
@@ -169,38 +131,37 @@
         }
     }
 
+    function showModal(modalElement) {
+        if (modalElement) {
+            modalElement.classList.add('show');
+        }
+    }
+
+    function hideModal(modalElement) {
+        if (modalElement) {
+            modalElement.classList.remove('show');
+        }
+    }
+
     function saveGame() {
-        GameCore.touchSaveTimestamp(gameState, Date.now());
         localStorage.setItem(STORAGE_KEY, GameCore.serializeState(gameState));
     }
 
     function bootstrapFreshState() {
         gameState = GameCore.createInitialState();
         GameCore.ensureStoryCursor(gameState);
-        pendingOfflineSettlement = null;
+        selectedTrainBatch = '1';
     }
 
     function getUnsupportedSaveMessage(rawState) {
         const versionText = Number.isFinite(rawState?.version) ? `v${rawState.version}` : '未知版本';
-        return `检测到旧版存档（${versionText}），当前叙事决策系统已升级到 v${GameCore.SAVE_VERSION}。`;
+        return `检测到旧版存档（${versionText}），当前主循环已升级到 v${GameCore.SAVE_VERSION}。`;
     }
 
-    function restoreGameState(parsedState, shouldResolveOffline) {
+    function restoreGameState(parsedState) {
         gameState = GameCore.mergeSave(parsedState);
         GameCore.ensureStoryCursor(gameState);
-        pendingOfflineSettlement = null;
-
-        if (!shouldResolveOffline) {
-            return;
-        }
-
-        try {
-            const settlement = GameCore.resolveOfflineCultivation(gameState, Date.now());
-            pendingOfflineSettlement = settlement.applied ? settlement : null;
-        } catch (error) {
-            console.error('离线挂机结算失败', error);
-            pendingOfflineSettlement = null;
-        }
+        selectedTrainBatch = TRAINING_BATCH_KEYS.includes(selectedTrainBatch) ? selectedTrainBatch : '1';
     }
 
     function loadGame() {
@@ -220,31 +181,28 @@
                 saveGame();
                 return;
             }
-            restoreGameState(parsed, true);
+            restoreGameState(parsed);
         } catch (error) {
             console.error('存档读取失败', error);
+            localStorage.removeItem(STORAGE_KEY);
             bootstrapFreshState();
+            saveGame();
         }
     }
 
     function resetGame() {
-        stopAutoCultivate();
         stopCombatLoop();
         localStorage.removeItem(STORAGE_KEY);
         bootstrapFreshState();
-        hideModal(elements.confirmModal);
-        hideModal(elements.settingsModal);
-        hideModal(elements.offlineModal);
+        [
+            elements.confirmModal,
+            elements.settingsModal,
+            elements.inventoryModal,
+            elements.dialogueModal,
+            elements.combatModal,
+        ].forEach(hideModal);
         render();
         saveGame();
-    }
-
-    function showModal(modalElement) {
-        modalElement.classList.add('show');
-    }
-
-    function hideModal(modalElement) {
-        modalElement.classList.remove('show');
     }
 
     function setActiveTab(tabName) {
@@ -256,12 +214,51 @@
         saveGame();
     }
 
+    function getTrainBatchLabel(batchKey) {
+        const labels = {
+            '1': '1 枚',
+            '10': '10 枚',
+            max: '尽数闭关',
+        };
+        return labels[batchKey] || '当前批次';
+    }
+
+    function getLatestExpeditionSummary() {
+        const latest = (gameState.logs || []).find((entry) => {
+            if (!entry || typeof entry.message !== 'string') {
+                return false;
+            }
+            return entry.message.startsWith('你在 ') || entry.message.startsWith('游历');
+        });
+
+        if (!latest) {
+            return '游历可能获得灵石、遭遇战斗、折损气血，或打听剧情线索。';
+        }
+        return `最近游历：${latest.message}`;
+    }
+
+    function getPrimaryActionState() {
+        if (GameCore.canBreakthrough(gameState)) {
+            return { mode: 'breakthrough', preview: null };
+        }
+
+        const preview = GameCore.getTrainingPreview(gameState, selectedTrainBatch);
+        if (preview.ok) {
+            return { mode: 'train', preview };
+        }
+
+        return { mode: 'adventure', preview };
+    }
+
     function renderStatus() {
         const realmLabel = GameCore.getRealmLabel(gameState);
         const summaryCultivationText = `${gameState.cultivation}/${gameState.maxCultivation}`;
+        const lingshiCount = GameCore.getInventoryCount(gameState, 'lingshi');
+
         elements.playerName.textContent = gameState.playerName;
         elements.summaryRealmDisplay.textContent = realmLabel;
         elements.summaryCultivationDisplay.textContent = summaryCultivationText;
+        elements.summaryLingshiDisplay.textContent = String(lingshiCount);
 
         const passiveBonuses = GameCore.getInventoryPassiveBonuses(gameState);
         const actualRate = GameCore.getBreakthroughActualRate(gameState);
@@ -281,38 +278,59 @@
             page.classList.toggle('active', page.dataset.page === gameState.ui.activeTab);
         });
         elements.navButtons.forEach((button) => {
-            const isPageButton = button.dataset.tab;
-            if (isPageButton) {
+            if (button.dataset.tab) {
                 button.classList.toggle('active', button.dataset.tab === gameState.ui.activeTab);
             }
         });
-        elements.storyBadge.classList.toggle('show', gameState.unreadStory);
+        elements.storyBadge.classList.toggle('show', !!gameState.unreadStory);
     }
 
     function renderCultivationPage() {
-        const canBreakthrough = GameCore.canBreakthrough(gameState);
         const storyView = GameCore.getStoryView(gameState);
-        elements.mainBtn.textContent = canBreakthrough ? '渡劫突破' : '吐纳聚气';
-        elements.mainBtn.classList.toggle('breakthrough', canBreakthrough);
+        const actionState = getPrimaryActionState();
+        const { mode, preview } = actionState;
+        const location = GameCore.getLocationMeta(gameState);
+
+        elements.mainBtn.textContent = mode === 'breakthrough'
+            ? '渡劫突破'
+            : mode === 'train'
+                ? '闭关修炼'
+                : '出门游历';
+        elements.mainBtn.classList.toggle('breakthrough', mode === 'breakthrough');
+
         if (storyView && storyView.source === 'level' && storyView.mode !== 'ending') {
             elements.hintText.textContent = `当前有小境界事件：${storyView.chapter.title}`;
+        } else if (mode === 'breakthrough') {
+            elements.hintText.textContent = '修为已满，心神沉静后即可尝试突破。';
+        } else if (mode === 'train') {
+            const remainingAfterTraining = Math.max(0, gameState.maxCultivation - (gameState.cultivation + preview.gain));
+            const suffix = remainingAfterTraining > 0
+                ? `，距突破还差 ${remainingAfterTraining} 点修为。`
+                : '，足以触及突破门槛。';
+            elements.hintText.textContent = `已选 ${getTrainBatchLabel(selectedTrainBatch)}，将炼化 ${preview.stonesSpent} 枚灵石，修为 +${preview.gain}${suffix}`;
         } else {
-            elements.hintText.textContent = canBreakthrough
-                ? '修为已满，心神沉静后即可尝试突破。'
-                : `继续吐纳，还需 ${Math.max(0, gameState.maxCultivation - gameState.cultivation)} 点修为。`;
+            elements.hintText.textContent = '灵石不足，先出门游历，再回来闭关修炼。';
         }
 
-        const autoUnlocked = GameCore.canAutoCultivate(gameState);
-        elements.autoPanel.style.display = 'grid';
-        elements.autoStatusText.textContent = autoUnlocked
-            ? '离线期间会按自动吐纳速度继续积累修为。'
-            : '筑基期后解锁自动吐纳。';
-        elements.autoToggleBtn.disabled = !autoUnlocked;
-        elements.autoToggleBtn.classList.toggle('active', autoUnlocked && gameState.autoCultivate);
-        elements.autoToggleText.textContent = autoUnlocked
-            ? `自动吐纳：${gameState.autoCultivate ? '开' : '关'}`
-            : '尚未解锁';
-        elements.offlineSummaryText.textContent = getOfflineSummaryText(autoUnlocked);
+        if (mode === 'breakthrough') {
+            elements.trainCostText.textContent = '当前修为已满，闭关暂停，请先尝试突破。';
+        } else if (mode === 'train') {
+            elements.trainCostText.textContent = `每枚灵石可炼化 10 点修为。本次将消耗 ${preview.stonesSpent} 枚灵石，获得 ${preview.gain} 点修为。`;
+        } else {
+            elements.trainCostText.textContent = '每枚灵石可炼化 10 点修为。当前批次无法闭关，主按钮将转为游历。';
+        }
+
+        elements.trainingBatchButtons.forEach((button) => {
+            button.classList.toggle('active', button.dataset.trainBatch === selectedTrainBatch);
+        });
+
+        elements.locationTitle.textContent = location.name;
+        elements.locationDesc.textContent = location.description;
+        if (combatState) {
+            elements.combatPreview.textContent = `正在与 ${combatState.monster.name} 交战，第 ${combatState.round} 回合。`;
+        } else {
+            elements.combatPreview.textContent = getLatestExpeditionSummary();
+        }
 
         const routeItems = GameCore.getRouteSummary(gameState);
         elements.routeSummary.innerHTML = routeItems.map((item) => `
@@ -331,6 +349,7 @@
     function renderStoryPage() {
         const view = GameCore.getStoryView(gameState);
         const echoes = GameCore.getEchoes(gameState);
+        const location = GameCore.getLocationMeta(gameState);
         elements.storyPressure.innerHTML = `
             <strong>失败压力</strong>
             <p>${GameCore.getPressureStatusText(gameState)}</p>
@@ -345,6 +364,27 @@
             </article>
         `).join('');
         elements.storyGoal.textContent = GameCore.getNextGoalText(gameState);
+
+        elements.locationNpcs.innerHTML = location.npcs.length > 0
+            ? location.npcs.map((npcName) => {
+                const dialogue = GameCore.getNpcDialogue(gameState, npcName);
+                const relation = gameState.npcRelations[npcName] || 0;
+                return `
+                    <button class="npc-btn" data-npc-name="${npcName}" type="button">
+                        <strong>${dialogue.name}</strong>
+                        <span>${dialogue.title} · 关系 ${relation}</span>
+                    </button>
+                `;
+            }).join('')
+            : '<div class="side-story-item">此地暂时没有可主动交谈的人物。</div>';
+
+        const sideStories = GameCore.getAvailableSideStories(gameState);
+        elements.sideStoryList.innerHTML = sideStories.map((item) => `
+            <article class="side-story-item">
+                <strong>${item.title}</strong>
+                <p>${item.detail}</p>
+            </article>
+        `).join('');
 
         if (!view) {
             elements.storyTitle.textContent = '暂无新剧情';
@@ -410,9 +450,7 @@
 
         elements.storyContinueBtn.disabled = view.mode === 'choices';
         elements.storySkipBtn.disabled = view.mode === 'choices';
-        elements.storyContinueBtn.textContent = view.mode === 'choices'
-            ? '等待抉择'
-            : '下一页';
+        elements.storyContinueBtn.textContent = view.mode === 'choices' ? '等待抉择' : '下一页';
         elements.storySkipBtn.textContent = '跳至抉择';
 
         elements.storyChoices.innerHTML = view.choices.map((choice) => `
@@ -431,39 +469,6 @@
                 ${choice.disabledReason ? `<span class="choice-disabled-reason">${choice.disabledReason}</span>` : ''}
             </button>
         `).join('');
-    }
-
-    function renderAdventurePage() {
-        const location = GameCore.getLocationMeta(gameState);
-        elements.locationTitle.textContent = location.name;
-        elements.locationDesc.textContent = location.description;
-
-        elements.locationNpcs.innerHTML = location.npcs.length > 0
-            ? location.npcs.map((npcName) => {
-                const dialogue = GameCore.getNpcDialogue(gameState, npcName);
-                const relation = gameState.npcRelations[npcName] || 0;
-                return `
-                    <button class="npc-btn" data-npc-name="${npcName}" type="button">
-                        <strong>${dialogue.name}</strong>
-                        <span>${dialogue.title} · 关系 ${relation}</span>
-                    </button>
-                `;
-            }).join('')
-            : '<div class="side-story-item">此地暂时没有可主动交谈的人物。</div>';
-
-        const sideStories = GameCore.getAvailableSideStories(gameState);
-        elements.sideStoryList.innerHTML = sideStories.map((item) => `
-            <article class="side-story-item">
-                <strong>${item.title}</strong>
-                <p>${item.detail}</p>
-            </article>
-        `).join('');
-
-        if (combatState) {
-            elements.combatPreview.textContent = `正在与 ${combatState.monster.name} 交战，第 ${combatState.round} 回合。`;
-        } else {
-            elements.combatPreview.textContent = '游历会自动战斗，胜可得修为与掉落，败则折损部分修为。';
-        }
     }
 
     function renderInventory() {
@@ -510,8 +515,8 @@
     }
 
     function renderSettings() {
-        elements.audioToggle.checked = gameState.settings.audioEnabled;
-        elements.musicToggle.checked = gameState.settings.musicEnabled;
+        elements.audioToggle.checked = !!gameState.settings.audioEnabled;
+        elements.musicToggle.checked = !!gameState.settings.musicEnabled;
     }
 
     function renderCombat() {
@@ -530,84 +535,65 @@
         elements.monsterHpText.textContent = `${combatState.monster.hp} / ${combatState.monster.maxHp}`;
     }
 
-    function renderOfflineSettlement() {
-        if (!pendingOfflineSettlement || !pendingOfflineSettlement.applied) {
-            hideModal(elements.offlineModal);
-            return;
-        }
-
-        elements.offlineDurationText.textContent = pendingOfflineSettlement.wasCapped
-            ? `离线 ${formatOfflineDuration(pendingOfflineSettlement.durationMs)}，按 ${formatOfflineDuration(pendingOfflineSettlement.effectiveDurationMs)} 结算`
-            : `离线 ${formatOfflineDuration(pendingOfflineSettlement.effectiveDurationMs)}`;
-        elements.offlineGainText.textContent = `修为 +${pendingOfflineSettlement.gain}`;
-        elements.offlineCurrentText.textContent = `${gameState.cultivation}/${gameState.maxCultivation}`;
-        showModal(elements.offlineModal);
-    }
-
     function render() {
         renderStatus();
         renderTabs();
         renderCultivationPage();
         renderStoryPage();
-        renderAdventurePage();
         renderInventory();
         renderSettings();
         renderCombat();
-        renderOfflineSettlement();
     }
 
     function showFloatingText(text, type) {
+        if (!elements.floatingContainer) {
+            return;
+        }
         const span = document.createElement('span');
         span.className = `floating-text ${type}`;
         span.textContent = text;
         span.style.left = `${50 + ((Math.random() - 0.5) * 40)}%`;
         elements.floatingContainer.appendChild(span);
-        setTimeout(() => {
+        window.setTimeout(() => {
             span.remove();
         }, 1300);
     }
 
-    function handleCultivate(isAuto) {
-        if (GameCore.canBreakthrough(gameState)) {
+    function handleCultivate() {
+        const actionState = getPrimaryActionState();
+
+        if (actionState.mode === 'breakthrough') {
             const result = GameCore.attemptBreakthrough(gameState);
-            playSound(result.success ? 'breakthrough' : 'fail');
-            if (result.capped) {
+            if (!result.ok) {
+                showFloatingText('修为未满', 'loss');
+                playSound('fail');
+            } else if (result.capped) {
                 showFloatingText('绝巅已至', 'breakthrough');
+                playSound('breakthrough');
             } else if (result.success) {
                 showFloatingText('突破成功', 'breakthrough');
+                playSound('breakthrough');
             } else {
                 showFloatingText(`突破失败 -${result.penalty}`, 'loss');
+                playSound('fail');
             }
-        } else {
-            const result = GameCore.cultivate(gameState, isAuto);
-            if (!isAuto) {
+        } else if (actionState.mode === 'train') {
+            const result = GameCore.trainWithLingshi(gameState, selectedTrainBatch);
+            if (!result.ok) {
+                showFloatingText('灵石不足', 'loss');
+                playSound('fail');
+            } else {
                 showFloatingText(`修为 +${result.gain}`, 'gain');
                 playSound('click');
             }
+        } else {
+            startAdventure();
+            return;
         }
 
         GameCore.ensureStoryCursor(gameState);
         render();
         saveGame();
-    }
-
-    function startAutoCultivate() {
-        if (!GameCore.canAutoCultivate(gameState)) {
-            return;
-        }
-        stopAutoCultivate();
-        gameState.autoCultivate = true;
-        autoCultivateTimer = window.setInterval(() => {
-            handleCultivate(true);
-        }, StoryData.CONFIG.autoCultivateInterval);
-    }
-
-    function stopAutoCultivate() {
-        gameState.autoCultivate = false;
-        if (autoCultivateTimer) {
-            window.clearInterval(autoCultivateTimer);
-            autoCultivateTimer = null;
-        }
     }
 
     function stopCombatLoop() {
@@ -627,6 +613,31 @@
         });
     }
 
+    function createCombatSettlementEntries(roundResult) {
+        if (!roundResult.rewards) {
+            return [];
+        }
+
+        if (roundResult.victory) {
+            const entries = [];
+            if (roundResult.rewards.lingshiGain) {
+                entries.push(`战利：灵石 +${roundResult.rewards.lingshiGain}`);
+            }
+            if (Array.isArray(roundResult.rewards.drops) && roundResult.rewards.drops.length > 0) {
+                roundResult.rewards.drops.forEach((drop) => {
+                    const itemName = ITEMS[drop.itemId]?.name || drop.itemId;
+                    entries.push(`掉落：${itemName} x${drop.quantity}`);
+                });
+            }
+            return entries;
+        }
+
+        if (roundResult.rewards.lingshiLoss > 0) {
+            return [`损失：灵石 -${roundResult.rewards.lingshiLoss}`];
+        }
+        return ['损失：未带回额外灵石'];
+    }
+
     function runCombatLoop() {
         if (!combatState) {
             return;
@@ -636,14 +647,14 @@
         appendCombatEntries(roundResult.entries);
         renderCombat();
         renderStatus();
+        renderCultivationPage();
 
         if (roundResult.finished) {
+            appendCombatEntries(createCombatSettlementEntries(roundResult));
+            appendCombatEntries([roundResult.victory ? '战斗结束，你带着收获离去。' : '战斗结束，你负伤退走。']);
             playSound(roundResult.victory ? 'victory' : 'fail');
-            const endText = roundResult.victory ? '战斗结束，你赢了。' : '战斗结束，你险胜退走。';
-            appendCombatEntries([endText]);
             combatTimer = window.setTimeout(() => {
                 stopCombatLoop();
-                hideModal(elements.combatModal);
                 render();
                 saveGame();
             }, 1200);
@@ -657,11 +668,38 @@
         if (combatState) {
             return;
         }
-        combatState = GameCore.beginCombat(gameState);
-        elements.combatLog.innerHTML = '';
-        appendCombatEntries([`你在 ${gameState.currentLocation} 遭遇 ${combatState.monster.name}。`]);
-        renderCombat();
-        combatTimer = window.setTimeout(runCombatLoop, 700);
+
+        const result = GameCore.resolveExpedition(gameState);
+        if (!result.ok) {
+            window.alert(result.error || '游历失败');
+            return;
+        }
+
+        if (result.type === 'battle') {
+            combatState = result.combatState;
+            elements.combatLog.innerHTML = '';
+            appendCombatEntries([result.summary]);
+            render();
+            combatTimer = window.setTimeout(runCombatLoop, 700);
+            saveGame();
+            return;
+        }
+
+        if (result.type === 'resource') {
+            showFloatingText(`灵石 +${result.lingshiGain}`, 'gain');
+            playSound('click');
+        } else if (result.type === 'risk') {
+            const text = result.lingshiLoss > 0
+                ? `灵石 -${result.lingshiLoss}`
+                : `气血 -${result.hpLoss}`;
+            showFloatingText(text, 'loss');
+            playSound('fail');
+        } else {
+            showFloatingText('探得线索', 'breakthrough');
+            playSound('story');
+        }
+
+        render();
         saveGame();
     }
 
@@ -704,12 +742,8 @@
                         window.alert(`导入失败：${getUnsupportedSaveMessage(parsed)}该存档不会覆盖当前进度。`);
                         return;
                     }
-                    stopAutoCultivate();
                     stopCombatLoop();
-                    restoreGameState(parsed, true);
-                    if (gameState.autoCultivate) {
-                        startAutoCultivate();
-                    }
+                    restoreGameState(parsed);
                     render();
                     saveGame();
                 } catch (error) {
@@ -722,15 +756,19 @@
     }
 
     function bindEvents() {
-        elements.mainBtn.addEventListener('click', () => handleCultivate(false));
-        elements.autoToggleBtn.addEventListener('click', () => {
-            if (gameState.autoCultivate) {
-                stopAutoCultivate();
-            } else {
-                startAutoCultivate();
+        elements.mainBtn.addEventListener('click', handleCultivate);
+
+        elements.trainBatchControls.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-train-batch]');
+            if (!button) {
+                return;
             }
-            render();
-            saveGame();
+            const nextBatchKey = button.dataset.trainBatch;
+            if (!TRAINING_BATCH_KEYS.includes(nextBatchKey)) {
+                return;
+            }
+            selectedTrainBatch = nextBatchKey;
+            renderCultivationPage();
         });
 
         elements.toggleLogBtn.addEventListener('click', () => {
@@ -832,12 +870,9 @@
             saveGame();
         });
 
-        elements.adventureBtn.addEventListener('click', startAdventure);
-
         elements.closeInventory.addEventListener('click', () => hideModal(elements.inventoryModal));
         elements.closeSettings.addEventListener('click', () => hideModal(elements.settingsModal));
         elements.closeDialogue.addEventListener('click', () => hideModal(elements.dialogueModal));
-        elements.closeOfflineModal.addEventListener('click', dismissOfflineSettlement);
 
         elements.audioToggle.addEventListener('change', () => {
             gameState.settings.audioEnabled = elements.audioToggle.checked;
@@ -860,12 +895,6 @@
                 }
             });
         });
-
-        elements.offlineModal.addEventListener('click', (event) => {
-            if (event.target === elements.offlineModal) {
-                dismissOfflineSettlement();
-            }
-        });
     }
 
     function init() {
@@ -873,9 +902,6 @@
         loadGame();
         bindEvents();
         window.addEventListener('pagehide', saveGame);
-        if (gameState.autoCultivate) {
-            startAutoCultivate();
-        }
         render();
         saveGame();
     }

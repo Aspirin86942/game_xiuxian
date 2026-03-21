@@ -94,6 +94,28 @@ function createFreshScenario() {
     };
 }
 
+function createAlchemyScenario() {
+    const { state, serialized } = createSerializedState((draft) => {
+        draft.ui.activeTab = 'alchemy';
+        draft.inventory.lingcao = 4;
+        draft.inventory.lingshi = 20;
+        draft.inventory.yaodan = 1;
+        draft.playerStats.hp = 28;
+        draft.recovery.lastCheckedAt = 1_710_000_000_000;
+    });
+    const previewState = cloneState(state);
+    const craftResult = GameCore.craftRecipe(previewState, 'brew-jiedusan');
+    return {
+        serialized,
+        recipeId: 'brew-jiedusan',
+        expectedRuleTextFragment: '非战斗时每',
+        expectedState: {
+            inventory: previewState.inventory,
+            outputText: craftResult.outputText,
+        },
+    };
+}
+
 function createTrainingScenario() {
     const { state, serialized } = createSerializedState((draft) => {
         draft.inventory.lingshi = 12;
@@ -285,6 +307,27 @@ function createConsumableScenario() {
     };
 }
 
+function createHighTierBreakthroughScenario(options = {}) {
+    const {
+        realmScore = 2,
+        breakthroughBonus = 0,
+    } = options;
+    const { state, serialized } = createSerializedState((draft) => {
+        setRealmScore(draft, realmScore);
+        draft.inventory.huashendan = 1;
+        draft.breakthroughBonus = breakthroughBonus;
+        draft.ui.activeTab = 'cultivation';
+    });
+    const previewState = cloneState(state);
+    const result = GameCore.useItem(previewState, 'huashendan');
+    return {
+        serialized,
+        itemId: 'huashendan',
+        expectedError: result.error,
+        expectedInventoryCount: state.inventory.huashendan || 0,
+    };
+}
+
 function createCustomSaveScenario() {
     const { state, serialized } = createSerializedState((draft) => {
         draft.playerName = '审查样本';
@@ -300,7 +343,7 @@ function createCustomSaveScenario() {
     return {
         serialized,
         expectedState: {
-            version: 6,
+            version: GameCore.SAVE_VERSION,
             playerName: state.playerName,
             realmLabel: GameCore.getRealmLabel(state),
             cultivationText: `${state.cultivation}/${state.maxCultivation}`,
@@ -319,9 +362,17 @@ function createLegacySaveScenario() {
     });
     const legacyState = cloneState(state);
     legacyState.version = 5;
+    delete legacyState.recovery;
     return {
         serialized: JSON.stringify(legacyState),
-        expectedAlertFragment: '检测到旧版存档（v5）',
+        expectedState: {
+            version: GameCore.SAVE_VERSION,
+            playerName: legacyState.playerName,
+            activeTab: 'story',
+            recovery: {
+                lastCheckedAt: null,
+            },
+        },
     };
 }
 
@@ -341,12 +392,14 @@ function createAdventureTabSaveScenario() {
 module.exports = {
     STORAGE_KEY,
     createFreshScenario,
+    createAlchemyScenario,
     createTrainingScenario,
     createStoryScenario,
     createTribulationEndingScenario,
     createResourceExpeditionScenario,
     createCombatScenario,
     createConsumableScenario,
+    createHighTierBreakthroughScenario,
     createCustomSaveScenario,
     createLegacySaveScenario,
     createAdventureTabSaveScenario,

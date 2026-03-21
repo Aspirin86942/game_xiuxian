@@ -3,17 +3,20 @@ const http = require('http');
 const path = require('path');
 const { URL } = require('url');
 
-const HOST = '127.0.0.1';
-const PORT = 4173;
+const HOST = process.env.HOST || '127.0.0.1';
+const PORT = Number(process.env.PORT || 4173);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
 const CONTENT_TYPES = {
     '.css': 'text/css; charset=utf-8',
     '.html': 'text/html; charset=utf-8',
+    '.ico': 'image/x-icon',
     '.js': 'application/javascript; charset=utf-8',
     '.json': 'application/json; charset=utf-8',
     '.md': 'text/markdown; charset=utf-8',
+    '.png': 'image/png',
     '.txt': 'text/plain; charset=utf-8',
+    '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
 
 function resolveRequestPath(requestUrl) {
@@ -75,4 +78,3 @@ process.on('SIGTERM', shutdown);
 server.listen(PORT, HOST, () => {
     console.log(`static server ready at http://${HOST}:${PORT}`);
 });
-

@@ -212,6 +212,48 @@ function testStoryCursorSwitching() {
     assert(choiceView.choices.length >= 2);
 }
 
+function testAlchemyRecipeCraftingSuccess() {
+    const state = GameCore.createInitialState();
+    state.inventory.lingcao = 2;
+    state.inventory.lingshi = 5;
+
+    const result = GameCore.craftRecipe(state, 'brew-jiedusan');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(state.inventory.jiedusan, 1);
+    assert.strictEqual(state.inventory.lingcao || 0, 0);
+    assert.strictEqual(state.inventory.lingshi || 0, 0);
+}
+
+function testAlchemyRecipeInsufficientMaterialsDoesNotPolluteInventory() {
+    const state = GameCore.createInitialState();
+    state.inventory.lingcao = 1;
+    state.inventory.lingshi = 5;
+
+    const result = GameCore.craftRecipe(state, 'brew-jiedusan');
+    assert.strictEqual(result.ok, false);
+    assert.strictEqual(result.error, '材料不足：灵草 x1');
+    assert.deepStrictEqual(state.inventory, {
+        lingcao: 1,
+        lingshi: 5,
+    });
+}
+
+function testHighTierBreakthroughPillRestrictions() {
+    const lowRealmState = GameCore.createInitialState();
+    lowRealmState.inventory.huashendan = 1;
+    const lowRealmResult = GameCore.useItem(lowRealmState, 'huashendan');
+    assert.strictEqual(lowRealmResult.ok, false);
+    assert.strictEqual(lowRealmResult.error, '当前境界不足，化神丹需元婴及以上方可承受。');
+
+    const lockedByBonusState = GameCore.createInitialState();
+    GameCore.setRealmScore(lockedByBonusState, 9);
+    lockedByBonusState.inventory.huashendan = 1;
+    lockedByBonusState.breakthroughBonus = 0.15;
+    const lockedByBonusResult = GameCore.useItem(lockedByBonusState, 'huashendan');
+    assert.strictEqual(lockedByBonusResult.ok, false);
+    assert.strictEqual(lockedByBonusResult.error, '已有药力护持，请先尝试突破。');
+}
+
 function testMainPathIntegrity() {
     const state = runMainPath(withInsertedChoices({
         0: 'set_out_now',
@@ -1481,6 +1523,9 @@ function testExplicitBranchImpactCoverage() {
 }
 
 testStoryCursorSwitching();
+testAlchemyRecipeCraftingSuccess();
+testAlchemyRecipeInsufficientMaterialsDoesNotPolluteInventory();
+testHighTierBreakthroughPillRestrictions();
 testMainPathIntegrity();
 testMoHouseTreasurePathNoDeadlock();
 testLevelEventCoverage();

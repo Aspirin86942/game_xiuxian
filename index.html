@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#335f53">
     <title>灵光修仙传</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -96,6 +100,29 @@
                     </article>
                 </section>
 
+                <section class="page" data-page="alchemy">
+                    <article class="card alchemy-overview-card">
+                        <div class="card-header">
+                            <div>
+                                <p class="eyebrow">丹炉</p>
+                                <h2>炼丹与调息</h2>
+                            </div>
+                        </div>
+                        <div class="alchemy-summary" id="alchemy-summary"></div>
+                        <p class="alchemy-rule-text" id="alchemy-rule-text">非战斗时会缓慢调息回血。</p>
+                    </article>
+
+                    <article class="card alchemy-list-card">
+                        <div class="card-header">
+                            <div>
+                                <p class="eyebrow">丹方</p>
+                                <h2>当前可见配方</h2>
+                            </div>
+                        </div>
+                        <div class="alchemy-list" id="alchemy-list"></div>
+                    </article>
+                </section>
+
                 <section class="page" data-page="story">
                     <article class="card story-card">
                         <div class="card-header">
@@ -149,6 +176,9 @@
             <nav class="bottom-nav">
                 <button class="nav-btn active" data-tab="cultivation" type="button">
                     <span>修行</span>
+                </button>
+                <button class="nav-btn" data-tab="alchemy" type="button">
+                    <span>丹炉</span>
                 </button>
                 <button class="nav-btn" data-tab="story" type="button">
                     <span>剧情</span>

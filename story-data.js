@@ -37,9 +37,8 @@
         lingshi: {
             name: '灵石',
             type: 'material',
-            description: '修仙界硬通货，买消息、走关系都要用。',
+            description: '修仙界硬通货，也是闭关修炼时最稳定的灵气来源。',
             usable: false,
-            actions: [{ id: 'absorb', label: '吸收 1 枚', summary: '吸收：消耗 1 枚，获得 10 点修为。', effect: { cultivation: 10 } }],
         },
         yaodan: {
             name: '妖丹',

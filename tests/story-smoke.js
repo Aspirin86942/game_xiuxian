@@ -463,31 +463,39 @@ function testChoiceEchoStateUpdates() {
     assert.strictEqual(state.decisionHistory.length, 1);
     assert.strictEqual(state.decisionHistory[0].promiseLabel, '保全');
     assert.strictEqual(state.decisionHistory[0].riskLabel, '有压');
+    assert.strictEqual(state.decisionHistory[0].branchImpactTitle, '禁地留名');
+    assert(state.decisionHistory[0].branchImpactDetail.includes('慢了半息'));
+    assert(state.decisionHistory[0].branchImpactDetail.includes('很多人记住'));
     assert(state.pendingEchoes.length >= 1);
     assert(state.endingSeeds.length >= 1);
 
     const echoes = GameCore.getEchoes(state);
-    assert.strictEqual(echoes[0].title, '即时结果');
+    assert.strictEqual(echoes.length, 1);
+    assert.strictEqual(echoes[0].title, '禁地留名');
     assert(echoes[0].detail.includes('慢了半息'));
-    assert.strictEqual(echoes[1].title, '长期提示');
-    assert(!echoes.some((item) => item.title === '禁地留名'));
+    assert(echoes[0].detail.includes('很多人记住'));
+    assert(echoes[0].meta.includes('保全'));
+    assert(echoes[0].meta.includes('有压'));
 }
 
-function testPendingEchoesBecomeVisibleWithinWindow() {
+function testPendingEchoesStayHiddenFromVisibleFeed() {
     const { state } = getChapterChoiceView(14);
     const result = GameCore.chooseStoryOption(state, 'save_nangong');
     assert.strictEqual(result.ok, true);
 
     let echoes = GameCore.getEchoes(state);
-    assert(!echoes.some((item) => item.title === '禁地留名'));
+    assert.strictEqual(echoes.length, 1);
+    assert.strictEqual(echoes[0].title, '禁地留名');
 
     state.storyProgress = 16;
     echoes = GameCore.getEchoes(state);
     assert(echoes.some((item) => item.title === '禁地留名'));
+    assert(!echoes.some((item) => item.title === '即时结果'));
+    assert(!echoes.some((item) => item.title === '长期提示'));
 
     state.storyProgress = 20;
     echoes = GameCore.getEchoes(state);
-    assert(!echoes.some((item) => item.title === '禁地留名'));
+    assert(echoes.some((item) => item.title === '禁地留名'));
 }
 
 function testChoiceTextsHideTradeoffPreview() {
@@ -546,7 +554,56 @@ function testLevelChoiceOutcomeStateUpdates() {
     assert.strictEqual(state.recentChoiceOutcome.choiceId, 'observe_change');
     assert.strictEqual(state.recentChoiceOutcome.battleWillGain, 1);
     assert.strictEqual(state.recentChoiceOutcome.tribulationGain, 0);
-    assert.strictEqual(GameCore.getEchoes(state)[0].title, '即时结果');
+    assert.strictEqual(GameCore.getEchoes(state)[0].title, state.decisionHistory[0].branchImpactTitle);
+    assert.strictEqual(GameCore.getEchoes(state).length, 1);
+}
+
+function testSamePromiseChoicesCreateDistinctBranchImpacts() {
+    const state = createChapterState(8);
+    let view = playToChoices(state);
+    let result = GameCore.chooseStoryOption(state, 'protect_mo_house');
+    assert.strictEqual(result.ok, true);
+
+    state.storyProgress = 14;
+    state.storyCursor = {
+        source: 'main',
+        storyId: null,
+        chapterId: null,
+        beatIndex: 0,
+        mode: 'idle',
+    };
+    satisfyMainChapter(state);
+    GameCore.ensureStoryCursor(state);
+    view = playToChoices(state);
+    assert.strictEqual(view.chapter.id, 14);
+
+    result = GameCore.chooseStoryOption(state, 'save_nangong');
+    assert.strictEqual(result.ok, true);
+
+    const echoes = GameCore.getEchoes(state);
+    assert.strictEqual(echoes.length >= 2, true);
+    assert.strictEqual(echoes[0].title, '禁地留名');
+    assert.strictEqual(echoes[1].title, '墨府余灯');
+    assert.notStrictEqual(echoes[0].title, echoes[1].title);
+    assert.notStrictEqual(echoes[0].detail, echoes[1].detail);
+}
+
+function testLegacySaveFallbackCreatesBranchImpacts() {
+    const state = GameCore.createInitialState();
+    state.decisionHistory = [];
+    state.chapterChoices = {
+        14: 'save_nangong',
+        24: 'returned_tiannan_for_bonds',
+    };
+    state.recentChoiceEcho = null;
+    state.pendingEchoes = [];
+
+    const echoes = GameCore.getEchoes(state);
+    assert.strictEqual(echoes.length, 2);
+    assert.strictEqual(echoes[0].title, '旧情归位');
+    assert.strictEqual(echoes[1].title, '禁地留名');
+    assert(!echoes.some((item) => item.title === '即时结果'));
+    assert(!echoes.some((item) => item.title === '长期提示'));
 }
 
 function testTribulationDeathEnding() {
@@ -1181,9 +1238,10 @@ function testBranchEchoes() {
         '23_mocaihuan_return': 'support_mocaihuan_longterm',
     }));
     const orthodoxEcho = GameCore.getEchoes(orthodoxState).map((item) => item.title);
-    assert(orthodoxEcho.includes('即时结果'));
-    assert(orthodoxEcho.includes('并肩飞升'));
-    assert(orthodoxState.ending.recapLines.some((line) => line.includes('推开更高的门')));
+    assert(orthodoxEcho.includes('有人不能再拖'));
+    assert(orthodoxEcho.includes('灵界仙尊'));
+    assert(!orthodoxEcho.includes('即时结果'));
+    assert(orthodoxState.ending.recapLines.some((line) => line.includes('有人不能再拖') || line.includes('灵界仙尊')));
 
     const demonicState = runMainPath(withInsertedChoices({
         0: 'set_out_now',
@@ -1218,13 +1276,15 @@ function testBranchEchoes() {
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
     }));
     const demonicEcho = GameCore.getEchoes(demonicState).map((item) => item.title);
-    assert(demonicEcho.includes('即时结果'));
-    assert(demonicEcho.includes('长期提示'));
+    assert(demonicEcho.includes('高效成瘾'));
+    assert(demonicEcho.includes('记忆未断'));
+    assert(!demonicEcho.includes('即时结果'));
+    assert(!demonicEcho.includes('长期提示'));
     const demonicEndingView = GameCore.getStoryView(demonicState);
     assert.strictEqual(demonicEndingView.source, 'ending');
     assert.strictEqual(demonicEndingView.ending.id, 'zouhuorumo');
     assert.strictEqual(demonicState.storyConsequences.pressureTier, '失控');
-    assert(demonicEndingView.ending.recapLines.some((line) => line.includes('资源不认人')));
+    assert(demonicEndingView.ending.recapLines.some((line) => line.includes('高效成瘾') || line.includes('记忆未断')));
 
     const secludedState = runMainPath(withInsertedChoices({
         0: 'pack_and_leave',
@@ -1259,12 +1319,13 @@ function testBranchEchoes() {
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
     }));
     const secludedEcho = GameCore.getEchoes(secludedState).map((item) => item.title);
-    assert(secludedEcho.includes('即时结果'));
-    assert(secludedEcho.includes('暗线消息'));
+    assert(secludedEcho.includes('逍遥散仙'));
+    assert(secludedEcho.includes('来过却不住回去'));
+    assert(!secludedEcho.includes('即时结果'));
     const secludedEndingView = GameCore.getStoryView(secludedState);
     assert.strictEqual(secludedEndingView.source, 'ending');
     assert.strictEqual(secludedEndingView.ending.id, 'xiaoyao_sanxian');
-    assert(secludedEndingView.ending.recapLines.some((line) => line.includes('离开名号与门墙')));
+    assert(secludedEndingView.ending.recapLines.some((line) => line.includes('逍遥散仙') || line.includes('来过却不住回去')));
 }
 
 testStoryCursorSwitching();
@@ -1275,10 +1336,12 @@ testBreakthroughQueuesLevelStory();
 testMissedLevelStoryCanRecover();
 testProfileCollapseSaveCompatibility();
 testChoiceEchoStateUpdates();
-testPendingEchoesBecomeVisibleWithinWindow();
+testPendingEchoesStayHiddenFromVisibleFeed();
 testChoiceTextsHideTradeoffPreview();
 testBattleWillBonusesAffectStats();
 testLevelChoiceOutcomeStateUpdates();
+testSamePromiseChoicesCreateDistinctBranchImpacts();
+testLegacySaveFallbackCreatesBranchImpacts();
 testTribulationDeathEnding();
 testPressureTierBoundaries();
 testResourceValidation();

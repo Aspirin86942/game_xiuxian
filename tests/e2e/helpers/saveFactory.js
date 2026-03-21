@@ -155,7 +155,7 @@ function createStoryScenario() {
 
     const afterChoiceState = cloneState(choiceState);
     GameCore.chooseStoryOption(afterChoiceState, selectedChoice.id);
-    const echoes = GameCore.getEchoes(afterChoiceState).map((item) => item.title);
+    const impact = GameCore.getEchoes(afterChoiceState)[0] || { title: '', detail: '', meta: '' };
 
     return {
         serialized,
@@ -172,7 +172,11 @@ function createStoryScenario() {
         expectedPressureText: GameCore.getPressureStatusText(afterChoiceState),
         expectedTitle: formatRenderedStoryTitle(afterChoiceState),
         expectedStoryProgress: afterChoiceState.storyProgress,
-        expectedEchoTitles: echoes.slice(0, 2),
+        expectedImpact: {
+            title: impact.title,
+            detail: impact.detail,
+            meta: impact.meta || '',
+        },
     };
 }
 
@@ -202,6 +206,8 @@ function createTribulationEndingScenario() {
     GameCore.chooseStoryOption(previewState, 'kill_for_gain');
     const endingView = GameCore.getStoryView(previewState);
 
+    const impact = GameCore.getEchoes(previewState)[0] || { title: '', detail: '', meta: '' };
+
     return {
         serialized,
         choiceId: 'kill_for_gain',
@@ -212,7 +218,11 @@ function createTribulationEndingScenario() {
         },
         expectedEndingTitle: '走火入魔',
         expectedPressureText: GameCore.getPressureStatusText(previewState),
-        expectedEchoTitles: GameCore.getEchoes(previewState).slice(0, 2).map((item) => item.title),
+        expectedImpact: {
+            title: impact.title,
+            detail: impact.detail,
+            meta: impact.meta || '',
+        },
         expectedRecapText: (endingView.ending.recapLines || []).join('；'),
         expectedTribulationValue: previewState.storyConsequences.tribulation,
         expectedResetRealmLabel: '炼气·初期',

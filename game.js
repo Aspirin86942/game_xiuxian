@@ -333,6 +333,7 @@
             <article class="echo-item">
                 <strong>${item.title}</strong>
                 <p>${item.detail}</p>
+                ${item.meta ? `<div class="echo-meta">${item.meta}</div>` : ''}
             </article>
         `).join('');
         elements.storyGoal.textContent = GameCore.getNextGoalText(gameState);

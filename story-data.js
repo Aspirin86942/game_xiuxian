@@ -475,6 +475,130 @@
         };
     }
 
+    function joinBranchImpactDetails(parts) {
+        return parts
+            .map((part) => (typeof part === 'string' ? part.trim() : ''))
+            .filter(Boolean)
+            .filter((part, index, items) => items.indexOf(part) === index)
+            .join(' ');
+    }
+
+    function buildBranchImpactTitleSeed(text) {
+        return String(text || '')
+            .split('：')
+            .pop()
+            .trim()
+            .replace(/[，。、“”"'‘’「」『』：；！？（）()【】《》、\s]/g, '')
+            .replace(/[与和及]/g, '')
+            .replace(/^第\d+章/, '')
+            .trim();
+    }
+
+    function getBranchImpactTitleSuffix(promiseLabel, riskLabel) {
+        if (promiseLabel === '保全') {
+            return riskLabel === '涉险' ? '守线' : '留痕';
+        }
+        if (promiseLabel === '献祭') {
+            return riskLabel === '涉险' ? '折光' : '留价';
+        }
+        if (promiseLabel === '夺取') {
+            return riskLabel === '涉险' ? '试锋' : '取势';
+        }
+        if (promiseLabel === '试探') {
+            return riskLabel === '涉险' ? '探锋' : '探路';
+        }
+        if (promiseLabel === '切割' || promiseLabel === '决裂') {
+            return '断线';
+        }
+        return riskLabel === '涉险' ? '试锋' : '留痕';
+    }
+
+    function getBranchImpactKeywordTitle(choiceText) {
+        const text = String(choiceText || '');
+        const keywordMappings = [
+            { pattern: /旧账|补偿|照拂/, title: '旧账归手' },
+            { pattern: /重要|承认/, title: '正面承认' },
+            { pattern: /乱星海|星海/, title: '海上押命' },
+            { pattern: /结队|同行|一起进入禁地|一起进禁地/, title: '结队求生' },
+            { pattern: /独自.*禁地|单独.*禁地/, title: '独自入局' },
+            { pattern: /隐藏|避开|不住回去/, title: '来过不住' },
+        ];
+        const matched = keywordMappings.find((entry) => entry.pattern.test(text));
+        return matched ? matched.title : '';
+    }
+
+    function buildFallbackBranchImpactTitle(choice, context, promiseLabel, riskLabel) {
+        if (typeof choice?.branchImpact?.title === 'string' && choice.branchImpact.title.trim()) {
+            return choice.branchImpact.title.trim();
+        }
+
+        const keywordTitle = getBranchImpactKeywordTitle(choice?.text);
+        if (keywordTitle) {
+            return keywordTitle;
+        }
+
+        const chapterSeed = buildBranchImpactTitleSeed(context?.chapterTitle || '');
+        if (chapterSeed) {
+            return `${chapterSeed.slice(0, Math.min(4, chapterSeed.length))}${getBranchImpactTitleSuffix(promiseLabel, riskLabel)}`;
+        }
+
+        const choiceSeed = buildBranchImpactTitleSeed(choice?.text || '');
+        if (choiceSeed) {
+            return `${choiceSeed.slice(0, Math.min(4, choiceSeed.length))}${getBranchImpactTitleSuffix(promiseLabel, riskLabel)}`;
+        }
+
+        return `${promiseLabel || '此步'}${getBranchImpactTitleSuffix(promiseLabel, riskLabel)}`;
+    }
+
+    function buildFallbackBranchImpactDetail(choice, context, riskLabel) {
+        if (typeof choice?.branchImpact?.detail === 'string' && choice.branchImpact.detail.trim()) {
+            return choice.branchImpact.detail.trim();
+        }
+
+        const chapterTitle = String(context?.chapterTitle || '这一节路').trim();
+        const chapterSummary = String(context?.chapterSummary || '').trim();
+
+        if (choice?.ending?.description) {
+            return choice.ending.description;
+        }
+
+        if (riskLabel === '涉险') {
+            return `在“${chapterTitle}”之后，这一步像把锋芒压进了袖里。眼下未必立刻见血，可往后局势一紧，它总会先在心里亮一下。`;
+        }
+        if (riskLabel === '有压') {
+            return `在“${chapterTitle}”之后，这一步没有立刻大声作响，却像在骨缝里留下一点能被认出的纹路。等路再拐回来时，你会先认出它，再认出当时的自己。`;
+        }
+        if (chapterSummary) {
+            return `${chapterSummary} 它没有停在这一页里，而是像没散尽的余温，等后面的路回头时再把你照一下。`;
+        }
+        return '这一步没有停在眼前。等后面的路重新拐回来时，它会先从暗处露出轮廓，再把当时的你一起带回来。';
+    }
+
+    function normalizeBranchImpact(choice, context, echoPack, promiseLabel, riskLabel) {
+        const delayedTitle = typeof echoPack?.delayed?.title === 'string' ? echoPack.delayed.title.trim() : '';
+        const delayedDetail = typeof echoPack?.delayed?.detail === 'string' ? echoPack.delayed.detail.trim() : '';
+        const immediateTitle = typeof echoPack?.immediate?.title === 'string' ? echoPack.immediate.title.trim() : '';
+        const immediateDetail = typeof echoPack?.immediate?.detail === 'string' ? echoPack.immediate.detail.trim() : '';
+        const explicitTitle = typeof choice?.branchImpact?.title === 'string' ? choice.branchImpact.title.trim() : '';
+        const explicitDetail = typeof choice?.branchImpact?.detail === 'string' ? choice.branchImpact.detail.trim() : '';
+
+        const title = explicitTitle
+            || delayedTitle
+            || immediateTitle
+            || buildFallbackBranchImpactTitle(choice, context, promiseLabel, riskLabel);
+
+        const detail = explicitDetail
+            || joinBranchImpactDetails([immediateDetail, delayedDetail])
+            || buildFallbackBranchImpactDetail(choice, context, riskLabel);
+
+        return {
+            title,
+            detail,
+            promiseLabel,
+            riskLabel,
+        };
+    }
+
     function buildLongTermHint(choice, riskLabel, promiseLabel, echoPack) {
         if (typeof choice?.longTermHint === 'string' && choice.longTermHint.trim()) {
             return choice.longTermHint.trim();
@@ -982,6 +1106,8 @@
         const tradeoff = normalizeTradeoff(choice.tradeoff, choice);
         const sourceType = context.sourceType || 'main';
         const chapterId = context.chapterId ?? normalizedId;
+        const chapterTitle = context.chapterTitle || '';
+        const chapterSummary = context.chapterSummary || '';
         const echoPack = CHAPTER_ECHO_PACKS[chapterId]?.[normalizedId] || null;
         const promiseType = inferPromiseType({ ...choice, id: normalizedId });
         const riskTier = inferRiskTier({ ...choice, id: normalizedId }, tradeoff);
@@ -991,6 +1117,12 @@
         const immediateFallbackDetail = echoPack?.immediate?.detail
             || `你选择了“${choice.text}”。这一步已经把“${promiseLabel}”写进当前章节，并会继续影响后续关系、路线或终局。`;
         const immediateResult = normalizeImmediateResult(choice.immediateResult || echoPack?.immediate, immediateFallbackTitle, immediateFallbackDetail);
+        const branchImpact = normalizeBranchImpact(choice, {
+            chapterId,
+            chapterTitle,
+            chapterSummary,
+            sourceType,
+        }, echoPack, promiseLabel, riskLabel);
         const longTermHint = buildLongTermHint(choice, riskLabel, promiseLabel, echoPack);
         const visibleCostLabel = buildVisibleCostLabel(choice, promiseLabel, riskLabel);
         const defaultPressureDelta = riskTier === 'perilous'
@@ -1008,6 +1140,7 @@
             riskTier,
             riskLabel,
             visibleCostLabel,
+            branchImpact,
             immediateResult,
             longTermHint,
             pressureDelta: Math.max(0, Math.min(3, Math.floor(choice.pressureDelta ?? defaultPressureDelta))),
@@ -1341,6 +1474,8 @@
             return rawChoices.map((choice, index) => normalizeChoice(choice, `${event.id}_choice_${index}`, {
                 chapterId: event.id,
                 sourceType: 'level',
+                chapterTitle: event.title,
+                chapterSummary: event.summary,
             }));
         };
     });
@@ -3520,6 +3655,8 @@
             return (rawChoices || []).map((choice, index) => normalizeChoice(choice, `${chapter.id}_choice_${index}`, {
                 chapterId: chapter.id,
                 sourceType: 'main',
+                chapterTitle: chapter.title,
+                chapterSummary: chapter.summary,
             }));
         };
     });

@@ -523,6 +523,13 @@ button {
     margin-bottom: 4px;
 }
 
+.echo-meta {
+    margin-top: 8px;
+    color: rgba(75, 58, 39, 0.72);
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
 .log-card {
     transition: max-height var(--transition), opacity var(--transition);
 }

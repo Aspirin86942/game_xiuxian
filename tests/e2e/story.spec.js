@@ -33,8 +33,10 @@ test('剧情页支持继续、跳至抉择和完成分支选择', async ({ page 
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
     await expect(page.locator(selectors.story.pressure)).toContainText(scenario.expectedPressureText);
     await expect(page.locator(selectors.story.pressure)).not.toContainText(/\d/);
-    await expect(page.locator(`${selectors.story.echoList} .echo-item strong`).nth(0)).toHaveText(scenario.expectedEchoTitles[0]);
-    await expect(page.locator(`${selectors.story.echoList} .echo-item strong`).nth(1)).toHaveText(scenario.expectedEchoTitles[1]);
+    await expect(page.locator(`${selectors.story.echoList} .echo-item`)).toHaveCount(1);
+    await expect(page.locator(`${selectors.story.echoList} .echo-item strong`)).toHaveText(scenario.expectedImpact.title);
+    await expect(page.locator(`${selectors.story.echoList} .echo-item p`)).toHaveText(scenario.expectedImpact.detail);
+    await expect(page.locator(`${selectors.story.echoList} .echo-item .echo-meta`)).toHaveText(scenario.expectedImpact.meta);
 
     const save = await readSave(page);
     expect(save.chapterChoices['0']).toBe(scenario.choiceId);
@@ -67,8 +69,10 @@ test('劫煞积满时进入走火入魔结局并可重开', async ({ page }) => 
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedEndingTitle);
     await expect(page.locator(selectors.story.pressure)).toContainText(scenario.expectedPressureText);
     await expect(page.locator(selectors.story.pressure)).not.toContainText(/\d/);
-    await expect(page.locator(`${selectors.story.echoList} .echo-item strong`).nth(0)).toHaveText(scenario.expectedEchoTitles[0]);
-    await expect(page.locator(`${selectors.story.echoList} .echo-item strong`).nth(1)).toHaveText(scenario.expectedEchoTitles[1]);
+    await expect(page.locator(`${selectors.story.echoList} .echo-item`)).toHaveCount(1);
+    await expect(page.locator(`${selectors.story.echoList} .echo-item strong`)).toHaveText(scenario.expectedImpact.title);
+    await expect(page.locator(`${selectors.story.echoList} .echo-item p`)).toHaveText(scenario.expectedImpact.detail);
+    await expect(page.locator(`${selectors.story.echoList} .echo-item .echo-meta`)).toHaveText(scenario.expectedImpact.meta);
     await expect(page.locator(selectors.story.endingChain)).toBeVisible();
     await expect(page.locator(selectors.story.endingChain)).toContainText('关键承诺链');
     await expect(page.locator(selectors.story.endingChain)).toContainText(scenario.expectedRecapText);

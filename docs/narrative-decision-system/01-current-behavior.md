@@ -1,97 +1,89 @@
-# 01. 当前实现行为
+﻿# 01. 当前实现行为
 
 ## 1. 机制目标
 
-截至 `2026-03-21`，理想化叙事决策系统 v2 已完成运行时代码落地。
+截至 `2026-03-21`，当前运行时已经把剧情页右侧收口为“顶部失败压力 + 下方分支影响历史”的可见结构，但它仍不是完整目标态。
 
-当前代码已经不再处于“旧按钮文案 + `costs` + 隐藏 `tradeoff` + 最近一次回响”的过渡态，而是进入四层闭环：
+当前最重要的现状基线如下：
 
-- 决策输入层：choice 在选前显式揭示承诺类型、可见代价、风险语义、不可执行原因
-- 后果输出层：choice 在选后固定输出即时结果、长期提示、到期延迟回响
-- 分支记忆层：关键选择写入 `decisionHistory / pendingEchoes / endingSeeds`
-- 揭示契约层：剧情页显示压力档位与趋势，终局页回指关键承诺链
+- 决策输入层：choice 在选前显式揭示承诺类型、可见代价、风险语义、不可执行原因。
+- 可见后果层：choice 在选后只向剧情页写入 1 条可见分支影响；失败压力独立显示在顶部。
+- 分支记忆层：关键选择写入 `decisionHistory / pendingEchoes / endingSeeds`，其中剧情页主显示优先读取 `decisionHistory`。
+- 揭示契约层：终局页优先回指分支影响历史，而不再依赖旧的即时结果摘要。
 
-本文件记录的是“当前代码已经实现了什么”，不再以“目标态差距清单”为主。
+本文件只记录当前代码已经落地的基线、仍保留的兼容物与尚未完全理想化的差距。
 
 ## 2. 术语表
 
 | 当前实现名词 | v2 术语 | 当前含义 / 当前实现说明 |
 | --- | --- | --- |
-| `storyProgress` | 主线推进记忆 | 继续承担章节入口，仍兼容数字章节与字符串插章 |
-| `storyCursor` | 剧情播放游标 | 负责 `playing / choices / ending` 三类 UI 视图切换 |
-| `chapterChoices` | 主线章节决策索引 | 继续作为作者读取层与旧逻辑回退层，不再独自承担核心叙事语义 |
-| `decisionHistory` | 关键承诺历史 | 保留最近 12 次关键 choice 的承诺、风险、即时摘要、长期提示、压力增量 |
-| `pendingEchoes` | 延迟回响队列 | 保留待兑现的延迟后果，并按 `eligibleFromProgress ~ eligibleToProgress` 窗口显示 |
-| `endingSeeds` | 终局承诺链种子 | 保留最近 4 条终局承诺种子，用于结局回指 |
+| `branchImpact` | 单次选择的可见分支影响 | choice 归一化后的稳定可见字段，包含 `title / detail / promiseLabel / riskLabel` |
+| `decisionHistory` | 分支影响历史 | 当前保留最近 64 次关键 choice，记录承诺、风险、压力增量与 `branchImpactTitle / branchImpactDetail` |
+| `pendingEchoes` | 隐藏承接兼容队列 | 仍保留旧延迟后果数据，但当前剧情页主显示忽略它 |
+| `chapterChoices` | 历史 choice 索引 | 继续作为旧存档和缺省历史的兼容读取层 |
+| `recentChoiceEcho` | 最近一次 choice 兜底锚点 | 仅在缺少 `decisionHistory` 与 `chapterChoices` 时作为最后回退 |
+| `recentChoiceOutcome` | 旧结果摘要兼容层 | 仍保留以兼容旧逻辑，但不再承担剧情页主显示职责 |
 | `storyConsequences` | 长期后果状态 | 当前结构为 `battleWill / tribulation / pressureTier / pressureTrend` |
-| `recentChoiceEcho` | 最近一次 choice 锚点 | 仅保留为兼容输出层，不再承担唯一叙事回响职责 |
-| `recentChoiceOutcome` | 最近一次结果摘要 | 仅保留为兼容数值输出层，不再承担唯一后果解释职责 |
-| `tradeoff` | 默认推导入口 | 仍可作为旧内容的默认推导入口，但不再直接承担 UI 语义 |
+| `endingSeeds` | 终局承诺链种子 | 保留最近 4 条终局承诺种子，用于结局回指 |
+| `immediateResult / longTermHint / delayedEchoes` | 兼容输入素材 | 仍可作为内容归一化来源，但不再是剧情页最终显示契约 |
 
 ## 3. 覆盖范围
 
 当前实现已经覆盖：
 
-- 主线章节与小境界事件统一走 v2 choice shape
+- 主线章节与小境界事件统一走新 choice shape。
 - 所有 choice 在归一化后都具备：
   - `promiseType / promiseLabel`
   - `riskTier / riskLabel`
   - `visibleCostLabel`
+  - `branchImpact`
   - `immediateResult`
   - `longTermHint`
   - `pressureDelta / resolveDelta`
   - `delayedEchoes`
   - `endingSeeds`
-- `chooseStoryOption()` 按 v2 顺序结算，并写入四层状态
-- 压力系统按 `安全 / 紧绷 / 濒危 / 失控` 四档运行
-- 走火入魔只在结算后进入 `失控` 时触发，不再是黑箱随机暴毙
-- 剧情页选前展示承诺 / 代价 / 风险 / 禁用原因
-- 剧情页选后固定展示“即时结果 → 长期提示 → 到期延迟回响”
-- 终局页展示关键承诺链回指，并保留重开 / 导出结局存档入口
-- 旧版存档加载时自动重置为新档，导入时阻断并提示
+- `chooseStoryOption()` 会把 `branchImpactTitle / branchImpactDetail` 写入 `decisionHistory`。
+- `getEchoes()` 当前优先根据 `decisionHistory` 生成分支影响列表；旧历史再回退到 `chapterChoices / recentChoiceEcho`。
+- 剧情页 `echo-list` 只渲染“标题 + 正文 + 元信息”的分支影响卡，最新一条在最上面。
+- `story-pressure` 继续独立显示压力档位与趋势。
+- 终局页的关键承诺链优先回指分支影响主题，而不是旧的即时结果摘要。
+
+当前与目标态的关键差距：
+
+- 并非所有成熟 choice 都已完全手写 `branchImpact`；部分内容仍会从旧素材或兜底生成器补齐。
+- `pendingEchoes` 仍是旧结构的兼容残留，尚未被重新定义为真正的隐藏承接系统。
+- `immediateResult / longTermHint / delayedEchoes` 仍然存在于内容输入层，尚未彻底从作者心智模型中退役。
 
 ## 4. 状态字段
 
-当前 v2 运行时的关键字段如下：
+当前运行时的关键字段如下：
 
-- `version`
-  - 当前固定为 `5`
-  - 存档键继续沿用 `xiuxian_save_v2`
-- `storyProgress`
-  - 继续作为主线入口与章节推进值
-- `storyCursor`
-  - 记录 `source / storyId / chapterId / beatIndex / mode`
-- `chapterChoices`
-  - 保留主线 choice 映射，供章节脚本与旧回响读取
-- `decisionHistory`
-  - 最近 12 次关键 choice 的承诺链历史
-- `pendingEchoes`
-  - 延迟回响队列；当前不在读取时消费，而是在窗口内持续可见
-- `endingSeeds`
-  - 最近 4 条终局承诺种子
-- `storyConsequences`
-  - `battleWill`：长期正向战斗收益
-  - `tribulation`：失败压力主值
-  - `pressureTier`：当前压力档位
-  - `pressureTrend`：当前压力趋势
-- `recentChoiceEcho / recentChoiceOutcome`
-  - 仍保留，但仅作为兼容输出层
-- `ending`
-  - 普通终局与走火入魔终局统一落在该字段
+| 字段 | 当前角色 | 当前实现说明 |
+| --- | --- | --- |
+| `version` | 存档版本 | 当前固定为 `5`，存档键继续沿用 `xiuxian_save_v2` |
+| `storyProgress` | 主线推进记忆 | 继续承担章节入口，仍兼容数字章节与字符串插章 |
+| `storyCursor` | 剧情播放游标 | 负责 `playing / choices / ending` 三类 UI 视图切换 |
+| `chapterChoices` | 旧历史索引 | 保留主线 choice 映射，供兼容回退与旧脚本读取 |
+| `decisionHistory` | 可见历史主数据源 | 最近 64 次关键 choice 的承诺链历史，含 `branchImpactTitle / branchImpactDetail` |
+| `pendingEchoes` | 隐藏承接兼容队列 | 当前不参与 `echo-list` 构建，但仍保留写入与兼容读取能力 |
+| `endingSeeds` | 终局承诺链种子 | 最近 4 条终局种子 |
+| `storyConsequences` | 长期后果状态 | `battleWill / tribulation / pressureTier / pressureTrend` |
+| `recentChoiceEcho / recentChoiceOutcome` | 最后兜底兼容层 | 仅在历史缺失时协助输出，不再代表主显示契约 |
+| `branchImpact` | 单次 choice 的可见文案契约 | 供 `decisionHistory`、剧情页侧栏与终局回顾复用 |
+| `ending` | 终局状态 | 普通终局与走火入魔终局统一落在该字段 |
 
 ## 5. 结算顺序
 
 当前 `chooseStoryOption()` 的固定顺序为：
 
 1. 校验当前 story、choice 与可执行性。
-2. 扣除 `costs`。
-3. 应用 `effects`。
-4. 更新 `storyConsequences`、`pressureTier`、`pressureTrend`。
-5. 写入 `chapterChoices / recentChoiceEcho / recentChoiceOutcome`。
-6. 写入 `decisionHistory / pendingEchoes / endingSeeds`。
-7. 判定失败终局（仅在压力进入 `失控` 时触发）。
-8. 判定普通终局。
-9. 若未终局，则推进 `storyProgress` 并重建 `storyCursor`。
+2. 扣除 `costs` 并应用 `effects`。
+3. 更新 `storyConsequences`、`pressureTier`、`pressureTrend`。
+4. 写入 `chapterChoices / recentChoiceEcho / recentChoiceOutcome`。
+5. 写入 `decisionHistory / pendingEchoes / endingSeeds`，并把分支影响正文留给可见历史使用。
+6. 判定失败终局（仅在压力进入 `失控` 时触发）。
+7. 判定普通终局。
+8. 若未终局，则推进 `storyProgress` 并重建 `storyCursor`。
 
 当前压力分层语义为：
 
@@ -116,43 +108,50 @@
   - 精确 `battleWill`
   - 精确 `tribulation`
 - 选后可见：
-  - `echo-list` 第 1 项固定为“即时结果”
-  - `echo-list` 第 2 项固定为“长期提示”
-  - 第 3 项开始显示到期延迟回响
-  - 常驻 `story-pressure` 区块显示压力档位与趋势
+  - 顶部 `story-pressure` 固定显示压力档位与趋势
+  - `echo-list` 仅显示分支影响历史，最新一条在最上面
+  - 每张分支影响卡只显示 `标题 + 正文 + 元信息`
+  - 元信息当前由 `承诺标签 + 风险标签 + 章节来源` 组成
   - `story-ending-chain` 在终局页显示关键承诺链回指
+- 选后不再直接显示：
+  - `即时结果`
+  - `长期提示`
+  - `pendingEchoes` 对应的旧延迟回响卡片
 
-补充说明：
+当前与目标态的 UI 差距：
 
-- `route-summary` 不再暴露精确失败压力数值
-- 终局页保留“重新开始另一条路 / 导出当前结局存档”
+- 仍有部分分支影响正文来自旧素材拼接，不是完全手写的成熟文案。
+- 旧输入字段还在内容层保留，作者如果只看数据结构，仍有误写回多卡模式的风险。
 
 ## 7. 兼容策略
 
-当前兼容策略已切换为“运行时拒绝旧档，内部工具保留归一化能力”：
+当前兼容策略分为“运行时旧档处理”与“可见历史回退”两层：
 
 - 运行时：
   - `version < 5` 的本地存档在加载时直接判为不支持
   - 页面会提示旧档已失效，并自动重置为新初始状态
   - 导入旧档时直接阻断，不覆盖当前进度
-- 内部代码：
-  - `mergeSave()` 仍保留宽松归一化能力，便于测试构造状态与内部工具调用
-  - `recentChoiceEcho / recentChoiceOutcome / chapterChoices` 仍保留为兼容读取层
+- 内部兼容：
+  - `decisionHistory` 缺失时，`getEchoes()` 会回退到 `chapterChoices`
+  - 若 `chapterChoices` 也缺失，再回退到 `recentChoiceEcho`
+  - 当历史记录缺少 `branchImpactTitle / branchImpactDetail` 时，允许使用兼容兜底生成器补齐
+  - `pendingEchoes` 继续保留为历史数据，但不再参与剧情页可见 feed
 
 ## 8. 边界与异常
 
 当前已知边界：
 
-- `storyProgress` 仍不是纯数字计数器，插章继续使用字符串 id
-- `pendingEchoes` 当前按窗口显示，但不会在读取后自动标记 `consumed`
-- `tradeoff` 仍存在于旧内容入口中，但只用于默认推导，不再承担 UI 语义
-- `recentChoiceEcho / recentChoiceOutcome` 仍会继续输出，不能再被误当作唯一叙事真相
+- `storyProgress` 仍不是纯数字计数器，插章继续使用字符串 id。
+- `decisionHistory` 当前上限为 64 条，不是严格意义上的无限全局历史。
+- `pendingEchoes` 仍保留旧窗口结构，但不会在可见层被读取为多张卡。
+- `immediateResult / longTermHint / delayedEchoes` 仍存在于内容归一化入口中，继续要求作者和实现者明确它们只是兼容输入，而不是最终显示契约。
+- 兼容兜底生成器能避免空白卡，但它不是成熟内容来源；若长期依赖，会让分支影响重新模板化。
 
 当前异常处理底线：
 
-- 没有可玩剧情时，剧情页回退到占位文案
-- 资源不足时，choice 按钮禁用且逻辑层再次拦截
-- 旧版存档加载 / 导入时必须提示并阻断
-- 进入终局后，剧情视图固定切换到 `ending` 模式
+- 没有可玩剧情时，剧情页回退到占位文案。
+- 资源不足时，choice 按钮禁用且逻辑层再次拦截。
+- 旧版存档加载 / 导入时必须提示并阻断。
+- 进入终局后，剧情视图固定切换到 `ending` 模式。
 
 若后续实现再次偏离本文件，应同步回写 `02`、`03`、`05`；若仅为实现落地与测试追平，则继续以本文件记录当前运行时事实。

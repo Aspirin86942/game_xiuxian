@@ -22,7 +22,7 @@
     const STORY_ORDER = new Map(STORY_CHAPTERS.map((chapter, index) => [String(chapter.id), index]));
     const MAX_LOGS = 120;
     const SAVE_VERSION = 5;
-    const DECISION_HISTORY_LIMIT = 12;
+    const DECISION_HISTORY_LIMIT = 64;
     const ENDING_SEED_LIMIT = 4;
     const PRESSURE_COLLAPSE_THRESHOLD = 9;
     const STORY_CONSEQUENCE_LIMITS = Object.freeze({
@@ -162,6 +162,8 @@
                 costLabel: entry.costLabel ?? '',
                 immediateSummary: entry.immediateSummary ?? '',
                 longTermHint: entry.longTermHint ?? '',
+                branchImpactTitle: entry.branchImpactTitle ?? '',
+                branchImpactDetail: entry.branchImpactDetail ?? '',
                 pressureDelta: clampConsequenceValue(entry.pressureDelta, 3),
                 endingSeedIds: Array.isArray(entry.endingSeedIds) ? entry.endingSeedIds.slice(0, ENDING_SEED_LIMIT) : [],
             }));
@@ -653,15 +655,65 @@
         state.endingSeeds = normalizeEndingSeeds([...currentSeeds, ...nextSeeds]);
     }
 
-    function getRecentDecisionEntries(state, limit = 4) {
+    function getRecentDecisionEntries(state, limit = DECISION_HISTORY_LIMIT) {
         const entries = normalizeDecisionHistory(state.decisionHistory);
         return entries.slice(Math.max(0, entries.length - limit));
     }
 
+    function getChoiceDefinitionByEntry(chapterId, choiceId, state) {
+        const story = getChapterById(chapterId) || getLevelEventById(chapterId);
+        if (!story) {
+            return null;
+        }
+
+        const availableChoices = typeof story.choices === 'function' ? story.choices(state) : story.choices;
+        if (!Array.isArray(availableChoices)) {
+            return null;
+        }
+        return availableChoices.find((item) => item.id === choiceId) || null;
+    }
+
+    function getLegacyBranchImpact(chapterId, choiceId) {
+        return getChoiceDelayedEcho(chapterId, choiceId) || getChoiceImmediateEcho(chapterId, choiceId);
+    }
+
+    function getDecisionBranchImpact(entry) {
+        if (!entry) {
+            return null;
+        }
+
+        const title = typeof entry.branchImpactTitle === 'string' ? entry.branchImpactTitle.trim() : '';
+        const detail = typeof entry.branchImpactDetail === 'string' ? entry.branchImpactDetail.trim() : '';
+        if (title && detail) {
+            return { title, detail };
+        }
+
+        const legacyImpact = getLegacyBranchImpact(entry.chapterId, entry.choiceId);
+        if (legacyImpact) {
+            return legacyImpact;
+        }
+
+        if (detail || title) {
+            return {
+                title: title || entry.promiseLabel || '分支影响',
+                detail: detail || entry.longTermHint || entry.immediateSummary || '这一步已经留在你的路上，之后还会被重新认出。',
+            };
+        }
+
+        return {
+            title: entry.promiseLabel || '分支影响',
+            detail: entry.longTermHint || entry.immediateSummary || '这一步已经留在你的路上，之后还会被重新认出。',
+        };
+    }
+
     function getEndingRecapLines(state, choice) {
-        const chain = getRecentDecisionEntries(state, 4).map((entry) => `${entry.promiseLabel} · ${entry.riskLabel}：${entry.immediateSummary || entry.longTermHint}`);
+        const chain = getRecentDecisionEntries(state, 4).map((entry) => {
+            const impact = getDecisionBranchImpact(entry);
+            return `${impact.title} · ${entry.promiseLabel} / ${entry.riskLabel}：${impact.detail}`;
+        });
         if (choice) {
-            chain.push(`收束于「${choice.text}」：最终把此前积累的承诺与压力一起推到了门前。`);
+            const finalTitle = choice.branchImpact?.title || choice.ending?.title || choice.text;
+            chain.push(`收束于「${finalTitle}」：此前留下的每一道分支影响，都在这里一起合了拢。`);
         }
         return chain.slice(-4);
     }
@@ -1035,6 +1087,8 @@
             costLabel: choice.visibleCostLabel || formatCosts(choice.costs),
             immediateSummary: choice.immediateResult?.detail || choice.text,
             longTermHint: choice.longTermHint || '',
+            branchImpactTitle: choice.branchImpact?.title || '',
+            branchImpactDetail: choice.branchImpact?.detail || '',
             pressureDelta: tradeoffResult.tribulationGain,
             endingSeedIds: (choice.endingSeeds || []).map((entry) => entry.id),
         });
@@ -1441,61 +1495,83 @@
             }));
     }
 
-    function getEchoes(state) {
-        const echoes = [];
-        const outcomeEcho = getChoiceOutcomeEcho(state);
-        if (outcomeEcho) {
-            echoes.push(outcomeEcho);
+    function getChapterSourceLabel(chapterId) {
+        const chapter = getChapterById(chapterId);
+        if (chapter) {
+            const prefix = chapter.chapterLabel || (typeof chapter.id === 'number' ? `第 ${chapter.id + 1} 章` : '主线章节');
+            return `${prefix} · ${chapter.title}`;
         }
 
-        const longTermEcho = getChoiceLongTermEcho(state);
-        if (longTermEcho) {
-            echoes.push(longTermEcho);
+        const levelEvent = getLevelEventById(chapterId);
+        if (levelEvent) {
+            return `悟境 · ${levelEvent.title}`;
         }
 
-        const allPendingEchoes = normalizePendingEchoes(state.pendingEchoes);
-        const pendingEchoes = getEligiblePendingEchoes(state);
-        pendingEchoes.forEach((entry) => {
-            echoes.push(entry);
-        });
-        if (pendingEchoes.length === 0 && allPendingEchoes.length === 0) {
-            const seenDelayedTitles = new Set();
-            getSortedChapterChoiceEntries(state).forEach(([chapterId, choiceId]) => {
-                const delayedEcho = getChoiceDelayedEcho(chapterId, choiceId);
-                if (delayedEcho && !seenDelayedTitles.has(delayedEcho.title)) {
-                    seenDelayedTitles.add(delayedEcho.title);
-                    echoes.push({
-                        title: delayedEcho.title,
-                        detail: delayedEcho.detail,
-                    });
-                }
+        if (chapterId !== null && chapterId !== undefined && chapterId !== '') {
+            return `章节 · ${chapterId}`;
+        }
+
+        return '';
+    }
+
+    function getBranchImpactMeta(promiseLabel, riskLabel, chapterId) {
+        return [promiseLabel, riskLabel, getChapterSourceLabel(chapterId)]
+            .filter(Boolean)
+            .join(' · ');
+    }
+
+    function getDecisionHistoryBranchImpacts(state) {
+        return getRecentDecisionEntries(state, DECISION_HISTORY_LIMIT)
+            .slice()
+            .reverse()
+            .map((entry) => {
+                const impact = getDecisionBranchImpact(entry);
+                return {
+                    title: impact.title,
+                    detail: impact.detail,
+                    meta: getBranchImpactMeta(entry.promiseLabel, entry.riskLabel, entry.chapterId),
+                };
             });
+    }
+
+    function getLegacyBranchImpactEntries(state) {
+        return getSortedChapterChoiceEntries(state)
+            .map(([chapterId, choiceId]) => {
+                const impact = getLegacyBranchImpact(chapterId, choiceId);
+                if (!impact) {
+                    return null;
+                }
+                const choice = getChoiceDefinitionByEntry(chapterId, choiceId, state);
+                return {
+                    title: impact.title,
+                    detail: impact.detail,
+                    meta: getBranchImpactMeta(choice?.promiseLabel || '', choice?.riskLabel || '', chapterId),
+                };
+            })
+            .filter(Boolean);
+    }
+
+    function getEchoes(state) {
+        const historyEchoes = getDecisionHistoryBranchImpacts(state);
+        if (historyEchoes.length > 0) {
+            return historyEchoes;
         }
 
-        if (state.flags.startPath === 'disciple') {
-            echoes.push({ title: '神手谷旧痕', detail: '你以弟子身份接近墨大夫，这让后续面对“师门”时更容易被旧记忆拉扯。' });
+        const legacyEchoes = getLegacyBranchImpactEntries(state);
+        if (legacyEchoes.length > 0) {
+            return legacyEchoes;
         }
-        if (state.flags.helpedOldFriendAgain) {
-            echoes.push({ title: '旧友照面', detail: '厉飞雨重新把你拉回那个还会被人先问“活着没有”的自己，这条线会一直提醒你别把凡人来路忘净。' });
+
+        const recentEcho = getLegacyBranchImpact(state.recentChoiceEcho?.chapterId, state.recentChoiceEcho?.choiceId);
+        if (recentEcho) {
+            return [{
+                title: recentEcho.title,
+                detail: recentEcho.detail,
+                meta: getChapterSourceLabel(state.recentChoiceEcho?.chapterId),
+            }];
         }
-        if (state.flags.keptDistanceFromOldFriend) {
-            echoes.push({ title: '旧情隔席', detail: '你连旧友也停在半步之外，这会让后面很多“凡心未死”的回响更显得艰难。' });
-        }
-        if (state.flags.hasSecretInfo) {
-            echoes.push({ title: '暗线消息', detail: '太南山换来的消息没有白费，它让你在宗门和海路两条线里都更懂得留后手。' });
-        }
-        if (state.flags.ascendedWithNangong) {
-            echoes.push({ title: '并肩飞升', detail: '血色禁地埋下的那条线，最后被你们一起带过了界壁。' });
-        }
-        if (echoes.length === 0) {
-            const recentEcho = getChoiceImmediateEcho(state.recentChoiceEcho?.chapterId, state.recentChoiceEcho?.choiceId);
-            if (recentEcho) {
-                echoes.push(recentEcho);
-            } else {
-                echoes.push({ title: '尚在起势', detail: '关键选择还不够多，继续推进剧情会看到更明显的回响。' });
-            }
-        }
-        return echoes;
+
+        return [{ title: '尚在起势', detail: '关键选择还不够多，继续推进剧情会看到更明显的分支影响。', meta: '' }];
     }
 
     function getAvailableSideStories(state) {

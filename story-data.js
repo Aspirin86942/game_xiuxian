@@ -16,6 +16,9 @@
         autoCultivateInterval: 1000,
         offlineCultivateMaxDurationMs: 8 * 60 * 60 * 1000,
         itemDropChance: 0.2,
+        naturalRecoveryIntervalMs: 30000,
+        naturalRecoveryRatio: 0.03,
+        naturalRecoveryCapRatio: 0.5,
     };
 
     const REALMS = [
@@ -121,6 +124,14 @@
             effect: { healRatio: 0.35 },
             actions: [{ id: 'use', label: '使用', summary: '使用：回复 35% 最大气血。', effect: { healRatio: 0.35 } }],
         },
+        huashendan: {
+            name: '化神丹',
+            type: 'pill',
+            description: '元婴之后的破关重药，下次突破额外提升 25% 成功率。',
+            usable: true,
+            effect: { breakthroughBonus: 0.25 },
+            actions: [{ id: 'use', label: '使用', summary: '使用：下次突破额外提升 25% 成功率。', effect: { breakthroughBonus: 0.25 } }],
+        },
         feijian: {
             name: '飞剑',
             type: 'weapon',
@@ -144,6 +155,49 @@
             usable: false,
             passiveEffects: { maxHp: 12 },
             passiveSummary: '持有生效：气血上限 +12。',
+        },
+    };
+
+    const ALCHEMY_RECIPES = {
+        'brew-jiedusan': {
+            id: 'brew-jiedusan',
+            name: '炼制解毒散',
+            category: 'recovery',
+            summary: '以灵草和灵石调理经脉，炼成基础回血丹。',
+            costs: { lingcao: 2, lingshi: 5 },
+            outputs: { jiedusan: 1 },
+            unlock: {},
+        },
+        'brew-juqidan': {
+            id: 'brew-juqidan',
+            name: '炼制聚气丹',
+            category: 'cultivation',
+            summary: '以灵草、妖丹与灵石炼制常用修为丹。',
+            costs: { lingcao: 2, yaodan: 1, lingshi: 10 },
+            outputs: { juqidan: 1 },
+            unlock: {},
+        },
+        'brew-zhujidan': {
+            id: 'brew-zhujidan',
+            name: '炼制筑基丹',
+            category: 'breakthrough',
+            summary: '持有主药后方可成丹，用于前中期突破准备。',
+            costs: { zhujidanMaterial: 1, lingcao: 2, lingshi: 20 },
+            outputs: { zhujidan: 1 },
+            unlock: {
+                requiredItems: { zhujidanMaterial: 1 },
+            },
+        },
+        'brew-huashendan': {
+            id: 'brew-huashendan',
+            name: '炼制化神丹',
+            category: 'breakthrough',
+            summary: '元婴及以上才可掌控的高阶突破丹。',
+            costs: { yaodan: 3, lingcao: 4, lingshi: 60 },
+            outputs: { huashendan: 1 },
+            unlock: {
+                minRealmIndex: 3,
+            },
         },
     };
 
@@ -4428,6 +4482,7 @@
         CONFIG,
         REALMS,
         ITEMS,
+        ALCHEMY_RECIPES,
         MONSTERS,
         LOCATIONS,
         NPCS,

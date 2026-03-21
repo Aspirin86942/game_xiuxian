@@ -1,5 +1,6 @@
 const assert = require('assert');
 const GameCore = require('../game-core.js');
+const StoryData = require('../story-data.js');
 
 const FIXED_NOW = 1_710_000_000_000;
 
@@ -14,13 +15,19 @@ function createOfflineState({ realmScore, cultivation = 0, autoCultivate = true,
 
 function testLegacySaveCompatibility() {
     const merged = GameCore.mergeSave({
+        version: 5,
         autoCultivate: true,
     });
 
     assert.strictEqual(merged.version, GameCore.SAVE_VERSION);
+    assert.strictEqual(GameCore.isSupportedSaveData({ version: 5 }), true);
+    assert.strictEqual(GameCore.isSupportedSaveData({ version: 4 }), false);
     assert.strictEqual(merged.offlineTraining.lastSavedAt, null);
     assert.strictEqual(merged.offlineTraining.lastGain, 0);
     assert.strictEqual(merged.offlineTraining.wasCapped, false);
+    assert.deepStrictEqual(merged.recovery, {
+        lastCheckedAt: null,
+    });
     assert.deepStrictEqual(merged.storyConsequences, {
         battleWill: 0,
         tribulation: 0,
@@ -81,9 +88,26 @@ function testOfflineSettlementRequiresAutoCultivate() {
     assert.strictEqual(state.logs.length, initialLogCount);
 }
 
+function testNaturalRecoveryAppliesTickAndCap() {
+    const state = GameCore.createInitialState();
+    GameCore.setRealmScore(state, 8);
+    state.playerStats.hp = 1;
+    state.recovery.lastCheckedAt = FIXED_NOW - (StoryData.CONFIG.naturalRecoveryIntervalMs * 40);
+
+    const capHp = Math.max(1, Math.floor(state.playerStats.maxHp * StoryData.CONFIG.naturalRecoveryCapRatio));
+    const result = GameCore.resolveNaturalRecovery(state, FIXED_NOW);
+
+    assert.strictEqual(result.applied, true);
+    assert.strictEqual(result.capHp, capHp);
+    assert.strictEqual(state.playerStats.hp, capHp);
+    assert.strictEqual(result.currentHp, capHp);
+    assert.strictEqual(result.lastCheckedAt, FIXED_NOW);
+}
+
 testLegacySaveCompatibility();
 testOfflineSettlementAppliesExpectedGain();
 testOfflineSettlementRespectsCap();
 testOfflineSettlementRequiresAutoCultivate();
+testNaturalRecoveryAppliesTickAndCap();
 
 console.log('offline smoke passed');

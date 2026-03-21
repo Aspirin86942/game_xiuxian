@@ -242,6 +242,7 @@ button {
 
 .page::-webkit-scrollbar,
 .log-container::-webkit-scrollbar,
+.alchemy-list::-webkit-scrollbar,
 .inventory-list::-webkit-scrollbar,
 .combat-log::-webkit-scrollbar,
 .side-story-list::-webkit-scrollbar {
@@ -250,6 +251,7 @@ button {
 
 .page::-webkit-scrollbar-thumb,
 .log-container::-webkit-scrollbar-thumb,
+.alchemy-list::-webkit-scrollbar-thumb,
 .inventory-list::-webkit-scrollbar-thumb,
 .combat-log::-webkit-scrollbar-thumb,
 .side-story-list::-webkit-scrollbar-thumb {
@@ -503,6 +505,7 @@ button {
 .echo-item,
 .side-story-item,
 .npc-btn,
+.alchemy-recipe,
 .inventory-item,
 .combat-entry {
     border-radius: var(--radius-md);
@@ -717,7 +720,7 @@ button {
 
 .bottom-nav {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 8px;
     padding: 10px;
     background: rgba(250, 244, 234, 0.84);
@@ -786,6 +789,114 @@ button {
     display: grid;
     gap: 10px;
     overflow-y: auto;
+}
+
+.alchemy-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.alchemy-metric,
+.battle-prep-summary {
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(143, 106, 42, 0.12);
+    background: rgba(255, 255, 255, 0.58);
+}
+
+.alchemy-metric {
+    display: grid;
+    gap: 6px;
+}
+
+.alchemy-metric span {
+    font-size: 0.78rem;
+    color: var(--ink-light);
+}
+
+.alchemy-metric strong {
+    color: var(--ink);
+}
+
+.alchemy-rule-text,
+.battle-prep-summary {
+    color: var(--ink-soft);
+    line-height: 1.6;
+}
+
+.alchemy-list {
+    display: grid;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+.alchemy-recipe {
+    padding: 12px 14px;
+    display: grid;
+    gap: 8px;
+}
+
+.alchemy-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.alchemy-head > div {
+    display: grid;
+    gap: 4px;
+}
+
+.alchemy-head span,
+.alchemy-line span {
+    font-size: 0.78rem;
+    color: var(--ink-light);
+}
+
+.alchemy-output {
+    align-self: start;
+    color: var(--jade);
+    font-weight: 700;
+}
+
+.alchemy-recipe p {
+    color: var(--ink-soft);
+    line-height: 1.55;
+}
+
+.alchemy-meta {
+    display: grid;
+    gap: 6px;
+}
+
+.alchemy-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.alchemy-line strong {
+    text-align: right;
+    color: var(--ink);
+}
+
+.alchemy-reason {
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.alchemy-reason.ready {
+    color: var(--jade);
+}
+
+.alchemy-reason.blocked {
+    color: var(--vermillion);
+}
+
+.alchemy-craft-btn[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .inventory-item {
@@ -1193,9 +1304,14 @@ button {
         border-radius: 18px;
     }
 
+    .alchemy-list,
     .inventory-list,
     .combat-log {
         gap: 8px;
+    }
+
+    .alchemy-summary {
+        grid-template-columns: 1fr;
     }
 
     .settings-grid {

@@ -9,6 +9,7 @@
         CONFIG,
         REALMS,
         ITEMS,
+        ALCHEMY_RECIPES,
         MONSTERS,
         LOCATIONS,
         NPCS,
@@ -21,7 +22,8 @@
     const STORY_LOOKUP = new Map(STORY_CHAPTERS.map((chapter) => [chapter.id, chapter]));
     const STORY_ORDER = new Map(STORY_CHAPTERS.map((chapter, index) => [String(chapter.id), index]));
     const MAX_LOGS = 120;
-    const SAVE_VERSION = 5;
+    const SAVE_VERSION = 6;
+    const MIN_SUPPORTED_SAVE_VERSION = 5;
     const DECISION_HISTORY_LIMIT = 64;
     const ENDING_SEED_LIMIT = 4;
     const PRESSURE_COLLAPSE_THRESHOLD = 9;
@@ -65,6 +67,12 @@
         };
     }
 
+    function createDefaultRecoveryState() {
+        return {
+            lastCheckedAt: null,
+        };
+    }
+
     function createDefaultStoryConsequences() {
         return {
             battleWill: 0,
@@ -105,6 +113,17 @@
             nextState[fieldName] = Math.max(0, Math.floor(rawValue));
         });
         nextState.wasCapped = Boolean(rawState.wasCapped);
+        return nextState;
+    }
+
+    function normalizeRecoveryState(rawState) {
+        const nextState = createDefaultRecoveryState();
+        if (!rawState || typeof rawState !== 'object') {
+            return nextState;
+        }
+        if (Number.isFinite(rawState.lastCheckedAt) && rawState.lastCheckedAt > 0) {
+            nextState.lastCheckedAt = Math.floor(rawState.lastCheckedAt);
+        }
         return nextState;
     }
 
@@ -336,6 +355,7 @@
                 musicEnabled: true,
             },
             offlineTraining: createDefaultOfflineTrainingState(),
+            recovery: createDefaultRecoveryState(),
             storyConsequences: createDefaultStoryConsequences(),
             storyProgress: 0,
             chapterChoices: {},
@@ -384,15 +404,18 @@
             return nextState;
         }
 
+        const defaultState = createInitialState();
         Object.assign(nextState, rawState);
-        nextState.settings = { ...createInitialState().settings, ...(rawState.settings || {}) };
+        nextState.version = SAVE_VERSION;
+        nextState.settings = { ...defaultState.settings, ...(rawState.settings || {}) };
         nextState.offlineTraining = normalizeOfflineTrainingState(rawState.offlineTraining);
+        nextState.recovery = normalizeRecoveryState(rawState.recovery);
         nextState.storyConsequences = normalizeStoryConsequences(rawState.storyConsequences);
-        nextState.ui = { ...createInitialState().ui, ...(rawState.ui || {}) };
+        nextState.ui = { ...defaultState.ui, ...(rawState.ui || {}) };
         nextState.storyCursor = normalizeStoryCursor(rawState.storyCursor);
-        nextState.playerStats = { ...createInitialState().playerStats, ...(rawState.playerStats || {}) };
-        nextState.routeScores = { ...createInitialState().routeScores, ...(rawState.routeScores || {}) };
-        nextState.npcRelations = { ...createInitialState().npcRelations, ...(rawState.npcRelations || {}) };
+        nextState.playerStats = { ...defaultState.playerStats, ...(rawState.playerStats || {}) };
+        nextState.routeScores = { ...defaultState.routeScores, ...(rawState.routeScores || {}) };
+        nextState.npcRelations = { ...defaultState.npcRelations, ...(rawState.npcRelations || {}) };
         nextState.flags = { ...(rawState.flags || {}) };
         nextState.inventory = { ...(rawState.inventory || {}) };
         nextState.chapterChoices = { ...(rawState.chapterChoices || {}) };
@@ -536,11 +559,22 @@
         return Math.max(0, state.inventory[itemId] || 0);
     }
 
-    function canAffordCosts(state, costs) {
+    function getMissingCosts(state, costs) {
         if (!costs) {
-            return true;
+            return {};
         }
-        return Object.entries(costs).every(([itemId, amount]) => getInventoryCount(state, itemId) >= amount);
+
+        return Object.entries(costs).reduce((result, [itemId, amount]) => {
+            const shortage = Math.max(0, amount - getInventoryCount(state, itemId));
+            if (shortage > 0) {
+                result[itemId] = shortage;
+            }
+            return result;
+        }, {});
+    }
+
+    function canAffordCosts(state, costs) {
+        return Object.keys(getMissingCosts(state, costs)).length === 0;
     }
 
     function changeItem(state, itemId, delta) {
@@ -1213,6 +1247,82 @@
             .join('、');
     }
 
+    function getAlchemyUnlockError(state, recipe) {
+        const unlock = recipe?.unlock || {};
+        if (Number.isFinite(unlock.minRealmIndex) && state.realmIndex < unlock.minRealmIndex) {
+            const targetRealm = REALMS[unlock.minRealmIndex] || REALMS[REALMS.length - 1];
+            return `境界不足，需达到 ${targetRealm.name}。`;
+        }
+        if (unlock.requiredItems) {
+            const missingItems = getMissingCosts(state, unlock.requiredItems);
+            if (Object.keys(missingItems).length > 0) {
+                return `锁定：需先持有 ${formatCosts(missingItems)}`;
+            }
+        }
+        return '';
+    }
+
+    function getAlchemyRecipes(state) {
+        return Object.values(ALCHEMY_RECIPES).map((recipe) => {
+            const lockReason = getAlchemyUnlockError(state, recipe);
+            const missingCosts = getMissingCosts(state, recipe.costs);
+            const missingCostText = Object.keys(missingCosts).length > 0 ? formatCosts(missingCosts) : '';
+            return {
+                id: recipe.id,
+                name: recipe.name,
+                category: recipe.category,
+                summary: recipe.summary,
+                costs: clone(recipe.costs || {}),
+                outputs: clone(recipe.outputs || {}),
+                unlock: clone(recipe.unlock || {}),
+                costText: formatCosts(recipe.costs),
+                outputText: formatCosts(recipe.outputs),
+                lockReason,
+                missingCosts,
+                missingCostText,
+                unlocked: !lockReason,
+                canCraft: !lockReason && !missingCostText,
+                disabledReason: lockReason || (missingCostText ? `缺少：${missingCostText}` : ''),
+            };
+        });
+    }
+
+    function craftRecipe(state, recipeId, options = {}) {
+        if (options.inCombat) {
+            return { ok: false, error: '战斗中不可分心炼丹。' };
+        }
+
+        const recipe = ALCHEMY_RECIPES[recipeId];
+        if (!recipe) {
+            return { ok: false, error: '丹方不存在。' };
+        }
+
+        const lockReason = getAlchemyUnlockError(state, recipe);
+        if (lockReason) {
+            return { ok: false, error: lockReason };
+        }
+
+        const missingCosts = getMissingCosts(state, recipe.costs);
+        if (Object.keys(missingCosts).length > 0) {
+            return { ok: false, error: `材料不足：${formatCosts(missingCosts)}` };
+        }
+
+        if (!applyCosts(state, recipe.costs)) {
+            return { ok: false, error: '材料不足。' };
+        }
+
+        applyEffects(state, { items: recipe.outputs });
+        const outputText = formatCosts(recipe.outputs);
+        pushLog(state, `${recipe.name} 成功，炼成 ${outputText}`, 'good');
+        return {
+            ok: true,
+            recipeId,
+            outputs: clone(recipe.outputs || {}),
+            outputText,
+            message: `炼成 ${outputText}`,
+        };
+    }
+
     function getNextGoalText(state) {
         if (state.ending) {
             return '结局已定，可重开体验另一条路。';
@@ -1855,7 +1965,79 @@
         };
     }
 
-    function getItemActionPreconditionError(state, action) {
+    function resolveNaturalRecovery(state, nowMs) {
+        const nextNowMs = Number.isFinite(nowMs) ? Math.floor(nowMs) : Date.now();
+        state.recovery = normalizeRecoveryState(state.recovery);
+
+        const intervalMs = Number.isFinite(CONFIG.naturalRecoveryIntervalMs)
+            ? Math.max(1, Math.floor(CONFIG.naturalRecoveryIntervalMs))
+            : 30000;
+        const recoveryRatio = Number.isFinite(CONFIG.naturalRecoveryRatio) ? CONFIG.naturalRecoveryRatio : 0.03;
+        const capRatio = Number.isFinite(CONFIG.naturalRecoveryCapRatio) ? CONFIG.naturalRecoveryCapRatio : 0.5;
+        const tickGain = Math.max(1, Math.round(state.playerStats.maxHp * recoveryRatio));
+        const capHp = Math.max(1, Math.floor(state.playerStats.maxHp * capRatio));
+        const emptyResult = {
+            applied: false,
+            touched: false,
+            gain: 0,
+            ticks: 0,
+            capHp,
+            currentHp: state.playerStats.hp,
+            lastCheckedAt: state.recovery.lastCheckedAt,
+        };
+
+        if (!state.recovery.lastCheckedAt) {
+            state.recovery.lastCheckedAt = nextNowMs;
+            return {
+                ...emptyResult,
+                touched: true,
+                lastCheckedAt: nextNowMs,
+            };
+        }
+
+        const elapsedMs = Math.max(0, nextNowMs - state.recovery.lastCheckedAt);
+        const ticks = Math.floor(elapsedMs / intervalMs);
+        if (ticks <= 0) {
+            return emptyResult;
+        }
+
+        state.recovery.lastCheckedAt += ticks * intervalMs;
+        if (state.playerStats.hp >= capHp) {
+            return {
+                ...emptyResult,
+                touched: true,
+                ticks,
+                lastCheckedAt: state.recovery.lastCheckedAt,
+            };
+        }
+
+        const gain = Math.min(capHp - state.playerStats.hp, ticks * tickGain);
+        if (gain <= 0) {
+            return {
+                ...emptyResult,
+                touched: true,
+                ticks,
+                lastCheckedAt: state.recovery.lastCheckedAt,
+            };
+        }
+
+        state.playerStats.hp = Math.min(capHp, state.playerStats.hp + gain);
+        return {
+            applied: true,
+            touched: true,
+            gain,
+            ticks,
+            capHp,
+            currentHp: state.playerStats.hp,
+            lastCheckedAt: state.recovery.lastCheckedAt,
+        };
+    }
+
+    function getItemActionPreconditionError(state, itemId, action, options = {}) {
+        if (options.inCombat) {
+            return '战斗中不可使用物品。';
+        }
+
         const effect = action?.effect || {};
         if (effect.cultivation && state.cultivation >= state.maxCultivation) {
             return '当前修为已满，请先尝试突破。';
@@ -1863,10 +2045,16 @@
         if (effect.healRatio && state.playerStats.hp >= state.playerStats.maxHp) {
             return '当前气血已满，无需使用该物品。';
         }
+        if (effect.breakthroughBonus && state.breakthroughBonus > 0) {
+            return '已有药力护持，请先尝试突破。';
+        }
+        if (itemId === 'huashendan' && state.realmIndex < 3) {
+            return '当前境界不足，化神丹需元婴及以上方可承受。';
+        }
         return '';
     }
 
-    function performItemAction(state, itemId, actionId) {
+    function performItemAction(state, itemId, actionId, options = {}) {
         const item = ITEMS[itemId];
         const action = getItemActions(itemId).find((entry) => entry.id === actionId) || null;
         if (!item || !action) {
@@ -1876,7 +2064,7 @@
             return { ok: false, error: '物品不足。' };
         }
 
-        const preconditionError = getItemActionPreconditionError(state, action);
+        const preconditionError = getItemActionPreconditionError(state, itemId, action, options);
         if (preconditionError) {
             return { ok: false, error: preconditionError };
         }
@@ -1902,8 +2090,8 @@
         };
     }
 
-    function useItem(state, itemId) {
-        return performItemAction(state, itemId, 'use');
+    function useItem(state, itemId, options = {}) {
+        return performItemAction(state, itemId, 'use', options);
     }
 
     function beginCombat(state, rng) {
@@ -1966,13 +2154,12 @@
                 drops.push({ itemId, quantity });
                 pushLog(state, `游历掉落 ${ITEMS[itemId].name} x${quantity}`, 'good');
             }
-            state.playerStats.hp = Math.max(1, Math.round(state.playerStats.maxHp * 0.65));
             return { cultivationGain, drops };
         }
 
         const cultivationLoss = Math.floor(state.cultivation * 0.18);
         state.cultivation = Math.max(0, state.cultivation - cultivationLoss);
-        state.playerStats.hp = Math.max(1, Math.round(state.playerStats.maxHp * 0.45));
+        state.playerStats.hp = Math.max(1, Math.round(state.playerStats.maxHp * 0.2));
         pushLog(state, `游历失利，损失修为 ${cultivationLoss}`, 'fail');
         return { cultivationLoss, drops: [] };
     }
@@ -1982,7 +2169,7 @@
     }
 
     function isSupportedSaveData(rawState) {
-        return Boolean(rawState && typeof rawState === 'object' && Number.isFinite(rawState.version) && rawState.version >= SAVE_VERSION);
+        return Boolean(rawState && typeof rawState === 'object' && Number.isFinite(rawState.version) && rawState.version >= MIN_SUPPORTED_SAVE_VERSION);
     }
 
     function getPressureStatusText(state) {
@@ -1992,9 +2179,11 @@
 
     const GameCore = {
         SAVE_VERSION,
+        MIN_SUPPORTED_SAVE_VERSION,
         CONFIG,
         REALMS,
         ITEMS,
+        ALCHEMY_RECIPES,
         LOCATIONS,
         NPCS,
         LEVEL_STORY_EVENTS,
@@ -2009,6 +2198,7 @@
         getRouteDisplay,
         getRouteSummary,
         getPressureStatusText,
+        getAlchemyRecipes,
         getEchoes,
         getLocationMeta,
         getAvailableSideStories,
@@ -2037,6 +2227,8 @@
         isSupportedSaveData,
         touchSaveTimestamp,
         resolveOfflineCultivation,
+        resolveNaturalRecovery,
+        craftRecipe,
         performItemAction,
         useItem,
         beginCombat,

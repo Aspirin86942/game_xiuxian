@@ -116,6 +116,28 @@ function createFreshScenario() {
     };
 }
 
+function createAlchemyScenario() {
+    const { state, serialized } = createSerializedState((draft) => {
+        draft.ui.activeTab = 'alchemy';
+        draft.inventory.lingcao = 4;
+        draft.inventory.lingshi = 20;
+        draft.inventory.yaodan = 1;
+        draft.playerStats.hp = 28;
+        draft.recovery.lastCheckedAt = 1_710_000_000_000;
+    });
+    const previewState = cloneState(state);
+    const craftResult = GameCore.craftRecipe(previewState, 'brew-jiedusan');
+    return {
+        serialized,
+        recipeId: 'brew-jiedusan',
+        expectedRuleTextFragment: '非战斗时每',
+        expectedState: {
+            inventory: previewState.inventory,
+            outputText: craftResult.outputText,
+        },
+    };
+}
+
 function createBreakthroughScenario() {
     const { state, serialized } = createSerializedState((draft) => {
         draft.cultivation = draft.maxCultivation;
@@ -301,6 +323,27 @@ function createConsumableScenario() {
     };
 }
 
+function createHighTierBreakthroughScenario(options = {}) {
+    const {
+        realmScore = 2,
+        breakthroughBonus = 0,
+    } = options;
+    const { state, serialized } = createSerializedState((draft) => {
+        setRealmScore(draft, realmScore);
+        draft.inventory.huashendan = 1;
+        draft.breakthroughBonus = breakthroughBonus;
+        draft.ui.activeTab = 'cultivation';
+    });
+    const previewState = cloneState(state);
+    const result = GameCore.useItem(previewState, 'huashendan');
+    return {
+        serialized,
+        itemId: 'huashendan',
+        expectedError: result.error,
+        expectedInventoryCount: state.inventory.huashendan || 0,
+    };
+}
+
 function createCustomSaveScenario() {
     const { state, serialized } = createSerializedState((draft) => {
         draft.playerName = '审查样本';
@@ -387,12 +430,14 @@ function createOfflineSettlementScenario(options = {}) {
 module.exports = {
     STORAGE_KEY,
     createFreshScenario,
+    createAlchemyScenario,
     createBreakthroughScenario,
     createStoryScenario,
     createTribulationEndingScenario,
     createLegacySaveScenario,
     createCombatScenario,
     createConsumableScenario,
+    createHighTierBreakthroughScenario,
     createCustomSaveScenario,
     createOfflineSettlementScenario,
 };

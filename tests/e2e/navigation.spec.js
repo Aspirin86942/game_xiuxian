@@ -3,13 +3,18 @@ const selectors = require('./helpers/selectors');
 const { openGame, waitForModalHidden, waitForModalShown } = require('./helpers/harness');
 const { createFreshScenario } = require('./helpers/saveFactory');
 
-test('新档支持三页签切换与模态开关', async ({ page }) => {
+test('新档支持四页签切换与模态开关', async ({ page }) => {
     const scenario = createFreshScenario();
     await openGame(page, { serializedSave: scenario.serialized });
 
     await expect(page.locator(selectors.status.playerName)).toHaveText(scenario.expectedPlayerName);
     await expect(page.locator(selectors.status.realm)).toHaveText(scenario.expectedRealmLabel);
     await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('吐纳聚气');
+
+    await page.click(selectors.tabs.alchemy);
+    await expect(page.locator(selectors.pages.alchemy)).toHaveClass(/active/);
+    await expect(page.locator(selectors.alchemy.summary)).toBeVisible();
+    await expect(page.locator(selectors.alchemy.list)).toBeVisible();
 
     await page.click(selectors.tabs.story);
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);

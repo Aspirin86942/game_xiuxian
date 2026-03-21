@@ -7,6 +7,7 @@ module.exports = {
     },
     tabs: {
         cultivation: '[data-tab="cultivation"]',
+        alchemy: '[data-tab="alchemy"]',
         story: '[data-tab="story"]',
         adventure: '[data-tab="adventure"]',
         inventory: '[data-action="inventory"]',
@@ -14,6 +15,7 @@ module.exports = {
     },
     pages: {
         cultivation: '.page[data-page="cultivation"]',
+        alchemy: '.page[data-page="alchemy"]',
         story: '.page[data-page="story"]',
         adventure: '.page[data-page="adventure"]',
     },
@@ -35,10 +37,17 @@ module.exports = {
         goal: '#story-goal',
         echoList: '#echo-list',
     },
+    alchemy: {
+        summary: '#alchemy-summary',
+        ruleText: '#alchemy-rule-text',
+        list: '#alchemy-list',
+        craftButton: (recipeId) => `[data-craft-recipe-id="${recipeId}"]`,
+    },
     adventure: {
         button: '#adventure-btn',
         preview: '#combat-preview',
         npcs: '#location-npcs',
+        battlePrep: '#battle-prep-summary',
     },
     inventory: {
         modal: '#inventory-modal',

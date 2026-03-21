@@ -1,6 +1,7 @@
 const fs = require('fs');
 
 const { test, expect } = require('@playwright/test');
+const GameCore = require('../../game-core.js');
 const selectors = require('./helpers/selectors');
 const { openGame, readSave, waitForModalShown } = require('./helpers/harness');
 const { createCustomSaveScenario, createLegacySaveScenario } = require('./helpers/saveFactory');
@@ -45,7 +46,7 @@ test('存档可导出、重开并重新导入恢复', async ({ page }, testInfo)
     await download.saveAs(downloadPath);
 
     const exported = JSON.parse(fs.readFileSync(downloadPath, 'utf8'));
-    expect(exported.version).toBe(5);
+    expect(exported.version).toBe(GameCore.SAVE_VERSION);
     expect(exported.playerName).toBe(scenario.expectedState.playerName);
     expect(exported.inventory.lingshi).toBe(scenario.expectedState.lingshi);
 
@@ -94,14 +95,14 @@ test('导入旧版存档时阻断并提示，且不污染当前进度', async ({
 
     const dialog = await dialogPromise;
     expect(dialog.message()).toContain(legacyScenario.expectedAlertFragment);
-    expect(dialog.message()).toContain('升级到 v5');
+    expect(dialog.message()).toContain(`升级到 v${GameCore.SAVE_VERSION}`);
     await dialog.accept();
 
     await expect(page.locator(selectors.status.playerName)).toHaveText(scenario.expectedState.playerName);
     await expect(page.locator(selectors.status.realm)).toHaveText(scenario.expectedState.realmLabel);
 
     const save = await readSave(page);
-    expect(save.version).toBe(5);
+    expect(save.version).toBe(GameCore.SAVE_VERSION);
     expect(save.playerName).toBe(scenario.expectedState.playerName);
     expect(save.inventory.lingshi).toBe(scenario.expectedState.lingshi);
 });

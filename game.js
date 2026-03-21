@@ -5,6 +5,7 @@
     let gameState = GameCore.createInitialState();
     let combatState = null;
     let autoCultivateTimer = null;
+    let naturalRecoveryTimer = null;
     let combatTimer = null;
     let audioContext = null;
     let pendingOfflineSettlement = null;
@@ -42,6 +43,37 @@
         return `上次离线吐纳 ${formatOfflineDuration(trainingState.lastEffectiveDurationMs)}，修为 +${trainingState.lastGain}${cappedText}`;
     }
 
+    function getNaturalRecoveryRuleText() {
+        const intervalSeconds = Math.max(1, Math.floor(StoryData.CONFIG.naturalRecoveryIntervalMs / 1000));
+        const recoveryPercent = Math.round(StoryData.CONFIG.naturalRecoveryRatio * 100);
+        const capPercent = Math.round(StoryData.CONFIG.naturalRecoveryCapRatio * 100);
+        return `非战斗时每 ${intervalSeconds} 秒回复 ${recoveryPercent}% 最大气血，最多恢复到 ${capPercent}% 气血。`;
+    }
+
+    function getNaturalRecoveryCapHp() {
+        return Math.max(1, Math.floor(gameState.playerStats.maxHp * StoryData.CONFIG.naturalRecoveryCapRatio));
+    }
+
+    function getBattlePrepSummaryText() {
+        const breakthroughBonusText = gameState.breakthroughBonus > 0
+            ? `当前药力护持 +${Math.round(gameState.breakthroughBonus * 100)}%`
+            : '当前无临时突破药力';
+        return `解毒散 x${gameState.inventory.jiedusan || 0} · 筑基丹 x${gameState.inventory.zhujidan || 0} · 化神丹 x${gameState.inventory.huashendan || 0} · ${breakthroughBonusText}`;
+    }
+
+    function markRecoveryCheckpoint(nowMs) {
+        const safeNowMs = typeof nowMs === 'number' ? nowMs : Date.now();
+        gameState.recovery = gameState.recovery || { lastCheckedAt: null };
+        gameState.recovery.lastCheckedAt = safeNowMs;
+    }
+
+    function primeNaturalRecoveryState(nowMs) {
+        if (combatState) {
+            return;
+        }
+        GameCore.resolveNaturalRecovery(gameState, nowMs);
+    }
+
     function dismissOfflineSettlement() {
         pendingOfflineSettlement = null;
         hideModal(elements.offlineModal);
@@ -77,12 +109,16 @@
             'story-ending-chain',
             'route-summary',
             'echo-list',
+            'alchemy-summary',
+            'alchemy-rule-text',
+            'alchemy-list',
             'location-title',
             'location-desc',
             'location-npcs',
             'side-story-list',
             'adventure-btn',
             'combat-preview',
+            'battle-prep-summary',
             'story-badge',
             'inventory-modal',
             'inventory-list',
@@ -191,6 +227,7 @@
         pendingOfflineSettlement = null;
 
         if (!shouldResolveOffline) {
+            primeNaturalRecoveryState(Date.now());
             return;
         }
 
@@ -201,6 +238,7 @@
             console.error('离线挂机结算失败', error);
             pendingOfflineSettlement = null;
         }
+        primeNaturalRecoveryState(Date.now());
     }
 
     function loadGame() {
@@ -248,12 +286,17 @@
     }
 
     function setActiveTab(tabName) {
+        if (tabName === 'alchemy' && combatState) {
+            window.alert('战斗中不可分心炼丹。');
+            return false;
+        }
         gameState.ui.activeTab = tabName;
         if (tabName === 'story') {
             gameState.unreadStory = false;
         }
         render();
         saveGame();
+        return true;
     }
 
     function renderStatus() {
@@ -433,6 +476,64 @@
         `).join('');
     }
 
+    function renderAlchemyPage() {
+        const recipes = GameCore.getAlchemyRecipes(gameState);
+        const actualRate = GameCore.getBreakthroughActualRate(gameState);
+        const currentRecoveryCapHp = getNaturalRecoveryCapHp();
+        const categoryLabels = {
+            recovery: '疗伤丹',
+            cultivation: '修为丹',
+            breakthrough: '破关丹',
+        };
+
+        elements.alchemySummary.innerHTML = `
+            <article class="alchemy-metric">
+                <span>当前气血</span>
+                <strong>${gameState.playerStats.hp} / ${gameState.playerStats.maxHp}</strong>
+            </article>
+            <article class="alchemy-metric">
+                <span>保底回血封顶</span>
+                <strong>${currentRecoveryCapHp} / ${gameState.playerStats.maxHp}</strong>
+            </article>
+            <article class="alchemy-metric">
+                <span>当前突破率</span>
+                <strong>${Math.round(actualRate * 100)}%</strong>
+            </article>
+            <article class="alchemy-metric">
+                <span>临时药力</span>
+                <strong>${gameState.breakthroughBonus > 0 ? `+${Math.round(gameState.breakthroughBonus * 100)}%` : '无'}</strong>
+            </article>
+        `;
+        elements.alchemyRuleText.textContent = combatState
+            ? '战斗中丹炉封闭，需先脱战后再开炉。'
+            : getNaturalRecoveryRuleText();
+        elements.alchemyList.innerHTML = recipes.map((recipe) => `
+            <article class="alchemy-recipe">
+                <div class="alchemy-head">
+                    <div>
+                        <strong>${recipe.name}</strong>
+                        <span>${categoryLabels[recipe.category] || '丹方'}</span>
+                    </div>
+                    <span class="alchemy-output">${recipe.outputText}</span>
+                </div>
+                <p>${recipe.summary}</p>
+                <div class="alchemy-meta">
+                    <div class="alchemy-line"><span>丹材</span><strong>${recipe.costText}</strong></div>
+                    <div class="alchemy-line"><span>成丹</span><strong>${recipe.outputText}</strong></div>
+                </div>
+                <div class="alchemy-reason ${recipe.canCraft ? 'ready' : 'blocked'}">
+                    ${recipe.canCraft ? '材料已齐，可立即开炉。' : recipe.disabledReason}
+                </div>
+                <button
+                    class="inventory-use-btn alchemy-craft-btn"
+                    data-craft-recipe-id="${recipe.id}"
+                    type="button"
+                    ${recipe.canCraft ? '' : 'disabled'}
+                >开炉炼制</button>
+            </article>
+        `).join('');
+    }
+
     function renderAdventurePage() {
         const location = GameCore.getLocationMeta(gameState);
         elements.locationTitle.textContent = location.name;
@@ -464,6 +565,7 @@
         } else {
             elements.combatPreview.textContent = '游历会自动战斗，胜可得修为与掉落，败则折损部分修为。';
         }
+        elements.battlePrepSummary.textContent = getBattlePrepSummaryText();
     }
 
     function renderInventory() {
@@ -484,6 +586,7 @@
                     data-item-action="${action.id}"
                     ${action.id === 'use' ? `data-use-item="${itemId}"` : ''}
                     type="button"
+                    ${combatState ? 'disabled' : ''}
                 >${action.label}</button>
             `).join('');
             const tags = [
@@ -548,6 +651,7 @@
         renderStatus();
         renderTabs();
         renderCultivationPage();
+        renderAlchemyPage();
         renderStoryPage();
         renderAdventurePage();
         renderInventory();
@@ -610,11 +714,38 @@
         }
     }
 
+    function runNaturalRecoveryTick() {
+        if (combatState) {
+            return;
+        }
+
+        const result = GameCore.resolveNaturalRecovery(gameState, Date.now());
+        if (!result.touched) {
+            return;
+        }
+
+        render();
+        saveGame();
+    }
+
+    function startNaturalRecoveryLoop() {
+        stopNaturalRecoveryLoop();
+        naturalRecoveryTimer = window.setInterval(runNaturalRecoveryTick, StoryData.CONFIG.naturalRecoveryIntervalMs);
+    }
+
+    function stopNaturalRecoveryLoop() {
+        if (naturalRecoveryTimer) {
+            window.clearInterval(naturalRecoveryTimer);
+            naturalRecoveryTimer = null;
+        }
+    }
+
     function stopCombatLoop() {
         if (combatTimer) {
             window.clearTimeout(combatTimer);
             combatTimer = null;
         }
+        markRecoveryCheckpoint();
         combatState = null;
     }
 
@@ -657,6 +788,8 @@
         if (combatState) {
             return;
         }
+        primeNaturalRecoveryState(Date.now());
+        markRecoveryCheckpoint();
         combatState = GameCore.beginCombat(gameState);
         elements.combatLog.innerHTML = '';
         appendCombatEntries([`你在 ${gameState.currentLocation} 遭遇 ${combatState.monster.name}。`]);
@@ -815,7 +948,12 @@
             if (!button) {
                 return;
             }
-            const result = GameCore.performItemAction(gameState, button.dataset.itemId, button.dataset.itemAction);
+            const result = GameCore.performItemAction(
+                gameState,
+                button.dataset.itemId,
+                button.dataset.itemAction,
+                { inCombat: Boolean(combatState) },
+            );
             if (!result.ok) {
                 window.alert(result.error);
                 return;
@@ -827,6 +965,24 @@
             } else if (result.delta.breakthroughRate > 0) {
                 showFloatingText(`突破率 +${Math.round(result.delta.breakthroughRate * 100)}%`, 'breakthrough');
             }
+            playSound('click');
+            render();
+            saveGame();
+        });
+
+        elements.alchemyList.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-craft-recipe-id]');
+            if (!button) {
+                return;
+            }
+            const result = GameCore.craftRecipe(gameState, button.dataset.craftRecipeId, {
+                inCombat: Boolean(combatState),
+            });
+            if (!result.ok) {
+                window.alert(result.error);
+                return;
+            }
+            showFloatingText(result.outputText, 'gain');
             playSound('click');
             render();
             saveGame();
@@ -872,6 +1028,8 @@
         cacheElements();
         loadGame();
         bindEvents();
+        startNaturalRecoveryLoop();
+        primeNaturalRecoveryState(Date.now());
         window.addEventListener('pagehide', saveGame);
         if (gameState.autoCultivate) {
             startAutoCultivate();

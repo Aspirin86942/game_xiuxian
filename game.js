@@ -263,8 +263,16 @@
         elements.summaryRealmDisplay.textContent = realmLabel;
         elements.summaryCultivationDisplay.textContent = summaryCultivationText;
 
-        const actualRate = Math.min(0.95, gameState.breakthroughRate + gameState.breakthroughBonus);
-        const bonusText = gameState.breakthroughBonus > 0 ? ` · 加成 +${Math.round(gameState.breakthroughBonus * 100)}%` : '';
+        const passiveBonuses = GameCore.getInventoryPassiveBonuses(gameState);
+        const actualRate = GameCore.getBreakthroughActualRate(gameState);
+        const bonusParts = [];
+        if (gameState.breakthroughBonus > 0) {
+            bonusParts.push(`临时 +${Math.round(gameState.breakthroughBonus * 100)}%`);
+        }
+        if ((passiveBonuses.breakthroughBonus || 0) > 0) {
+            bonusParts.push(`持有 +${Math.round(passiveBonuses.breakthroughBonus * 100)}%`);
+        }
+        const bonusText = bonusParts.length > 0 ? ` · ${bonusParts.join(' · ')}` : '';
         elements.breakthroughInline.textContent = `当前突破率：${Math.round(actualRate * 100)}%${bonusText}`;
     }
 
@@ -466,8 +474,26 @@
         }
 
         elements.inventoryList.innerHTML = itemIds.map((itemId) => {
-            const item = ITEMS[itemId];
+            const item = ITEMS[itemId] || { name: itemId, description: '来历不明，暂时无法辨认。' };
             const quantity = gameState.inventory[itemId];
+            const actions = GameCore.getItemActions(itemId);
+            const actionButtons = actions.map((action) => `
+                <button
+                    class="inventory-use-btn"
+                    data-item-id="${itemId}"
+                    data-item-action="${action.id}"
+                    ${action.id === 'use' ? `data-use-item="${itemId}"` : ''}
+                    type="button"
+                >${action.label}</button>
+            `).join('');
+            const tags = [
+                ...actions.map((action) => `<span class="inventory-tag inventory-tag-action">${action.label}</span>`),
+                ...(item.passiveSummary ? ['<span class="inventory-tag inventory-tag-passive">持有生效</span>'] : []),
+            ].join('');
+            const summaries = [
+                ...actions.map((action) => `<div class="inventory-effect-line">${action.summary || action.label}</div>`),
+                ...(item.passiveSummary ? [`<div class="inventory-effect-line inventory-passive-summary">${item.passiveSummary}</div>`] : []),
+            ].join('');
             return `
                 <article class="inventory-item">
                     <div class="inventory-head">
@@ -475,7 +501,9 @@
                         <span>x${quantity}</span>
                     </div>
                     <p>${item.description}</p>
-                    ${item.usable ? `<button class="inventory-use-btn" data-use-item="${itemId}" type="button">使用</button>` : ''}
+                    ${tags ? `<div class="inventory-tags">${tags}</div>` : ''}
+                    ${summaries ? `<div class="inventory-effect-list">${summaries}</div>` : ''}
+                    ${actionButtons ? `<div class="inventory-actions">${actionButtons}</div>` : ''}
                 </article>
             `;
         }).join('');
@@ -783,15 +811,23 @@
         });
 
         elements.inventoryList.addEventListener('click', (event) => {
-            const button = event.target.closest('[data-use-item]');
+            const button = event.target.closest('[data-item-action]');
             if (!button) {
                 return;
             }
-            const result = GameCore.useItem(gameState, button.dataset.useItem);
+            const result = GameCore.performItemAction(gameState, button.dataset.itemId, button.dataset.itemAction);
             if (!result.ok) {
                 window.alert(result.error);
                 return;
             }
+            if (result.delta.cultivation > 0) {
+                showFloatingText(`修为 +${result.delta.cultivation}`, 'gain');
+            } else if (result.delta.hp > 0) {
+                showFloatingText(`气血 +${result.delta.hp}`, 'gain');
+            } else if (result.delta.breakthroughRate > 0) {
+                showFloatingText(`突破率 +${Math.round(result.delta.breakthroughRate * 100)}%`, 'breakthrough');
+            }
+            playSound('click');
             render();
             saveGame();
         });

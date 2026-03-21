@@ -451,6 +451,61 @@
         return labels[dominant];
     }
 
+    function getItemActions(itemId) {
+        const item = ITEMS[itemId];
+        if (!item) {
+            return [];
+        }
+        if (Array.isArray(item.actions) && item.actions.length > 0) {
+            return item.actions;
+        }
+        if (item.usable && item.effect) {
+            return [{ id: 'use', label: '使用', summary: item.description, effect: item.effect }];
+        }
+        return [];
+    }
+
+    function getItemPassiveCount(state, itemId, item) {
+        const count = getInventoryCount(state, itemId);
+        if (count <= 0 || !item?.passiveEffects) {
+            return 0;
+        }
+        if (Number.isFinite(item.passiveCap)) {
+            return Math.max(0, Math.min(count, Math.floor(item.passiveCap)));
+        }
+        return 1;
+    }
+
+    function getInventoryPassiveBonuses(state) {
+        const bonuses = {
+            attack: 0,
+            defense: 0,
+            maxHp: 0,
+            breakthroughBonus: 0,
+        };
+
+        Object.entries(ITEMS).forEach(([itemId, item]) => {
+            const passiveCount = getItemPassiveCount(state, itemId, item);
+            if (passiveCount <= 0) {
+                return;
+            }
+
+            Object.entries(item.passiveEffects || {}).forEach(([statKey, amount]) => {
+                if (!Number.isFinite(amount)) {
+                    return;
+                }
+                bonuses[statKey] = (bonuses[statKey] || 0) + (amount * passiveCount);
+            });
+        });
+
+        return bonuses;
+    }
+
+    function getBreakthroughActualRate(state) {
+        const passiveBonuses = getInventoryPassiveBonuses(state);
+        return Math.min(0.95, state.breakthroughRate + state.breakthroughBonus + (passiveBonuses.breakthroughBonus || 0));
+    }
+
     function recalculateState(state, healFull) {
         const realm = REALMS[state.realmIndex] || REALMS[REALMS.length - 1];
         const stageMultiplier = 1 + (state.stageIndex * 0.55);
@@ -460,15 +515,13 @@
         const previousMaxHp = state.playerStats.maxHp || 100;
         const hpRatio = previousMaxHp > 0 ? state.playerStats.hp / previousMaxHp : 1;
         const baseHp = 100 + (state.realmIndex * 48) + (state.stageIndex * 18);
-        const itemAttack = getInventoryCount(state, 'feijian') > 0 ? 6 : 0;
-        const itemDefense = getInventoryCount(state, 'hujian') > 0 ? 4 : 0;
-        const companionBonus = getInventoryCount(state, 'quhun') > 0 ? 12 : 0;
+        const passiveBonuses = getInventoryPassiveBonuses(state);
         const battleWillBonuses = getBattleWillBonuses(state);
 
-        state.playerStats.maxHp = baseHp + companionBonus + battleWillBonuses.hp;
+        state.playerStats.maxHp = baseHp + passiveBonuses.maxHp + battleWillBonuses.hp;
         state.playerStats.hp = healFull ? state.playerStats.maxHp : Math.max(1, Math.min(state.playerStats.maxHp, Math.round(state.playerStats.maxHp * hpRatio)));
-        state.playerStats.attack = 12 + (state.realmIndex * 5) + (state.stageIndex * 2) + itemAttack + battleWillBonuses.attack;
-        state.playerStats.defense = 5 + (state.realmIndex * 3) + state.stageIndex + itemDefense + battleWillBonuses.defense;
+        state.playerStats.attack = 12 + (state.realmIndex * 5) + (state.stageIndex * 2) + passiveBonuses.attack + battleWillBonuses.attack;
+        state.playerStats.defense = 5 + (state.realmIndex * 3) + state.stageIndex + passiveBonuses.defense + battleWillBonuses.defense;
     }
 
     function pushLog(state, message, type = 'normal') {
@@ -849,13 +902,26 @@
     }
 
     function getChoiceDisabledReason(state, choice) {
-        if (canAffordCosts(state, choice.costs)) {
+        const requirementsMet = meetsRequirements(state, choice.requirements);
+        const costsMet = canAffordCosts(state, choice.costs);
+        if (requirementsMet && costsMet) {
             return '';
         }
-        const missing = Object.entries(choice.costs || {})
+        const missing = [];
+
+        Object.entries(choice.requirements?.items || {})
             .filter(([itemId, amount]) => getInventoryCount(state, itemId) < amount)
-            .map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`);
-        return missing.length > 0 ? `不足：${missing.join('、')}` : '资源不足';
+            .forEach(([itemId, amount]) => {
+                missing.push(`${ITEMS[itemId]?.name || itemId} x${amount}`);
+            });
+
+        Object.entries(choice.costs || {})
+            .filter(([itemId, amount]) => getInventoryCount(state, itemId) < amount)
+            .forEach(([itemId, amount]) => {
+                missing.push(`${ITEMS[itemId]?.name || itemId} x${amount}`);
+            });
+
+        return missing.length > 0 ? `不足：${missing.join('、')}` : '当前条件不足';
     }
 
     function resolveStoryDefinition(definition, state, source) {
@@ -870,7 +936,7 @@
                 // 小境界事件允许用文本驱动定义，但运行期必须有稳定 id，避免选择和测试都落到 undefined。
                 normalizedChoice.id = `${definition.id}_choice_${index}`;
             }
-            const disabled = !canAffordCosts(state, normalizedChoice.costs);
+            const disabled = !meetsRequirements(state, normalizedChoice.requirements) || !canAffordCosts(state, normalizedChoice.costs);
             return {
                 ...normalizedChoice,
                 disabled,
@@ -1694,7 +1760,7 @@
             return { ok: true, success: true, capped: true };
         }
 
-        const actualRate = Math.min(0.95, state.breakthroughRate + state.breakthroughBonus);
+        const actualRate = getBreakthroughActualRate(state);
         const success = random() < actualRate;
 
         if (success) {
@@ -1789,18 +1855,55 @@
         };
     }
 
-    function useItem(state, itemId) {
+    function getItemActionPreconditionError(state, action) {
+        const effect = action?.effect || {};
+        if (effect.cultivation && state.cultivation >= state.maxCultivation) {
+            return '当前修为已满，请先尝试突破。';
+        }
+        if (effect.healRatio && state.playerStats.hp >= state.playerStats.maxHp) {
+            return '当前气血已满，无需使用该物品。';
+        }
+        return '';
+    }
+
+    function performItemAction(state, itemId, actionId) {
         const item = ITEMS[itemId];
-        if (!item || !item.usable) {
-            return { ok: false, error: '该物品不可直接使用。' };
+        const action = getItemActions(itemId).find((entry) => entry.id === actionId) || null;
+        if (!item || !action) {
+            return { ok: false, error: '该物品当前无法执行此动作。' };
         }
         if (getInventoryCount(state, itemId) <= 0) {
             return { ok: false, error: '物品不足。' };
         }
+
+        const preconditionError = getItemActionPreconditionError(state, action);
+        if (preconditionError) {
+            return { ok: false, error: preconditionError };
+        }
+
+        const beforeSnapshot = {
+            cultivation: state.cultivation,
+            hp: state.playerStats.hp,
+            actualRate: getBreakthroughActualRate(state),
+        };
         changeItem(state, itemId, -1);
-        applyEffects(state, item.effect);
-        pushLog(state, `使用 ${item.name}`, 'good');
-        return { ok: true };
+        applyEffects(state, action.effect || item.effect);
+        pushLog(state, `${action.label} ${item.name}`, 'good');
+
+        return {
+            ok: true,
+            actionId,
+            itemId,
+            delta: {
+                cultivation: state.cultivation - beforeSnapshot.cultivation,
+                hp: state.playerStats.hp - beforeSnapshot.hp,
+                breakthroughRate: getBreakthroughActualRate(state) - beforeSnapshot.actualRate,
+            },
+        };
+    }
+
+    function useItem(state, itemId) {
+        return performItemAction(state, itemId, 'use');
     }
 
     function beginCombat(state, rng) {
@@ -1914,6 +2017,9 @@
         getAvailableLevelEvent,
         getCurrentPlayableStory,
         getInventoryCount,
+        getItemActions,
+        getInventoryPassiveBonuses,
+        getBreakthroughActualRate,
         formatCosts,
         getNextGoalText,
         getChapterById,
@@ -1931,6 +2037,7 @@
         isSupportedSaveData,
         touchSaveTimestamp,
         resolveOfflineCultivation,
+        performItemAction,
         useItem,
         beginCombat,
         resolveCombatRound,

@@ -805,6 +805,47 @@ button {
     line-height: 1.55;
 }
 
+.inventory-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.inventory-tag {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    background: rgba(112, 133, 120, 0.12);
+    color: var(--ink-soft);
+}
+
+.inventory-tag-passive {
+    background: rgba(64, 101, 83, 0.16);
+    color: var(--jade-deep);
+}
+
+.inventory-effect-list {
+    display: grid;
+    gap: 4px;
+}
+
+.inventory-effect-line {
+    font-size: 0.82rem;
+    color: var(--ink-light);
+    line-height: 1.5;
+}
+
+.inventory-passive-summary {
+    color: var(--jade-deep);
+}
+
+.inventory-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 .inventory-use-btn {
     justify-self: start;
     padding: 8px 14px;

@@ -45,6 +45,8 @@ module.exports = {
         closeButton: '#close-inventory',
         list: '#inventory-list',
         useButton: (itemId) => `[data-use-item="${itemId}"]`,
+        actionButton: (itemId, actionId) => `[data-item-id="${itemId}"][data-item-action="${actionId}"]`,
+        anyActionButton: (itemId) => `[data-item-id="${itemId}"][data-item-action]`,
     },
     settings: {
         modal: '#settings-modal',

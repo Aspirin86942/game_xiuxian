@@ -336,6 +336,14 @@ button {
     border: 1px solid rgba(51, 95, 83, 0.08);
 }
 
+.primary-actions {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .floating-text-container {
     position: absolute;
     inset: 12px 0 auto;
@@ -394,6 +402,32 @@ button {
 .main-button.breakthrough {
     background: linear-gradient(135deg, var(--jade), #63a28f);
     animation: pulse 1.8s ease-in-out infinite;
+}
+
+.secondary-main-button {
+    min-width: 156px;
+    min-height: 64px;
+    padding: 14px 24px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(255, 250, 239, 0.96), rgba(239, 231, 214, 0.92));
+    color: var(--ink-deep);
+    font-size: 1rem;
+    letter-spacing: 0.06em;
+    border: 1px solid rgba(143, 106, 42, 0.18);
+    box-shadow: 0 6px 16px rgba(60, 41, 23, 0.1);
+}
+
+.secondary-main-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(60, 41, 23, 0.12);
+}
+
+.main-button:disabled,
+.secondary-main-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    transform: none;
+    box-shadow: none;
 }
 
 @keyframes pulse {
@@ -1208,6 +1242,17 @@ button {
         padding: 12px 22px;
         font-size: 1rem;
         letter-spacing: 0.04em;
+    }
+
+    .secondary-main-button {
+        min-width: 136px;
+        min-height: 52px;
+        padding: 12px 18px;
+        font-size: 0.92rem;
+    }
+
+    .primary-actions {
+        gap: 8px;
     }
 
     .hint-text,

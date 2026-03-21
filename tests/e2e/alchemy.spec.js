@@ -30,8 +30,8 @@ test('战斗中不能切入丹炉页', async ({ page }) => {
         randomValue: 0,
     });
 
-    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('出门游历');
-    await page.click(selectors.cultivation.mainButton);
+    await expect(page.locator(selectors.cultivation.adventureButton)).toHaveText('出门游历');
+    await page.click(selectors.cultivation.adventureButton);
     await waitForModalShown(page, selectors.combat.modal);
 
     await page.locator(selectors.tabs.alchemy).evaluate((button) => button.click());

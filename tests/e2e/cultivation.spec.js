@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const selectors = require('./helpers/selectors');
 const { openGame, readSave } = require('./helpers/harness');
-const { createTrainingScenario } = require('./helpers/saveFactory');
+const { createFreshScenario, createTrainingScenario } = require('./helpers/saveFactory');
 
 test('闭关批次可切换，闭关后进入突破并在刷新后保留状态', async ({ page }) => {
     const scenario = createTrainingScenario();
@@ -37,4 +37,15 @@ test('闭关批次可切换，闭关后进入突破并在刷新后保留状态',
     save = await readSave(page);
     expect(save.realmIndex).toBe(scenario.afterBreakthrough.realmIndex);
     expect(save.stageIndex).toBe(scenario.afterBreakthrough.stageIndex);
+});
+
+test('灵石不足时闭关按钮禁用，但仍可独立出门游历', async ({ page }) => {
+    const scenario = createFreshScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('闭关修炼');
+    await expect(page.locator(selectors.cultivation.mainButton)).toBeDisabled();
+    await expect(page.locator(selectors.cultivation.adventureButton)).toHaveText('出门游历');
+    await expect(page.locator(selectors.cultivation.adventureButton)).not.toBeDisabled();
+    await expect(page.locator(selectors.cultivation.hint)).toContainText('灵石不足');
 });

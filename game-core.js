@@ -976,7 +976,7 @@
         state.levelStoryState.events[pendingEvent.id].triggered = true;
         state.levelStoryState.currentEventId = pendingEvent.id;
         state.currentLocation = pendingEvent.location || state.currentLocation;
-        state.unreadStory = true;
+        state.unreadStory = shouldMarkStoryUnread(state);
         pushLog(state, `境界感悟浮现：${pendingEvent.title}`, 'breakthrough');
         return pendingEvent;
     }
@@ -1095,6 +1095,10 @@
         return `《${story.title}》`;
     }
 
+    function shouldMarkStoryUnread(state) {
+        return state?.ui?.activeTab !== 'story';
+    }
+
     function ensureStoryCursor(state) {
         if (state.ending) {
             state.storyCursor = {
@@ -1136,7 +1140,7 @@
                 state.levelStoryState.currentEventId = null;
             }
             state.currentLocation = current.location || state.currentLocation;
-            state.unreadStory = true;
+            state.unreadStory = shouldMarkStoryUnread(state);
             const storyLabel = formatStoryLabel(current);
             pushLog(state, `新剧情开启：${storyLabel}`, 'breakthrough');
         }

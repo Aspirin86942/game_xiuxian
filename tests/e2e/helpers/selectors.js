@@ -35,6 +35,7 @@ module.exports = {
     nav: {
         tabList: '.bottom-nav',
         tab: (tabId) => tabSelectorMap[tabId] || `[data-tab="${tabId}"], [data-action="${tabId}"]`,
+        storyBadge: '#story-badge',
     },
     pages: {
         cultivation: '.page[data-page="cultivation"]',
@@ -43,6 +44,7 @@ module.exports = {
     },
     cultivation: {
         mainButton: '#main-btn',
+        adventureButton: '#adventure-btn',
         hint: '#hint-text',
         rate: '#breakthrough-inline',
         trainCost: '#train-cost-text',

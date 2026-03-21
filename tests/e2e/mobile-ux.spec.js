@@ -32,7 +32,9 @@ for (const viewport of VIEWPORTS) {
 
             await page.click(selectors.nav.tab('cultivation'));
             await expect(page.locator(selectors.cultivation.mainButton)).toBeVisible();
+            await expect(page.locator(selectors.cultivation.adventureButton)).toBeVisible();
             await page.locator(selectors.cultivation.mainButton).click({ trial: true });
+            await page.locator(selectors.cultivation.adventureButton).click({ trial: true });
 
             await page.click(selectors.nav.tab('story'));
             await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);

@@ -10,13 +10,16 @@ test('游历资源事件只增加灵石，不直接增加修为', async ({ page 
         randomValue: 0.5,
     });
 
-    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('出门游历');
-    await page.click(selectors.cultivation.mainButton);
+    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('闭关修炼');
+    await expect(page.locator(selectors.cultivation.mainButton)).toBeDisabled();
+    await expect(page.locator(selectors.cultivation.adventureButton)).toHaveText('出门游历');
+    await page.click(selectors.cultivation.adventureButton);
 
     await expect(page.locator(selectors.journey.preview)).toContainText('最近游历');
     await expect(page.locator(selectors.status.lingshi)).toHaveText(String(scenario.expectedLingshi));
     await expect(page.locator(selectors.status.cultivation)).toHaveText(scenario.expectedCultivationText);
     await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('闭关修炼');
+    await expect(page.locator(selectors.cultivation.mainButton)).not.toBeDisabled();
 
     const save = await readSave(page);
     expect(save.inventory.lingshi).toBe(scenario.expectedLingshi);
@@ -30,8 +33,10 @@ test('游历战斗事件会弹出战斗模态并把结算写回存档', async ({
         randomSequence: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     });
 
-    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('出门游历');
-    await page.click(selectors.cultivation.mainButton);
+    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('闭关修炼');
+    await expect(page.locator(selectors.cultivation.mainButton)).toBeDisabled();
+    await expect(page.locator(selectors.cultivation.adventureButton)).toHaveText('出门游历');
+    await page.click(selectors.cultivation.adventureButton);
 
     await waitForModalShown(page, selectors.combat.modal);
     await expect(page.locator(selectors.combat.title)).toContainText(scenario.expectedMonsterName);

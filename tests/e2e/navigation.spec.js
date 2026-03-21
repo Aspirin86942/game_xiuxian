@@ -9,7 +9,9 @@ test('新档支持修行/丹炉/剧情切换、模态开关，且不再存在独
 
     await expect(page.locator(selectors.status.playerName)).toHaveText(scenario.expectedPlayerName);
     await expect(page.locator(selectors.status.realm)).toHaveText(scenario.expectedRealmLabel);
-    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('出门游历');
+    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('闭关修炼');
+    await expect(page.locator(selectors.cultivation.mainButton)).toBeDisabled();
+    await expect(page.locator(selectors.cultivation.adventureButton)).toHaveText('出门游历');
     await expect(page.locator(selectors.status.lingshi)).toBeVisible();
     await expect(page.locator('[data-tab="adventure"]')).toHaveCount(0);
     await expect(page.locator('[data-page="adventure"]')).toHaveCount(0);

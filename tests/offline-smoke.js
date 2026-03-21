@@ -109,6 +109,7 @@ function testBattleVictoryRewardsNoCultivation() {
     const state = createState({ realmScore: 6, lingshi: 2, cultivation: 80 });
     const cultivationBefore = state.cultivation;
     const lingshiBefore = state.inventory.lingshi;
+    const hpBefore = state.playerStats.hp;
 
     const expedition = GameCore.resolveExpedition(state, () => 0);
     assert.strictEqual(expedition.type, 'battle');
@@ -118,6 +119,9 @@ function testBattleVictoryRewardsNoCultivation() {
     assert.strictEqual(result.victory, true);
     assert.strictEqual(state.cultivation, cultivationBefore);
     assert((state.inventory.lingshi || 0) >= lingshiBefore);
+    assert.strictEqual(hpBefore, state.playerStats.maxHp);
+    assert.strictEqual(state.playerStats.hp, 181);
+    assert(state.playerStats.hp < state.playerStats.maxHp);
 }
 
 function testBattleFailureNoCultivationPenalty() {

@@ -323,6 +323,238 @@
         },
     };
 
+    const PROMISE_LABELS = Object.freeze({
+        protect: '保全',
+        probe: '试探',
+        seize: '夺取',
+        sacrifice: '献祭',
+        sever: '决裂',
+        conceal: '藏锋',
+    });
+
+    const RISK_LABELS = Object.freeze({
+        steady: '稳妥',
+        pressured: '有压',
+        perilous: '涉险',
+    });
+
+    function getChapterProgressValue(chapterId) {
+        if (typeof chapterId === 'number' && Number.isFinite(chapterId)) {
+            return chapterId;
+        }
+        const matched = String(chapterId || '').match(/^(\d+)/);
+        return matched ? Number.parseInt(matched[1], 10) : 0;
+    }
+
+    function formatChoiceCosts(costs) {
+        if (!costs || typeof costs !== 'object') {
+            return '';
+        }
+        return Object.entries(costs)
+            .map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`)
+            .join('、');
+    }
+
+    function inferPromiseType(choice) {
+        if (PROMISE_LABELS[choice?.promiseType]) {
+            return choice.promiseType;
+        }
+
+        const choiceId = String(choice?.id || '');
+        const text = String(choice?.text || '');
+        const routes = choice?.effects?.routeScores || {};
+
+        if (
+            routes.orthodox > 0
+            || /save|protect|help|hold|support|return|rescue|guard|acknowledge|promise/i.test(choiceId)
+            || /护|救|守|接住|回头|认下|补|护住|帮/.test(text)
+        ) {
+            return 'protect';
+        }
+
+        if (
+            /observe|watch|wait|collect|ask|record|survey|check|buy_rumor/i.test(choiceId)
+            || /观察|试探|摸清|记下|看清|等一等/.test(text)
+        ) {
+            return 'probe';
+        }
+
+        if (
+            routes.demonic > 0
+            || /grab|loot|kill|harvest|sell|take|use|strike|crush|seize|open_mine_gate|defect/i.test(choiceId)
+            || /夺|抢|杀|拿|卷|收割|卖|先下手|压碎/.test(text)
+        ) {
+            return 'seize';
+        }
+
+        if (
+            /accept|stand|owe|stay|admit|fight_for|lead_breakout|go_team/i.test(choiceId)
+            || /认下|承担|留下|扛|站住|接应|一起/.test(text)
+        ) {
+            return 'sacrifice';
+        }
+
+        if (
+            /cut|burn|betray|defect|distance|escape_alone|decline|release|reject/i.test(choiceId)
+            || /斩|切|断|背弃|烧|拒绝|抽身/.test(text)
+        ) {
+            return 'sever';
+        }
+
+        if (
+            routes.secluded > 0
+            || /keep_low|hide|slip|seek_cave|escape|bury|watch_last|stay_quiet|avoid|keep_free/i.test(choiceId)
+            || /藏|稳|低调|退|绕开|避开|不露面|留退路/.test(text)
+        ) {
+            return 'conceal';
+        }
+
+        return 'protect';
+    }
+
+    function inferRiskTier(choice, tradeoff) {
+        if (RISK_LABELS[choice?.riskTier]) {
+            return choice.riskTier;
+        }
+
+        const choiceId = String(choice?.id || '');
+        const routes = choice?.effects?.routeScores || {};
+        const tribulationGain = Math.max(0, Number.isFinite(tradeoff?.tribulationGain) ? tradeoff.tribulationGain : 0);
+        const hasCosts = Boolean(choice?.costs && Object.keys(choice.costs).length > 0);
+
+        if (
+            choice?.ending
+            || tribulationGain >= 2
+            || routes.demonic > 0
+            || /kill|loot|grab|harvest|open_mine_gate|defect|betray|cut|strike_first/i.test(choiceId)
+        ) {
+            return 'perilous';
+        }
+
+        if (
+            hasCosts
+            || tribulationGain === 1
+            || routes.secluded > 0
+            || /observe|wait|keep|trade|seek|hide|watch|buy_rumor|avoid/i.test(choiceId)
+        ) {
+            return 'pressured';
+        }
+
+        return 'steady';
+    }
+
+    function buildVisibleCostLabel(choice, promiseLabel, riskLabel) {
+        if (typeof choice?.visibleCostLabel === 'string' && choice.visibleCostLabel.trim()) {
+            return choice.visibleCostLabel.trim();
+        }
+        if (choice?.costs && Object.keys(choice.costs).length > 0) {
+            return `消耗：${formatChoiceCosts(choice.costs)}`;
+        }
+        if (riskLabel === '涉险') {
+            return '机会成本：会显著抬高后续失败压力';
+        }
+        if (promiseLabel === '藏锋') {
+            return '机会成本：会放慢眼前推进速度';
+        }
+        if (promiseLabel === '试探') {
+            return '机会成本：会延后兑现关键结果';
+        }
+        return '机会成本：会改写后续路线、关系或终局解释';
+    }
+
+    function normalizeImmediateResult(rawResult, fallbackTitle, fallbackDetail) {
+        if (rawResult && typeof rawResult === 'object') {
+            return {
+                title: rawResult.title || fallbackTitle,
+                detail: rawResult.detail || fallbackDetail,
+            };
+        }
+        return {
+            title: fallbackTitle,
+            detail: fallbackDetail,
+        };
+    }
+
+    function buildLongTermHint(choice, riskLabel, promiseLabel, echoPack) {
+        if (typeof choice?.longTermHint === 'string' && choice.longTermHint.trim()) {
+            return choice.longTermHint.trim();
+        }
+        if (echoPack?.delayed?.detail) {
+            return echoPack.delayed.detail;
+        }
+        if (choice?.ending) {
+            return '这一抉择会直接进入终局解释，并决定你最后如何回看这一路的承诺。';
+        }
+        if (riskLabel === '涉险') {
+            return `这一步会让你的${promiseLabel}路线更锋利，也更容易在后续章节里把压力推向失控边缘。`;
+        }
+        if (riskLabel === '有压') {
+            return `这一步会在后续 2~5 个章节单元内留下可被识别的${promiseLabel}回响。`;
+        }
+        return `这一步会把“${promiseLabel}”写进你的长期路径，之后的关系、章节与终局都会继续读取它。`;
+    }
+
+    function normalizeDelayedEchoes(choice, chapterId, choiceId, sourceType, echoPack, longTermHint, promiseLabel) {
+        if (Array.isArray(choice?.delayedEchoes) && choice.delayedEchoes.length > 0) {
+            return choice.delayedEchoes.map((entry, index) => ({
+                id: entry.id || `${choiceId}_delayed_${index}`,
+                title: entry.title || `${promiseLabel}余波`,
+                detail: entry.detail || longTermHint,
+                eligibleFromProgress: Number.isFinite(entry.eligibleFromProgress) ? Math.max(0, Math.floor(entry.eligibleFromProgress)) : getChapterProgressValue(chapterId) + 2,
+                eligibleToProgress: Number.isFinite(entry.eligibleToProgress) ? Math.max(0, Math.floor(entry.eligibleToProgress)) : getChapterProgressValue(chapterId) + 5,
+                consumed: Boolean(entry.consumed),
+            }));
+        }
+
+        if (echoPack?.delayed) {
+            const baseProgress = getChapterProgressValue(chapterId);
+            return [{
+                id: `${choiceId}_delayed`,
+                title: echoPack.delayed.title || `${promiseLabel}余波`,
+                detail: echoPack.delayed.detail || longTermHint,
+                eligibleFromProgress: baseProgress + 2,
+                eligibleToProgress: baseProgress + 5,
+                consumed: false,
+            }];
+        }
+
+        if (sourceType !== 'main') {
+            return [];
+        }
+
+        const baseProgress = getChapterProgressValue(chapterId);
+        return [{
+            id: `${choiceId}_delayed`,
+            title: `${promiseLabel}余波`,
+            detail: longTermHint,
+            eligibleFromProgress: baseProgress + 2,
+            eligibleToProgress: baseProgress + 5,
+            consumed: false,
+        }];
+    }
+
+    function normalizeEndingSeeds(choice, choiceId, sourceType, promiseType, longTermHint) {
+        if (Array.isArray(choice?.endingSeeds) && choice.endingSeeds.length > 0) {
+            return choice.endingSeeds.map((entry, index) => ({
+                id: entry.id || `${choiceId}_seed_${index}`,
+                note: entry.note || longTermHint,
+                promiseType,
+            }));
+        }
+
+        if (sourceType !== 'main' && !choice?.ending) {
+            return [];
+        }
+
+        return [{
+            id: `${choiceId}_seed`,
+            note: choice?.ending
+                ? `这一步会把你推向“${choice.ending.title}”对应的终局解释。`
+                : longTermHint,
+            promiseType,
+        }];
+    }
+
     function getChapterChoiceComment(state, npcName) {
         const chapterChoices = state?.chapterChoices || {};
         const entries = Object.entries(chapterChoices);
@@ -745,13 +977,43 @@
         return { battleWillGain: 2, tribulationGain: 1 };
     }
 
-    function normalizeChoice(choice, fallbackId) {
+    function normalizeChoice(choice, fallbackId, context = {}) {
+        const normalizedId = choice.id || fallbackId;
+        const tradeoff = normalizeTradeoff(choice.tradeoff, choice);
+        const sourceType = context.sourceType || 'main';
+        const chapterId = context.chapterId ?? normalizedId;
+        const echoPack = CHAPTER_ECHO_PACKS[chapterId]?.[normalizedId] || null;
+        const promiseType = inferPromiseType({ ...choice, id: normalizedId });
+        const riskTier = inferRiskTier({ ...choice, id: normalizedId }, tradeoff);
+        const promiseLabel = PROMISE_LABELS[promiseType];
+        const riskLabel = RISK_LABELS[riskTier];
+        const immediateFallbackTitle = echoPack?.immediate?.title || `${promiseLabel}已定`;
+        const immediateFallbackDetail = echoPack?.immediate?.detail
+            || `你选择了“${choice.text}”。这一步已经把“${promiseLabel}”写进当前章节，并会继续影响后续关系、路线或终局。`;
+        const immediateResult = normalizeImmediateResult(choice.immediateResult || echoPack?.immediate, immediateFallbackTitle, immediateFallbackDetail);
+        const longTermHint = buildLongTermHint(choice, riskLabel, promiseLabel, echoPack);
+        const visibleCostLabel = buildVisibleCostLabel(choice, promiseLabel, riskLabel);
+        const defaultPressureDelta = riskTier === 'perilous'
+            ? Math.max(1, Math.min(3, Math.floor((tradeoff.tribulationGain || 0) - 1 + (choice.ending ? 1 : 0))))
+            : 0;
+
         return {
             ...choice,
-            id: choice.id || fallbackId,
+            id: normalizedId,
             effects: choice.effects || {},
             nextChapterId: choice.nextChapterId ?? null,
-            tradeoff: normalizeTradeoff(choice.tradeoff, choice),
+            tradeoff,
+            promiseType,
+            promiseLabel,
+            riskTier,
+            riskLabel,
+            visibleCostLabel,
+            immediateResult,
+            longTermHint,
+            pressureDelta: Math.max(0, Math.min(3, Math.floor(choice.pressureDelta ?? defaultPressureDelta))),
+            resolveDelta: Math.max(0, Math.min(3, Math.floor(choice.resolveDelta ?? tradeoff.battleWillGain ?? 0))),
+            delayedEchoes: normalizeDelayedEchoes(choice, chapterId, normalizedId, sourceType, echoPack, longTermHint, promiseLabel),
+            endingSeeds: normalizeEndingSeeds(choice, normalizedId, sourceType, promiseType, longTermHint),
         };
     }
 
@@ -1076,7 +1338,10 @@
         const originalChoices = event.choices;
         event.choices = function normalizedChoices(state) {
             const rawChoices = typeof originalChoices === 'function' ? originalChoices(state) : originalChoices;
-            return rawChoices.map((choice, index) => normalizeChoice(choice, `${event.id}_choice_${index}`));
+            return rawChoices.map((choice, index) => normalizeChoice(choice, `${event.id}_choice_${index}`, {
+                chapterId: event.id,
+                sourceType: 'level',
+            }));
         };
     });
 
@@ -3252,7 +3517,10 @@
 
         chapter.choices = function normalizedChoices(state) {
             const rawChoices = typeof originalChoices === 'function' ? originalChoices(state) : originalChoices;
-            return (rawChoices || []).map((choice, index) => normalizeChoice(choice, `${chapter.id}_choice_${index}`));
+            return (rawChoices || []).map((choice, index) => normalizeChoice(choice, `${chapter.id}_choice_${index}`, {
+                chapterId: chapter.id,
+                sourceType: 'main',
+            }));
         };
     });
 
@@ -3266,6 +3534,7 @@
         NPCS,
         POSITIVE_ENCOUNTERS,
         NEGATIVE_ENCOUNTERS,
+        CHAPTER_ECHO_PACKS,
         LEVEL_STORY_EVENTS,
         STORY_CHAPTERS,
     };

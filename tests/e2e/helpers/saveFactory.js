@@ -163,9 +163,16 @@ function createStoryScenario() {
         continuedLine: continuedView && continuedView.currentBeat ? continuedView.currentBeat.text : '',
         continuedProgressText: formatRenderedStoryProgress(secondBeatState),
         choiceId: selectedChoice.id,
+        expectedChoiceMeta: {
+            promiseLabel: selectedChoice.promiseLabel,
+            riskLabel: selectedChoice.riskLabel,
+            visibleCostLabel: selectedChoice.visibleCostLabel,
+        },
+        initialPressureText: GameCore.getPressureStatusText(choiceState),
+        expectedPressureText: GameCore.getPressureStatusText(afterChoiceState),
         expectedTitle: formatRenderedStoryTitle(afterChoiceState),
         expectedStoryProgress: afterChoiceState.storyProgress,
-        expectedEchoTitle: echoes[0] || '',
+        expectedEchoTitles: echoes.slice(0, 2),
     };
 }
 
@@ -173,7 +180,7 @@ function createTribulationEndingScenario() {
     const { state, serialized } = createSerializedState((draft) => {
         draft.storyProgress = 14;
         draft.ui.activeTab = 'story';
-        draft.storyConsequences.tribulation = GameCore.STORY_CONSEQUENCE_LIMITS.tribulation - 1;
+        draft.storyConsequences.tribulation = 8;
         draft.storyConsequences.battleWill = 3;
         GameCore.LEVEL_STORY_EVENTS.forEach((event) => {
             draft.levelStoryState.events[event.id] = { triggered: true, completed: true };
@@ -189,13 +196,53 @@ function createTribulationEndingScenario() {
         GameCore.ensureStoryCursor(draft);
         GameCore.skipStoryPlayback(draft);
     });
+    const choiceView = GameCore.getStoryView(state);
+    const selectedChoice = choiceView.choices.find((choice) => choice.id === 'kill_for_gain');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, 'kill_for_gain');
+    const endingView = GameCore.getStoryView(previewState);
 
     return {
         serialized,
         choiceId: 'kill_for_gain',
+        expectedChoiceMeta: {
+            promiseLabel: selectedChoice.promiseLabel,
+            riskLabel: selectedChoice.riskLabel,
+            visibleCostLabel: selectedChoice.visibleCostLabel,
+        },
         expectedEndingTitle: '走火入魔',
+        expectedPressureText: GameCore.getPressureStatusText(previewState),
+        expectedEchoTitles: GameCore.getEchoes(previewState).slice(0, 2).map((item) => item.title),
+        expectedRecapText: (endingView.ending.recapLines || []).join('；'),
+        expectedTribulationValue: previewState.storyConsequences.tribulation,
         expectedResetRealmLabel: '炼气·初期',
         expectedResetCultivationText: '0/100',
+        expectedResetStoryConsequences: {
+            battleWill: 0,
+            tribulation: 0,
+            pressureTier: '安全',
+            pressureTrend: '平稳',
+        },
+    };
+}
+
+function createLegacySaveScenario() {
+    const { state } = createSerializedState((draft) => {
+        draft.playerName = '旧版档案';
+        draft.ui.activeTab = 'story';
+    });
+    const legacyState = cloneState(state);
+    legacyState.version = 4;
+    delete legacyState.decisionHistory;
+    delete legacyState.pendingEchoes;
+    delete legacyState.endingSeeds;
+    if (legacyState.storyConsequences) {
+        delete legacyState.storyConsequences.pressureTier;
+        delete legacyState.storyConsequences.pressureTrend;
+    }
+    return {
+        serialized: JSON.stringify(legacyState),
+        expectedAlertFragment: '检测到旧版存档（v4）',
     };
 }
 
@@ -333,6 +380,7 @@ module.exports = {
     createBreakthroughScenario,
     createStoryScenario,
     createTribulationEndingScenario,
+    createLegacySaveScenario,
     createCombatScenario,
     createConsumableScenario,
     createCustomSaveScenario,

@@ -365,11 +365,20 @@ function testMissedLevelStoryCanRecover() {
 
 function testProfileCollapseSaveCompatibility() {
     const initialState = GameCore.createInitialState();
+    assert.strictEqual(initialState.version, GameCore.SAVE_VERSION);
     assert.strictEqual(initialState.ui.profileCollapsed, true);
     assert.deepStrictEqual(initialState.chapterChoices, {});
     assert.strictEqual(initialState.recentChoiceEcho, null);
-    assert.deepStrictEqual(initialState.storyConsequences, { battleWill: 0, tribulation: 0 });
+    assert.deepStrictEqual(initialState.storyConsequences, {
+        battleWill: 0,
+        tribulation: 0,
+        pressureTier: '安全',
+        pressureTrend: '平稳',
+    });
     assert.strictEqual(initialState.recentChoiceOutcome, null);
+    assert.deepStrictEqual(initialState.decisionHistory, []);
+    assert.deepStrictEqual(initialState.pendingEchoes, []);
+    assert.deepStrictEqual(initialState.endingSeeds, []);
 
     const mergedLegacyState = GameCore.mergeSave({
         ui: {
@@ -380,7 +389,12 @@ function testProfileCollapseSaveCompatibility() {
     assert.strictEqual(mergedLegacyState.ui.activeTab, 'story');
     assert.deepStrictEqual(mergedLegacyState.chapterChoices, {});
     assert.strictEqual(mergedLegacyState.recentChoiceEcho, null);
-    assert.deepStrictEqual(mergedLegacyState.storyConsequences, { battleWill: 0, tribulation: 0 });
+    assert.deepStrictEqual(mergedLegacyState.storyConsequences, {
+        battleWill: 0,
+        tribulation: 0,
+        pressureTier: '安全',
+        pressureTrend: '平稳',
+    });
     assert.strictEqual(mergedLegacyState.recentChoiceOutcome, null);
 
     const mergedExplicitState = GameCore.mergeSave({
@@ -415,6 +429,8 @@ function testProfileCollapseSaveCompatibility() {
     assert.deepStrictEqual(mergedExplicitState.storyConsequences, {
         battleWill: GameCore.STORY_CONSEQUENCE_LIMITS.battleWill,
         tribulation: GameCore.STORY_CONSEQUENCE_LIMITS.tribulation,
+        pressureTier: '失控',
+        pressureTrend: '平稳',
     });
     assert.deepStrictEqual(mergedExplicitState.recentChoiceOutcome, {
         chapterId: 14,
@@ -434,18 +450,44 @@ function testChoiceEchoStateUpdates() {
     assert.strictEqual(state.chapterChoices[14], 'save_nangong');
     assert.strictEqual(state.recentChoiceEcho.chapterId, 14);
     assert.strictEqual(state.recentChoiceEcho.choiceId, 'save_nangong');
-    assert.deepStrictEqual(state.storyConsequences, { battleWill: 2, tribulation: 1 });
+    assert.deepStrictEqual(state.storyConsequences, {
+        battleWill: 2,
+        tribulation: 0,
+        pressureTier: '安全',
+        pressureTrend: '平稳',
+    });
     assert.strictEqual(state.recentChoiceOutcome.chapterId, 14);
     assert.strictEqual(state.recentChoiceOutcome.choiceId, 'save_nangong');
     assert.strictEqual(state.recentChoiceOutcome.battleWillGain, 2);
-    assert.strictEqual(state.recentChoiceOutcome.tribulationGain, 1);
+    assert.strictEqual(state.recentChoiceOutcome.tribulationGain, 0);
+    assert.strictEqual(state.decisionHistory.length, 1);
+    assert.strictEqual(state.decisionHistory[0].promiseLabel, '保全');
+    assert.strictEqual(state.decisionHistory[0].riskLabel, '有压');
+    assert(state.pendingEchoes.length >= 1);
+    assert(state.endingSeeds.length >= 1);
 
     const echoes = GameCore.getEchoes(state);
-    assert.strictEqual(echoes[0].title, '抉择余波');
-    assert(echoes[0].detail.includes('战意 +2'));
-    assert(echoes[0].detail.includes('劫煞 +1'));
-    assert(echoes.some((item) => item.title === '禁地回身'));
+    assert.strictEqual(echoes[0].title, '即时结果');
+    assert(echoes[0].detail.includes('慢了半息'));
+    assert.strictEqual(echoes[1].title, '长期提示');
+    assert(!echoes.some((item) => item.title === '禁地留名'));
+}
+
+function testPendingEchoesBecomeVisibleWithinWindow() {
+    const { state } = getChapterChoiceView(14);
+    const result = GameCore.chooseStoryOption(state, 'save_nangong');
+    assert.strictEqual(result.ok, true);
+
+    let echoes = GameCore.getEchoes(state);
+    assert(!echoes.some((item) => item.title === '禁地留名'));
+
+    state.storyProgress = 16;
+    echoes = GameCore.getEchoes(state);
     assert(echoes.some((item) => item.title === '禁地留名'));
+
+    state.storyProgress = 20;
+    echoes = GameCore.getEchoes(state);
+    assert(!echoes.some((item) => item.title === '禁地留名'));
 }
 
 function testChoiceTextsHideTradeoffPreview() {
@@ -453,6 +495,9 @@ function testChoiceTextsHideTradeoffPreview() {
     mainView.choices.forEach((choice) => {
         assert(!choice.text.includes('战意'));
         assert(!choice.text.includes('劫煞'));
+        assert(choice.promiseLabel);
+        assert(choice.riskLabel);
+        assert(choice.visibleCostLabel);
     });
 
     const levelState = GameCore.createInitialState();
@@ -463,6 +508,9 @@ function testChoiceTextsHideTradeoffPreview() {
     levelView.choices.forEach((choice) => {
         assert(!choice.text.includes('战意'));
         assert(!choice.text.includes('劫煞'));
+        assert(choice.promiseLabel);
+        assert(choice.riskLabel);
+        assert(choice.visibleCostLabel);
     });
 }
 
@@ -497,13 +545,13 @@ function testLevelChoiceOutcomeStateUpdates() {
     assert.strictEqual(state.recentChoiceOutcome.chapterId, 'qi_0');
     assert.strictEqual(state.recentChoiceOutcome.choiceId, 'observe_change');
     assert.strictEqual(state.recentChoiceOutcome.battleWillGain, 1);
-    assert.strictEqual(state.recentChoiceOutcome.tribulationGain, 1);
-    assert.strictEqual(GameCore.getEchoes(state)[0].title, '抉择余波');
+    assert.strictEqual(state.recentChoiceOutcome.tribulationGain, 0);
+    assert.strictEqual(GameCore.getEchoes(state)[0].title, '即时结果');
 }
 
 function testTribulationDeathEnding() {
     const { state } = getChapterChoiceView(14, (chapterState) => {
-        chapterState.storyConsequences.tribulation = 41;
+        chapterState.storyConsequences.tribulation = 8;
     });
 
     const result = GameCore.chooseStoryOption(state, 'kill_for_gain');
@@ -513,10 +561,32 @@ function testTribulationDeathEnding() {
     assert.strictEqual(state.ending.id, 'zouhuorumo');
     assert.strictEqual(state.storyProgress, -1);
     assert.strictEqual(state.storyCursor.source, 'ending');
-    assert.strictEqual(state.storyConsequences.tribulation, GameCore.STORY_CONSEQUENCE_LIMITS.tribulation);
+    assert.strictEqual(state.storyConsequences.pressureTier, '失控');
     assert.strictEqual(state.recentChoiceOutcome.battleWillGain, 3);
-    assert.strictEqual(state.recentChoiceOutcome.tribulationGain, 2);
+    assert.strictEqual(state.recentChoiceOutcome.tribulationGain, 1);
     assert.strictEqual(GameCore.getStoryView(state).source, 'ending');
+    assert(Array.isArray(state.ending.recapLines));
+    assert(state.ending.recapLines.length >= 2 && state.ending.recapLines.length <= 4);
+}
+
+function testPressureTierBoundaries() {
+    [
+        { tribulation: 0, pressureTier: '安全' },
+        { tribulation: 2, pressureTier: '安全' },
+        { tribulation: 3, pressureTier: '紧绷' },
+        { tribulation: 5, pressureTier: '紧绷' },
+        { tribulation: 6, pressureTier: '濒危' },
+        { tribulation: 8, pressureTier: '濒危' },
+        { tribulation: 9, pressureTier: '失控' },
+    ].forEach(({ tribulation, pressureTier }) => {
+        const merged = GameCore.mergeSave({
+            storyConsequences: {
+                battleWill: 0,
+                tribulation,
+            },
+        });
+        assert.strictEqual(merged.storyConsequences.pressureTier, pressureTier);
+    });
 }
 
 function testResourceValidation() {
@@ -535,55 +605,17 @@ function testResourceValidation() {
 }
 
 function testMineChoicesBecomeRouteSpecific() {
-    const orthodoxView = runUntilChapter(withInsertedChoices({
-        0: 'set_out_now',
-        1: 'keep_low_profile',
-        2: 'become_disciple',
-        3: 'save_li',
-        4: 'collect_evidence',
-        5: 'keep_bottle',
-        6: 'bait_and_counter',
-        7: 'keep_letter',
-        8: 'protect_mo_house',
-        9: 'repair_quhun',
-        10: 'watch_market',
-        11: 'join_yellow_maple',
-        12: 'build_connections',
-        13: 'go_team',
-        14: 'save_nangong',
-        15: 'accept_nangong_debt',
-        16: 'become_li_disciple',
-        17: 'show_strength_banquet',
-        18: 'fight_for_sect',
-    }, {
-        '16_feiyu_return': 'help_feiyu_again',
-        '18_nangong_return': 'acknowledge_nangong_importance',
-    }), 19).view;
+    const orthodoxView = getChapterChoiceView(19, (state) => {
+        state.flags.warChoice = 'orthodox';
+        state.routeScores.orthodox = 4;
+        state.npcRelations['李化元'] = 20;
+    }).view;
 
-    const demonicView = runUntilChapter(withInsertedChoices({
-        0: 'set_out_now',
-        1: 'show_drive',
-        2: 'become_disciple',
-        3: 'warn_li',
-        4: 'confront_early',
-        5: 'keep_bottle',
-        6: 'strike_first',
-        7: 'burn_letter',
-        8: 'take_treasure_leave',
-        9: 'take_quhun',
-        10: 'watch_market',
-        11: 'sell_token',
-        12: 'push_growth',
-        13: 'go_solo',
-        14: 'kill_for_gain',
-        15: 'cut_nangong_ties',
-        16: 'learn_in_secret',
-        17: 'trade_favors_banquet',
-        18: 'defect_demonic',
-    }, {
-        '16_feiyu_return': 'distance_from_feiyu',
-        '18_nangong_return': 'avoid_nangong_again',
-    }), 19).view;
+    const demonicView = getChapterChoiceView(19, (state) => {
+        state.flags.warChoice = 'demonic';
+        state.routeScores.demonic = 5;
+        state.flags.executedDisabledEnemy = true;
+    }).view;
 
     const orthodoxChoiceIds = orthodoxView.choices.map((item) => item.id);
     const demonicChoiceIds = demonicView.choices.map((item) => item.id);
@@ -868,58 +900,20 @@ function testChapter17BeatsAndFlags() {
 }
 
 function testChapter19RouteChoices() {
-    const { state: orthoState, view: orthodoxView } = runUntilChapter(withInsertedChoices({
-        0: 'set_out_now',
-        1: 'keep_low_profile',
-        2: 'become_disciple',
-        3: 'save_li',
-        4: 'collect_evidence',
-        5: 'keep_bottle',
-        6: 'bait_and_counter',
-        7: 'keep_letter',
-        8: 'protect_mo_house',
-        9: 'repair_quhun',
-        10: 'watch_market',
-        11: 'join_yellow_maple',
-        12: 'build_connections',
-        13: 'go_team',
-        14: 'save_nangong',
-        15: 'accept_nangong_debt',
-        16: 'become_li_disciple',
-        17: 'show_strength_banquet',
-        18: 'fight_for_sect',
-    }, {
-        '16_feiyu_return': 'help_feiyu_again',
-        '18_nangong_return': 'acknowledge_nangong_importance',
-    }), 19);
+    const { state: orthoState, view: orthodoxView } = getChapterChoiceView(19, (state) => {
+        state.flags.warChoice = 'orthodox';
+        state.routeScores.orthodox = 4;
+        state.npcRelations['李化元'] = 20;
+    });
     assert(orthodoxView.story.beats.length >= 8 && orthodoxView.story.beats.length <= 10);
     const orthoIds = orthodoxView.choices.map((item) => item.id);
     assert(orthoIds.includes('hold_the_line'));
     assert(orthoIds.includes('rescue_rearguard'));
-    const holdState = runUntilChapter(withInsertedChoices({
-        0: 'set_out_now',
-        1: 'keep_low_profile',
-        2: 'become_disciple',
-        3: 'save_li',
-        4: 'collect_evidence',
-        5: 'keep_bottle',
-        6: 'bait_and_counter',
-        7: 'keep_letter',
-        8: 'protect_mo_house',
-        9: 'repair_quhun',
-        10: 'watch_market',
-        11: 'join_yellow_maple',
-        12: 'build_connections',
-        13: 'go_team',
-        14: 'save_nangong',
-        15: 'accept_nangong_debt',
-        16: 'become_li_disciple',
-        17: 'show_strength_banquet',
-        18: 'fight_for_sect',
-    }, {
-        '16_feiyu_return': 'help_feiyu_again',
-        '18_nangong_return': 'acknowledge_nangong_importance',
-    }), 19).state;
+    const holdState = getChapterChoiceView(19, (state) => {
+        state.flags.warChoice = 'orthodox';
+        state.routeScores.orthodox = 4;
+        state.npcRelations['李化元'] = 20;
+    }).state;
     let result = GameCore.chooseStoryOption(holdState, 'hold_the_line');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(holdState.flags.heldSpiritMineLine, true);
@@ -928,30 +922,12 @@ function testChapter19RouteChoices() {
     assert.strictEqual(orthoState.flags.mineChoice, 'rearGuard');
     assert.strictEqual(orthoState.flags.ledMineBreakout, true);
 
-    const { state: demoState, view: demonicView } = runUntilChapter(withInsertedChoices({
-        0: 'set_out_now',
-        1: 'show_drive',
-        2: 'become_disciple',
-        3: 'warn_li',
-        4: 'confront_early',
-        5: 'keep_bottle',
-        6: 'strike_first',
-        7: 'burn_letter',
-        8: 'take_treasure_leave',
-        9: 'take_quhun',
-        10: 'watch_market',
-        11: 'sell_token',
-        12: 'push_growth',
-        13: 'go_solo',
-        14: 'kill_for_gain',
-        15: 'cut_nangong_ties',
-        16: 'learn_in_secret',
-        17: 'trade_favors_banquet',
-        18: 'defect_demonic',
-    }, {
-        '16_feiyu_return': 'distance_from_feiyu',
-        '18_nangong_return': 'avoid_nangong_again',
-    }), 19);
+    const { state: demoState, view: demonicView } = getChapterChoiceView(19, (state) => {
+        state.flags.warChoice = 'demonic';
+        state.routeScores.demonic = 5;
+        state.flags.executedDisabledEnemy = true;
+        state.flags.roseInChaos = true;
+    });
     const demoIds = demonicView.choices.map((item) => item.id);
     assert(demoIds.includes('open_mine_gate'));
     assert(demoIds.includes('harvest_chaos'));
@@ -960,31 +936,15 @@ function testChapter19RouteChoices() {
     assert.strictEqual(demoState.flags.mineChoice, 'betrayGate');
     assert.strictEqual(demoState.flags.escapedMineWithCoreAssets, true);
 
-    const { state: routeSubState, view: routeState } = runUntilChapter(withInsertedChoices({
-        0: 'set_out_now',
-        1: 'keep_low_profile',
-        2: 'become_disciple',
-        3: 'save_li',
-        4: 'collect_evidence',
-        5: 'keep_bottle',
-        6: 'bait_and_counter',
-        7: 'keep_letter',
-        8: 'protect_mo_house',
-        9: 'repair_quhun',
-        10: 'watch_market',
-        11: 'join_yellow_maple',
-        12: 'build_connections',
-        13: 'go_team',
-        14: 'save_nangong',
-        15: 'accept_nangong_debt',
-        16: 'become_li_disciple',
-        17: 'show_strength_banquet',
-        18: 'fake_fight',
-    }, {
-        '16_feiyu_return': 'share_drink_and_part',
-        '18_nangong_return': 'owe_nangong_silently',
-    }), 19);
+    const { state: routeSubState, view: routeState } = getChapterChoiceView(19, (state) => {
+        state.flags.warChoice = 'secluded';
+        state.routeScores.secluded = 4;
+        state.flags.rescuedSmallGroup = true;
+    });
     assert(routeState.choices.map((item) => item.id).includes('lead_breakout'));
+    result = GameCore.chooseStoryOption(routeSubState, 'lead_breakout');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(routeSubState.flags.mineChoice, 'breakout');
 }
 
 function testChapter21StarSeaFlags() {
@@ -1068,7 +1028,6 @@ function testEchoesAndSideStoriesIncludeNewSignals() {
     echoState.recentChoiceEcho = { chapterId: 23, choiceId: 'grab_treasure' };
     const echoes = GameCore.getEchoes(echoState);
     const echoTitles = echoes.map((item) => item.title);
-    assert.strictEqual(echoes[0].title, '抢先夺宝');
     assert(echoTitles.includes('笑里先看座次'));
     assert(echoTitles.includes('海上先活'));
     assert(echoTitles.includes('先伸手的人'));
@@ -1222,8 +1181,9 @@ function testBranchEchoes() {
         '23_mocaihuan_return': 'support_mocaihuan_longterm',
     }));
     const orthodoxEcho = GameCore.getEchoes(orthodoxState).map((item) => item.title);
-    assert(orthodoxEcho.includes('禁地留名'));
-    assert(orthodoxEcho.includes('灵界仙尊'));
+    assert(orthodoxEcho.includes('即时结果'));
+    assert(orthodoxEcho.includes('并肩飞升'));
+    assert(orthodoxState.ending.recapLines.some((line) => line.includes('推开更高的门')));
 
     const demonicState = runMainPath(withInsertedChoices({
         0: 'set_out_now',
@@ -1258,11 +1218,13 @@ function testBranchEchoes() {
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
     }));
     const demonicEcho = GameCore.getEchoes(demonicState).map((item) => item.title);
-    assert(demonicEcho.includes('底线后移'));
+    assert(demonicEcho.includes('即时结果'));
+    assert(demonicEcho.includes('长期提示'));
     const demonicEndingView = GameCore.getStoryView(demonicState);
     assert.strictEqual(demonicEndingView.source, 'ending');
     assert.strictEqual(demonicEndingView.ending.id, 'zouhuorumo');
-    assert.strictEqual(demonicState.storyConsequences.tribulation, GameCore.STORY_CONSEQUENCE_LIMITS.tribulation);
+    assert.strictEqual(demonicState.storyConsequences.pressureTier, '失控');
+    assert(demonicEndingView.ending.recapLines.some((line) => line.includes('资源不认人')));
 
     const secludedState = runMainPath(withInsertedChoices({
         0: 'pack_and_leave',
@@ -1297,11 +1259,12 @@ function testBranchEchoes() {
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
     }));
     const secludedEcho = GameCore.getEchoes(secludedState).map((item) => item.title);
-    assert(secludedEcho.includes('只留一道影子'));
-    assert(secludedEcho.includes('逍遥散仙'));
+    assert(secludedEcho.includes('即时结果'));
+    assert(secludedEcho.includes('暗线消息'));
     const secludedEndingView = GameCore.getStoryView(secludedState);
     assert.strictEqual(secludedEndingView.source, 'ending');
     assert.strictEqual(secludedEndingView.ending.id, 'xiaoyao_sanxian');
+    assert(secludedEndingView.ending.recapLines.some((line) => line.includes('离开名号与门墙')));
 }
 
 testStoryCursorSwitching();
@@ -1312,10 +1275,12 @@ testBreakthroughQueuesLevelStory();
 testMissedLevelStoryCanRecover();
 testProfileCollapseSaveCompatibility();
 testChoiceEchoStateUpdates();
+testPendingEchoesBecomeVisibleWithinWindow();
 testChoiceTextsHideTradeoffPreview();
 testBattleWillBonusesAffectStats();
 testLevelChoiceOutcomeStateUpdates();
 testTribulationDeathEnding();
+testPressureTierBoundaries();
 testResourceValidation();
 testMineChoicesBecomeRouteSpecific();
 testChapter15ChoiceFlags();

@@ -415,6 +415,23 @@ button {
     line-height: 1.65;
 }
 
+.story-pressure,
+.story-ending-chain {
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(143, 106, 42, 0.12);
+    background: rgba(255, 251, 243, 0.76);
+    color: var(--ink-soft);
+    line-height: 1.6;
+}
+
+.story-pressure strong,
+.story-ending-chain strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--ink);
+}
+
 .cultivation-meta {
     text-align: center;
     letter-spacing: 0.02em;
@@ -613,6 +630,43 @@ button {
     line-height: 1.55;
 }
 
+.choice-title {
+    display: block;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.choice-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.choice-tag {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(143, 106, 42, 0.12);
+    color: var(--ink-soft);
+    font-size: 0.74rem;
+    letter-spacing: 0.02em;
+}
+
+.choice-tag.risk-perilous {
+    background: rgba(137, 38, 38, 0.14);
+    color: #7f2a2a;
+}
+
+.choice-tag.risk-pressured {
+    background: rgba(168, 109, 26, 0.14);
+    color: #7a5314;
+}
+
+.choice-tag.risk-steady {
+    background: rgba(78, 112, 74, 0.14);
+    color: #42643d;
+}
+
 .story-choice-btn[disabled] {
     cursor: not-allowed;
     opacity: 0.55;
@@ -625,6 +679,13 @@ button {
     margin-top: 6px;
     color: var(--vermillion);
     font-size: 0.86rem;
+}
+
+.choice-disabled-reason {
+    display: block;
+    margin-top: 4px;
+    color: #8a3b3b;
+    font-size: 0.76rem;
 }
 
 .npc-list {
@@ -939,6 +1000,12 @@ button {
         line-height: 1.45;
     }
 
+    .story-pressure,
+    .story-ending-chain {
+        padding: 8px 10px;
+        font-size: 0.78rem;
+    }
+
     .auto-panel {
         padding: 8px 10px;
         gap: 8px;
@@ -1017,6 +1084,16 @@ button {
     .choice-cost {
         margin-top: 4px;
         font-size: 0.76rem;
+    }
+
+    .choice-tags {
+        margin-top: 6px;
+        gap: 4px;
+    }
+
+    .choice-tag,
+    .choice-disabled-reason {
+        font-size: 0.72rem;
     }
 
     .npc-list {

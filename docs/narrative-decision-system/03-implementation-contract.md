@@ -2,306 +2,239 @@
 
 ## 1. 目的
 
-本文件写给未来要按“叙事决策系统设计”改代码的人。
+本文件写给未来按理想化叙事决策系统 v2 落地的人。
 
 目标是明确：
 
-- 哪些状态结构现在已经稳定，不能随意删改
-- 哪些流程顺序现在是核心行为，不能为了“看起来更合理”直接打乱
-- 哪些 UI 可见性与文档同步规则必须保住
-- 哪些测试和校验是最低门槛
+- 哪些是稳定语义，未来实现必须保住
+- 哪些旧实现约束只是过渡事实，不再视为长期硬约束
+- 哪些流程顺序、可见性和测试门槛不能被偷换
 
 ## 2. 代码入口
 
-### `story-data.js`
+当前落地入口仍在以下文件：
 
-负责：
+- `D:\Program_python\game_xiuxian\story-data.js`
+- `D:\Program_python\game_xiuxian\game-core.js`
+- `D:\Program_python\game_xiuxian\game.js`
 
-- 主线章节 `STORY_CHAPTERS`
-- 小境界事件 `LEVEL_STORY_EVENTS`
-- `normalizeChoice()`
-- `normalizeTradeoff()`
-- 章节与事件的 `requirements`
-- choice 的 `effects`、显式 `tradeoff`、显式 `ending`
+说明：
 
-### `game-core.js`
-
-负责：
-
-- `createInitialState()` 与 `mergeSave()`
-- `ensureStoryCursor()`、`getStoryView()`、`advanceStoryBeat()`、`skipStoryPlayback()`
-- `chooseStoryOption()` 结算顺序
-- `storyConsequences`、`recentChoiceOutcome`、`recentChoiceEcho`
-- `chapterChoices`、`routeScores`、`flags`、`npcRelations`
-- `getRouteSummary()` 与 `getEchoes()`
-- `createTribulationEnding()`
-
-### `game.js`
-
-负责：
-
-- 剧情页 DOM 渲染
-- `echo-list` 与 `route-summary` 展示
-- ending 页按钮
-- `resetGame()` / `exportSave()`
-- 剧情 / 结局音效分流
+- 这些文件是当前实施入口，不代表它们的现有字段名就是 v2 的稳定契约。
+- v2 的稳定契约优先保护“语义层”，例如决策输入层、后果输出层、分支记忆层和揭示契约层。
 
 ## 3. 稳定数据契约
 
-### 3.1 主线推进状态
+### 3.1 决策输入层
 
-- `storyProgress`
-  - 当前允许 `number`、`string` 与 ending 后的 `-1`
-  - 不能被实现者假设为永远自增数字
-- `storyCursor`
-  - `source` 当前以 `main / level / ending` 为准
-  - `mode` 当前以 `playing / choices / idle` 为准
-  - 旧存档缺字段时必须能安全归一化
+未来实现必须能稳定表达：
 
-### 3.2 小境界事件状态
+- `承诺类型`
+- `可见成本或机会成本`
+- `风险语义档位`
+- `可支付性或可执行性`
 
-- `levelStoryState.events[eventId]`
-  - 结构至少保留 `{ triggered, completed }`
-- `levelStoryState.currentEventId`
-  - 当前事件指针不能静默移除
-- 兼容层要继续支持旧字段形态 `byId`
+旧实现中只有按钮文案与 `costs` 的情况，不再视为充分契约。
 
-### 3.3 分支状态
+### 3.2 后果输出层
 
-- `chapterChoices`
-  - 保留“章 id -> choice id”的映射能力
-- `routeScores`
-  - 保留 `orthodox / demonic / secluded`
-- `flags`
-  - 保留为可扩展对象，不要强行收窄成固定枚举前不迁移旧逻辑
-- `npcRelations`
-  - 保留当前关键 NPC 关系入口
+未来实现必须能稳定表达：
 
-### 3.4 回响与后果状态
+- 即时结果摘要
+- 至少一个可感知的状态变化
+- 至少一个延迟读取锚点或终局种子
+- 失败压力变化
 
-- `recentChoiceEcho`
-  - 继续保留 `{ chapterId, choiceId } | null`
-- `recentChoiceOutcome`
-  - 当前字段不能随意删除或改名：
-    - `chapterId`
-    - `choiceId`
-    - `battleWillGain`
-    - `tribulationGain`
-    - `attackBonus`
-    - `defenseBonus`
-    - `hpBonus`
-- `storyConsequences`
-  - 继续保留：
-    - `battleWill`
-    - `tribulation`
-- `ending`
-  - 继续复用统一结局结构，不单独为死亡结局另起一套状态面
+旧实现中的 `recentChoiceOutcome` 与 `tradeoff` 可以作为过渡来源，但不要求永久沿用其字段形状。
+
+### 3.3 分支记忆层
+
+未来实现必须有稳定入口承接：
+
+- 主线推进记忆
+- 路线人格权重
+- 关系承接
+- 长期失败压力
+- 终局种子
+
+旧实现里的 `storyProgress`、`routeScores`、`npcRelations`、`storyConsequences`、`flags` 可作为迁移素材，但不强制保持原字段名。
+
+### 3.4 揭示契约层
+
+未来实现必须能区分：
+
+- 选前必须揭示的信息
+- 选后即时揭示的信息
+- 延迟兑现的信息
+- 终局回指的信息
+
+若系统只保留“选前按钮”和“选后数值”，则不算完成 v2。
 
 ## 4. 稳定流程契约
 
-### 4.1 当前剧情解析顺序
+### 4.1 决策流程顺序
 
-1. 先续播当前有效 `storyCursor`。
-2. 当前 cursor 无效时，再找可用主线章节。
-3. 没有可用主线时，再找可用小境界事件。
-4. 仍然没有时，剧情页回落到“暂无新剧情”占位。
+未来实现必须遵守的最低顺序：
 
-### 4.2 当前抉择结算顺序
+1. 先构造决策输入层，确保承诺、成本、风险语义可用。
+2. 玩家做出选择后，先结算即时结果。
+3. 再写入分支记忆与失败压力。
+4. 再注册延迟读取点或终局种子。
+5. 最后根据累计压力与关键承诺链决定是否进入终局或下一阶段。
 
-1. `costs`
-2. `effects`
-3. `tradeoff`
-4. `recentChoiceOutcome`
-5. `chapterChoices / recentChoiceEcho` 或 `levelStoryState.completed`
-6. 死亡 ending
-7. 普通 ending
-8. 常规推进与下一段剧情游标重建
+### 4.2 解释流程顺序
 
-### 4.3 当前必须保留的流程事实
+未来实现必须保证：
 
-- 不能把死亡判定提到 `tradeoff` 之前。
-- 不能把 `recentChoiceOutcome` 延后到 ending 之后才写。
-- 不能把 `recentChoiceEcho` 提前到 `effects` 或 `tradeoff` 之前。
-- 不能把 `getEchoes()` 的“抉择余波 -> 剧情回响”顺序反过来。
-- 不能把主线和小境界 choice 拆成两套完全不同的归一化结构。
+1. 玩家先看到“刚才做了什么承诺”与“立刻发生了什么”。
+2. 再看到这次决定如何改变长期路径。
+3. 最后在延迟章节或终局中回指这次决定。
+
+不允许把终局解释写成与此前选择脱节的独立结论。
+
+### 4.3 当前旧约束中被明确放弃的部分
+
+- 不再把 `storyProgress` 混用数字与字符串视为目标态硬约束。
+- 不再把“只保存最近一次 `recentChoiceOutcome`”视为目标态上限。
+- 不再把 `battleWill / tribulation` 二元结构视为唯一长期后果模型。
+
+若未来实施继续沿用旧字段，必须说明这是过渡方案而不是最终设计。
 
 ## 5. 稳定 UI 契约
 
-### 5.1 选前必须隐藏
+### 5.1 选前必须可见
 
-- `tradeoff`
-- `battleWillGain`
-- `tribulationGain`
-- “高风险 / 低风险 / 偏稳 / 偏狠”等后果提示
+- choice 的承诺类型
+- 可见成本或机会成本
+- 风险语义档位
+- 不可执行时的阻断原因
 
-### 5.2 选前允许显示
+### 5.2 选前必须隐藏
 
-- 选项文案
-- `costs`
-- 资源不足导致的 `disabled` 状态
+- 精确收益数值
+- 精确失败压力数值
+- 延迟回响的具体触发章节
+- 终局种子的内部计算细节
 
 ### 5.3 选后必须揭示
 
-- `echo-list` 第一条必须是 `recentChoiceOutcome` 对应的“抉择余波”
-- narrative echo 只能排在数值余波后面
-- “道心与因果”面板必须持续展示：
-  - dominant 路线
-  - 三路分值
-  - 战意摘要
-  - 劫煞摘要
+- 即时结果摘要
+- 本次 choice 对长期路径的至少一条提示
+- 当前失败压力所处区间或趋势说明
 
-### 5.4 ending 页必须保留
+### 5.4 终局页必须保留
 
-- 结局标题与结局描述
-- `重新开始另一条路`
-- `导出当前结局存档`
+- 最终承诺链的回指说明
+- 失败或成功的主要成因
+- 重开或继续探索其他路线的入口
 
-### 5.5 音效反馈契约
+## 6. 禁止项
 
-- 普通剧情仍走剧情音
-- 普通终局走胜利音
-- `走火入魔` 终局走失败音
+1. 不能只新增按钮文案，不新增系统后果。
+2. 不能只新增隐藏状态，不新增后续读取点。
+3. 不能把关键风险完全隐藏，只靠事后解释补锅。
+4. 不能把失败写成随机惩罚，而不回指长期压力与关键承诺链。
+5. 不能把 v2 目标态偷偷降级成“当前代码略微美化版”。
+6. 不能只改代码不改 `01` 与 `04`，导致现状差距失真。
 
-## 6. 兼容契约
+## 7. 可改项
 
-- 不能改 `LocalStorage` 键 `xiuxian_save_v2`
-- 不能跳过 `mergeSave()` 对旧存档的回填
-- 不能把 `storyProgress` 的旧字符串分支节点静默改坏
-- 不能删除 `normalizeStoryConsequences()`、`normalizeRecentChoiceOutcome()`、`normalizeStoryCursor()` 这类兜底逻辑
-- 文档与代码冲突时，必须先标明“当前代码为准”，再修正文档；不能把过时聊天记录当事实来源
+- 承诺类型的具体枚举名
+- 风险语义的具体文案
+- 延迟回响兑现窗口的长度
+- 失败压力分层名称
+- 终局种子回指深度
 
-## 7. 与其他分册的边界
+只要这些调整影响玩家理解、作者接口或审计口径，就必须同步更新 `02` 与 `04`。
 
-- 当前本册负责系统级联动，不负责更细的内容资产写作规范。
-- 未来若拆出 `branch-state-system`、`echo-system`、`reward-risk-system`，只能把细粒度规则迁走，不能把系统地图和跨层契约迁空。
+## 8. 最低测试契约
 
-## 8. 禁止项
-
-1. 不能只改其中一层而让主线、分支、回响、收益 / 负面脱节。
-2. 不能把收益 / 代价提前渲染回剧情按钮。
-3. 不能把 `tribulation` 死亡语义私自改成 `>= 42` 而不同步规则书与测试。
-4. 不能只在 UI 层手写后果展示，绕开 `tradeoff` 和 `recentChoiceOutcome`。
-5. 不能把 `recentChoiceOutcome` 改成历史数组却不更新存档兼容与页面结构。
-6. 不能只改 UI 文案却不改系统事实文档。
-7. 不能把只有本册知道的关键规则藏进聊天记录。
-
-## 9. 可改项
-
-- 单个章节或单个小境界事件的 `requirements`
-- 默认 `tradeoff` 分档与少量关键剧情的显式 `tradeoff`
-- `battleWill` 与 `tribulation` 上限
-- 战斗映射公式
-- `getEchoes()` 中 flag echo 的内容和数量
-- 系列拆册后的 ownership 边界
-
-任何可改项只要影响现有体感，都必须同步更新 `02-parameters-and-formulas.md` 和 `04-change-worklog.md`。
-
-## 10. 最低测试契约
-
-### 10.1 文档校验
+### 8.1 文档校验
 
 - `python C:\Users\Aspir\.codex\skills\rulebook-author\scripts\validate_rulebook.py --root D:\Program_python\game_xiuxian\docs\narrative-decision-system`
 - `python C:\Users\Aspir\.codex\skills\rulebook-author\scripts\validate_rulebook_series.py --root D:\Program_python\game_xiuxian\docs --series-dir rulebook-series`
 
-### 10.2 状态与兼容测试
-
-- 旧存档自动补齐 `storyConsequences`
-- 旧存档自动补齐 `recentChoiceOutcome`
-- 旧存档自动补齐 `storyCursor`
-- 旧存档自动补齐 `levelStoryState`
-
-### 10.3 UI 契约测试
-
-- 主线按钮不显示 `战意 / 劫煞`
-- 小境界按钮不显示 `战意 / 劫煞`
-- `echo-list` 首项为 `抉择余波`
-- ending 页保留重开与导出按钮
-
-### 10.4 行为测试
-
-- 主线推进仍可进入抉择
-- 支线 / 小境界仍能正确插入
-- `recentChoiceOutcome` 会随 choice 正确更新
-- `battleWill` 会真实抬高 `attack / defense / maxHp`
-- 高风险路径可以触发 `走火入魔`
-- ending reset 后能回到初始状态
-
-### 10.5 自动化命令
+### 8.2 未来代码落地后的自动化命令
 
 - `npm run test:smoke`
 - `npm run test:e2e`
 - `npm test`
 
-文档-only 改动可以不跑游戏自动化回归，但后续一旦按本册改代码，上述命令至少要按影响面补跑。
+### 8.3 未来实现必须补齐的行为测试
 
-## 11. 变更分级
+- choice 是否具备承诺类型、成本、风险语义三要素
+- choice 结算后是否同时产生即时结果与分支记忆
+- 延迟回响是否能在规定窗口内兑现
+- 失败压力是否具有分层而非单纯暴毙阈值
+- 终局是否能回指关键承诺链
 
-### 11.1 A 级：规则重定义
+### 8.4 未来实现必须补齐的 UI 契约测试
 
-包括但不限于：
+- 选前是否展示风险语义但不展示精确数值
+- 选后是否先展示即时结果，再展示长期提示
+- 终局页是否包含回指说明与重开入口
 
-- 修改死亡语义 `> 42` / `>= 42`
-- 修改 `getEchoes()` 主排序
-- 修改选前隐藏 / 选后揭示原则
+## 9. 变更分级
 
-要求：
-
-- 必须先改规则书
-- 必须补 `04-change-worklog.md`
-- 必须更新测试要求
-- 必须人工复核典型路线体验
-
-### 11.2 B 级：系统调参
+### 9.1 A 级：规则重定义
 
 包括但不限于：
 
-- 调整默认 `tradeoff` 三档
-- 调整 `battleWill` 映射公式
-- 调整个别章节 `requirements`
+- 改动风险揭示原则
+- 改动失败压力分层逻辑
+- 改动终局回指结构
+- 改动“伪分支”的判定标准
 
 要求：
 
-- 必须更新 `02-parameters-and-formulas.md`
-- 必须记录影响范围
-- 至少跑 smoke 或固定手工回归
+- 先改规则书
+- 必须更新 `02`、`03`、`04`
+- 必须新增或更新对应审计场景
 
-### 11.3 C 级：内容扩写
+### 9.2 B 级：系统调参
 
 包括但不限于：
 
-- 新增章节文本
-- 新增 flag echo 内容
-- 新增 NPC 关系承接文本
+- 调整风险档位数量
+- 调整延迟回响窗口
+- 调整终局种子回指深度
 
 要求：
 
-- 不改系统契约时可不重写 `03`
-- 但必须保证引用的状态字段已经存在，并在后续有读取点
+- 必须更新 `02`
+- 必须记录预期体验变化
+- 必须明确是否影响现有落地方案
 
-## 12. 设计验收
+### 9.3 C 级：内容扩写
 
-### 12.1 玩家可解释性审计
+包括但不限于：
 
-检查：
+- 新增章节
+- 新增 choice
+- 新增延迟回响
+- 新增终局种子
 
-- 玩家能否理解为什么这个选择会造成这个后果
-- 玩家能否理解为什么自己偏向某条路线
-- 玩家能否理解为什么会死于走火入魔
+要求：
 
-### 12.2 设计一致性审计
+- 通过 `05` 的作者接口检查
+- 通过附录中的伪分支与承接审计
 
-检查：
+## 10. 设计验收
 
-- 选前隐藏、选后揭示是否仍成立
-- 风险收益是否仍以长期累积为主
-- 主线与小境界是否仍共用同一 choice 闭环
-- 数值余波是否仍先于叙事回响展示
+### 10.1 玩家可解释性审计
 
-### 12.3 资产接入质量审计
+- 玩家能否说出自己做了什么承诺
+- 玩家能否说出自己承担了什么风险
+- 玩家能否理解结果为何发生
 
-检查：
+### 10.2 设计一致性审计
 
-- 新增章节是否真正写入系统状态
-- 新增状态是否真正被后续读取
-- 是否不是伪分支
-- 是否不会破坏 late branch 承接
+- 选前揭示是否充分但不过度透题
+- 选后结果是否同时具备即时性与延迟性
+- 高风险是否来自压力累积，而不是随机暴毙
+
+### 10.3 资产接入质量审计
+
+- 新内容是否真的写入分支记忆
+- 新内容是否真的具备后续读取点
+- 新内容是否通过伪分支检查

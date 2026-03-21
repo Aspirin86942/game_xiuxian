@@ -30,6 +30,8 @@ module.exports = {
         continueButton: '#story-continue-btn',
         skipButton: '#story-skip-btn',
         choices: '#story-choices',
+        pressure: '#story-pressure',
+        endingChain: '#story-ending-chain',
         goal: '#story-goal',
         echoList: '#echo-list',
     },

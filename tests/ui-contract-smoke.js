@@ -24,6 +24,8 @@ function testProfileAndStoryAnchors(indexHtml, gameJs, gameCoreJs, styleCss) {
     assert(indexHtml.includes('id="offline-summary-text"'), '修炼区应存在离线收益摘要占位');
     assert(indexHtml.includes('id="offline-modal"'), '应存在离线收益弹层');
     assert(indexHtml.includes('id="story-progress"'), '剧情页码容器缺失');
+    assert(indexHtml.includes('id="story-pressure"'), '剧情页应存在压力摘要占位');
+    assert(indexHtml.includes('id="story-ending-chain"'), '终局页应存在承诺链回指占位');
     assert(!indexHtml.includes('id="story-history"'), '剧情历史列表应已移除');
 
     assert(!gameJs.includes('is-mobile-compact'), 'game.js 不应再依赖 is-mobile-compact');
@@ -33,6 +35,9 @@ function testProfileAndStoryAnchors(indexHtml, gameJs, gameCoreJs, styleCss) {
     assert(gameJs.includes('pendingOfflineSettlement'), 'game.js 应维护离线收益结算状态');
     assert(gameJs.includes("window.addEventListener('pagehide', saveGame)"), 'game.js 应在 pagehide 时刷新存档时间戳');
     assert(gameJs.includes("elements.storyProgress.textContent"), 'game.js 应更新剧情页码文案');
+    assert(gameJs.includes('storyPressure'), 'game.js 应渲染剧情压力摘要');
+    assert(gameJs.includes('storyEndingChain'), 'game.js 应渲染终局承诺链');
+    assert(gameJs.includes('risk-'), 'game.js 应渲染风险档位样式标识');
     assert(gameJs.includes('view.chapter.chapterLabel'), 'game.js 应优先使用 chapterLabel 显示插章标题');
     assert(gameJs.includes('result.death ? \'fail\''), 'game.js 应区分死亡结局与普通终局音效');
     assert(gameJs.includes("'下一页'"), '剧情继续按钮应改为下一页');
@@ -43,6 +48,10 @@ function testProfileAndStoryAnchors(indexHtml, gameJs, gameCoreJs, styleCss) {
     assert(gameCoreJs.includes('touchSaveTimestamp'), 'game-core.js 应提供存档时间戳刷新接口');
     assert(gameCoreJs.includes('storyConsequences'), 'game-core.js 应维护抉择后果累计状态');
     assert(gameCoreJs.includes('recentChoiceOutcome'), 'game-core.js 应维护最近一次抉择结算结果');
+    assert(gameCoreJs.includes('decisionHistory'), 'game-core.js 应维护关键承诺历史');
+    assert(gameCoreJs.includes('pendingEchoes'), 'game-core.js 应维护延迟回响队列');
+    assert(gameCoreJs.includes('endingSeeds'), 'game-core.js 应维护终局种子');
+    assert(gameCoreJs.includes('isSupportedSaveData'), 'game-core.js 应显式校验旧版存档');
 
     assert(!styleCss.includes('@media (min-width: 760px)'), '不应继续保留桌面端专用布局');
     assert(!styleCss.includes('.status-card.is-mobile-compact'), '样式中不应继续保留 is-mobile-compact 分支');

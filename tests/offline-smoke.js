@@ -17,10 +17,16 @@ function testLegacySaveCompatibility() {
         autoCultivate: true,
     });
 
-    assert.strictEqual(merged.version, 4);
+    assert.strictEqual(merged.version, GameCore.SAVE_VERSION);
     assert.strictEqual(merged.offlineTraining.lastSavedAt, null);
     assert.strictEqual(merged.offlineTraining.lastGain, 0);
     assert.strictEqual(merged.offlineTraining.wasCapped, false);
+    assert.deepStrictEqual(merged.storyConsequences, {
+        battleWill: 0,
+        tribulation: 0,
+        pressureTier: '安全',
+        pressureTrend: '平稳',
+    });
 }
 
 function testOfflineSettlementAppliesExpectedGain() {

@@ -3,7 +3,7 @@ const fs = require('fs');
 const { test, expect } = require('@playwright/test');
 const selectors = require('./helpers/selectors');
 const { openGame, readSave, waitForModalShown } = require('./helpers/harness');
-const { createCustomSaveScenario } = require('./helpers/saveFactory');
+const { createCustomSaveScenario, createLegacySaveScenario } = require('./helpers/saveFactory');
 
 test('设置开关在刷新后保留', async ({ page }) => {
     await openGame(page);
@@ -45,6 +45,7 @@ test('存档可导出、重开并重新导入恢复', async ({ page }, testInfo)
     await download.saveAs(downloadPath);
 
     const exported = JSON.parse(fs.readFileSync(downloadPath, 'utf8'));
+    expect(exported.version).toBe(5);
     expect(exported.playerName).toBe(scenario.expectedState.playerName);
     expect(exported.inventory.lingshi).toBe(scenario.expectedState.lingshi);
 
@@ -70,4 +71,37 @@ test('存档可导出、重开并重新导入恢复', async ({ page }, testInfo)
     expect(save.inventory.lingshi).toBe(scenario.expectedState.lingshi);
     expect(save.settings.audioEnabled).toBe(scenario.expectedState.audioEnabled);
     expect(save.settings.musicEnabled).toBe(scenario.expectedState.musicEnabled);
+});
+
+test('导入旧版存档时阻断并提示，且不污染当前进度', async ({ page }, testInfo) => {
+    const scenario = createCustomSaveScenario();
+    const legacyScenario = createLegacySaveScenario();
+    const legacyPath = testInfo.outputPath('legacy-save-v4.json');
+    fs.writeFileSync(legacyPath, legacyScenario.serialized, 'utf8');
+
+    await openGame(page, { serializedSave: scenario.serialized });
+    await expect(page.locator(selectors.status.playerName)).toHaveText(scenario.expectedState.playerName);
+
+    await page.click(selectors.tabs.settings);
+    await waitForModalShown(page, selectors.settings.modal);
+
+    const dialogPromise = page.waitForEvent('dialog');
+    const [fileChooser] = await Promise.all([
+        page.waitForEvent('filechooser'),
+        page.click(selectors.settings.importButton),
+    ]);
+    await fileChooser.setFiles(legacyPath);
+
+    const dialog = await dialogPromise;
+    expect(dialog.message()).toContain(legacyScenario.expectedAlertFragment);
+    expect(dialog.message()).toContain('升级到 v5');
+    await dialog.accept();
+
+    await expect(page.locator(selectors.status.playerName)).toHaveText(scenario.expectedState.playerName);
+    await expect(page.locator(selectors.status.realm)).toHaveText(scenario.expectedState.realmLabel);
+
+    const save = await readSave(page);
+    expect(save.version).toBe(5);
+    expect(save.playerName).toBe(scenario.expectedState.playerName);
+    expect(save.inventory.lingshi).toBe(scenario.expectedState.lingshi);
 });

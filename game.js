@@ -73,6 +73,8 @@
             'story-skip-btn',
             'story-choices',
             'story-goal',
+            'story-pressure',
+            'story-ending-chain',
             'route-summary',
             'echo-list',
             'location-title',
@@ -172,6 +174,17 @@
         localStorage.setItem(STORAGE_KEY, GameCore.serializeState(gameState));
     }
 
+    function bootstrapFreshState() {
+        gameState = GameCore.createInitialState();
+        GameCore.ensureStoryCursor(gameState);
+        pendingOfflineSettlement = null;
+    }
+
+    function getUnsupportedSaveMessage(rawState) {
+        const versionText = Number.isFinite(rawState?.version) ? `v${rawState.version}` : '未知版本';
+        return `检测到旧版存档（${versionText}），当前叙事决策系统已升级到 v${GameCore.SAVE_VERSION}。`;
+    }
+
     function restoreGameState(parsedState, shouldResolveOffline) {
         gameState = GameCore.mergeSave(parsedState);
         GameCore.ensureStoryCursor(gameState);
@@ -193,20 +206,24 @@
     function loadGame() {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) {
-            gameState = GameCore.createInitialState();
-            GameCore.ensureStoryCursor(gameState);
-            pendingOfflineSettlement = null;
+            bootstrapFreshState();
             return;
         }
 
         try {
             const parsed = JSON.parse(raw);
+            if (!GameCore.isSupportedSaveData(parsed)) {
+                console.warn('检测到旧版存档，已自动重置');
+                window.alert(`${getUnsupportedSaveMessage(parsed)}该存档不会继续加载，已为你重置为新档。`);
+                localStorage.removeItem(STORAGE_KEY);
+                bootstrapFreshState();
+                saveGame();
+                return;
+            }
             restoreGameState(parsed, true);
         } catch (error) {
             console.error('存档读取失败', error);
-            gameState = GameCore.createInitialState();
-            GameCore.ensureStoryCursor(gameState);
-            pendingOfflineSettlement = null;
+            bootstrapFreshState();
         }
     }
 
@@ -214,9 +231,7 @@
         stopAutoCultivate();
         stopCombatLoop();
         localStorage.removeItem(STORAGE_KEY);
-        gameState = GameCore.createInitialState();
-        GameCore.ensureStoryCursor(gameState);
-        pendingOfflineSettlement = null;
+        bootstrapFreshState();
         hideModal(elements.confirmModal);
         hideModal(elements.settingsModal);
         hideModal(elements.offlineModal);
@@ -308,6 +323,12 @@
     function renderStoryPage() {
         const view = GameCore.getStoryView(gameState);
         const echoes = GameCore.getEchoes(gameState);
+        elements.storyPressure.innerHTML = `
+            <strong>失败压力</strong>
+            <p>${GameCore.getPressureStatusText(gameState)}</p>
+        `;
+        elements.storyEndingChain.style.display = 'none';
+        elements.storyEndingChain.innerHTML = '';
         elements.echoList.innerHTML = echoes.map((item) => `
             <article class="echo-item">
                 <strong>${item.title}</strong>
@@ -338,6 +359,13 @@
             elements.storyProgress.textContent = '终局';
             elements.storySpeaker.textContent = '尾声';
             elements.storyLine.textContent = '这一段路已经走完。';
+            if (Array.isArray(view.ending.recapLines) && view.ending.recapLines.length > 0) {
+                elements.storyEndingChain.style.display = 'block';
+                elements.storyEndingChain.innerHTML = `
+                    <strong>${view.ending.recapTitle || '关键承诺链'}</strong>
+                    <p>${view.ending.recapLines.join('；')}</p>
+                `;
+            }
             elements.storyChoices.innerHTML = `
                 <button class="story-choice-btn" data-ending-action="reset" type="button">重新开始另一条路</button>
                 <button class="story-choice-btn" data-ending-action="export" type="button">导出当前结局存档</button>
@@ -385,8 +413,13 @@
                 type="button"
                 ${choice.disabled ? 'disabled' : ''}
             >
-                ${choice.text}
-                ${choice.costs ? `<span class="choice-cost">消耗：${GameCore.formatCosts(choice.costs)}</span>` : ''}
+                <span class="choice-title">${choice.text}</span>
+                <div class="choice-tags">
+                    <span class="choice-tag">${choice.promiseLabel || '承诺未定'}</span>
+                    <span class="choice-tag risk-${choice.riskTier || 'steady'}">${choice.riskLabel || '稳妥'}</span>
+                </div>
+                <span class="choice-cost">${choice.visibleCostLabel || (choice.costs ? `消耗：${GameCore.formatCosts(choice.costs)}` : '机会成本：会改写后续路线')}</span>
+                ${choice.disabledReason ? `<span class="choice-disabled-reason">${choice.disabledReason}</span>` : ''}
             </button>
         `).join('');
     }
@@ -620,7 +653,7 @@
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
-        anchor.download = `灵光修仙传_v2_${new Date().toISOString().slice(0, 10)}.json`;
+        anchor.download = `灵光修仙传_v${GameCore.SAVE_VERSION}_${new Date().toISOString().slice(0, 10)}.json`;
         anchor.click();
         URL.revokeObjectURL(url);
     }
@@ -638,6 +671,10 @@
             reader.onload = (loadEvent) => {
                 try {
                     const parsed = JSON.parse(loadEvent.target.result);
+                    if (!GameCore.isSupportedSaveData(parsed)) {
+                        window.alert(`导入失败：${getUnsupportedSaveMessage(parsed)}该存档不会覆盖当前进度。`);
+                        return;
+                    }
                     stopAutoCultivate();
                     stopCombatLoop();
                     restoreGameState(parsed, true);

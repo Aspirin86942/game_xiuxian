@@ -21,10 +21,20 @@
     const STORY_LOOKUP = new Map(STORY_CHAPTERS.map((chapter) => [chapter.id, chapter]));
     const STORY_ORDER = new Map(STORY_CHAPTERS.map((chapter, index) => [String(chapter.id), index]));
     const MAX_LOGS = 120;
+    const SAVE_VERSION = 5;
+    const DECISION_HISTORY_LIMIT = 12;
+    const ENDING_SEED_LIMIT = 4;
+    const PRESSURE_COLLAPSE_THRESHOLD = 9;
     const STORY_CONSEQUENCE_LIMITS = Object.freeze({
         battleWill: 8,
         tribulation: 42,
     });
+    const PRESSURE_TIERS = Object.freeze([
+        { id: 'safe', label: '安全', min: 0, max: 2 },
+        { id: 'tense', label: '紧绷', min: 3, max: 5 },
+        { id: 'critical', label: '濒危', min: 6, max: 8 },
+        { id: 'collapse', label: '失控', min: PRESSURE_COLLAPSE_THRESHOLD, max: STORY_CONSEQUENCE_LIMITS.tribulation },
+    ]);
 
     function clone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -59,7 +69,21 @@
         return {
             battleWill: 0,
             tribulation: 0,
+            pressureTier: '安全',
+            pressureTrend: '平稳',
         };
+    }
+
+    function createDefaultDecisionHistory() {
+        return [];
+    }
+
+    function createDefaultPendingEchoes() {
+        return [];
+    }
+
+    function createDefaultEndingSeeds() {
+        return [];
     }
 
     function normalizeOfflineTrainingState(rawState) {
@@ -91,6 +115,21 @@
         return Math.max(0, Math.min(upperBound, Math.floor(rawValue)));
     }
 
+    function getPressureTierMeta(tribulation) {
+        const safeTribulation = clampConsequenceValue(tribulation, STORY_CONSEQUENCE_LIMITS.tribulation);
+        return PRESSURE_TIERS.find((item) => safeTribulation >= item.min && safeTribulation <= item.max) || PRESSURE_TIERS[0];
+    }
+
+    function getPressureTrendLabel(delta) {
+        if (delta > 0) {
+            return '上扬';
+        }
+        if (delta < 0) {
+            return '缓和';
+        }
+        return '平稳';
+    }
+
     function normalizeStoryConsequences(rawState) {
         const nextState = createDefaultStoryConsequences();
         if (!rawState || typeof rawState !== 'object') {
@@ -99,7 +138,67 @@
 
         nextState.battleWill = clampConsequenceValue(rawState.battleWill, STORY_CONSEQUENCE_LIMITS.battleWill);
         nextState.tribulation = clampConsequenceValue(rawState.tribulation, STORY_CONSEQUENCE_LIMITS.tribulation);
+        nextState.pressureTier = getPressureTierMeta(nextState.tribulation).label;
+        nextState.pressureTrend = typeof rawState.pressureTrend === 'string' && rawState.pressureTrend
+            ? rawState.pressureTrend
+            : '平稳';
         return nextState;
+    }
+
+    function normalizeDecisionHistory(rawState) {
+        if (!Array.isArray(rawState)) {
+            return createDefaultDecisionHistory();
+        }
+        return rawState
+            .filter((entry) => entry && typeof entry === 'object')
+            .slice(-DECISION_HISTORY_LIMIT)
+            .map((entry) => ({
+                chapterId: entry.chapterId ?? null,
+                choiceId: entry.choiceId ?? null,
+                promiseType: entry.promiseType ?? 'protect',
+                promiseLabel: entry.promiseLabel ?? '保全',
+                riskTier: entry.riskTier ?? 'steady',
+                riskLabel: entry.riskLabel ?? '稳妥',
+                costLabel: entry.costLabel ?? '',
+                immediateSummary: entry.immediateSummary ?? '',
+                longTermHint: entry.longTermHint ?? '',
+                pressureDelta: clampConsequenceValue(entry.pressureDelta, 3),
+                endingSeedIds: Array.isArray(entry.endingSeedIds) ? entry.endingSeedIds.slice(0, ENDING_SEED_LIMIT) : [],
+            }));
+    }
+
+    function normalizePendingEchoes(rawState) {
+        if (!Array.isArray(rawState)) {
+            return createDefaultPendingEchoes();
+        }
+        return rawState
+            .filter((entry) => entry && typeof entry === 'object')
+            .map((entry) => ({
+                id: entry.id ?? null,
+                sourceChapterId: entry.sourceChapterId ?? null,
+                sourceChoiceId: entry.sourceChoiceId ?? null,
+                title: entry.title ?? '延迟回响',
+                detail: entry.detail ?? '',
+                eligibleFromProgress: Number.isFinite(entry.eligibleFromProgress) ? Math.max(0, Math.floor(entry.eligibleFromProgress)) : 0,
+                eligibleToProgress: Number.isFinite(entry.eligibleToProgress) ? Math.max(0, Math.floor(entry.eligibleToProgress)) : STORY_CONSEQUENCE_LIMITS.tribulation,
+                consumed: Boolean(entry.consumed),
+            }));
+    }
+
+    function normalizeEndingSeeds(rawState) {
+        if (!Array.isArray(rawState)) {
+            return createDefaultEndingSeeds();
+        }
+        return rawState
+            .filter((entry) => entry && typeof entry === 'object')
+            .slice(-ENDING_SEED_LIMIT)
+            .map((entry) => ({
+                id: entry.id ?? null,
+                sourceChapterId: entry.sourceChapterId ?? null,
+                sourceChoiceId: entry.sourceChoiceId ?? null,
+                promiseType: entry.promiseType ?? 'protect',
+                note: entry.note ?? '',
+            }));
     }
 
     function normalizeRecentChoiceOutcome(rawState) {
@@ -207,13 +306,13 @@
         return {
             id: 'zouhuorumo',
             title: '走火入魔',
-            description: `你一路积下的劫煞终于反噬心神。战意虽盛，却已压不住识海裂开的回声；当劫煞攀至 ${consequences.tribulation}/${STORY_CONSEQUENCE_LIMITS.tribulation}，这一局也只能在失控中断掉。`,
+            description: `你一路累积的失败压力终于越过${consequences.pressureTier}边界。先前那些涉险而行、强撑不退的选择没有再被稳住，识海里的裂声也在此刻一起反噬回来。`,
         };
     }
 
     function createInitialState() {
         const state = {
-            version: 4,
+            version: SAVE_VERSION,
             playerName: '无名散修',
             realmIndex: 0,
             stageIndex: 0,
@@ -240,6 +339,9 @@
             chapterChoices: {},
             recentChoiceEcho: null,
             recentChoiceOutcome: null,
+            decisionHistory: createDefaultDecisionHistory(),
+            pendingEchoes: createDefaultPendingEchoes(),
+            endingSeeds: createDefaultEndingSeeds(),
             storyCursor: {
                 source: 'main',
                 storyId: null,
@@ -296,6 +398,9 @@
             ? { chapterId: rawState.recentChoiceEcho.chapterId ?? null, choiceId: rawState.recentChoiceEcho.choiceId ?? null }
             : null;
         nextState.recentChoiceOutcome = normalizeRecentChoiceOutcome(rawState.recentChoiceOutcome);
+        nextState.decisionHistory = normalizeDecisionHistory(rawState.decisionHistory);
+        nextState.pendingEchoes = normalizePendingEchoes(rawState.pendingEchoes);
+        nextState.endingSeeds = normalizeEndingSeeds(rawState.endingSeeds);
         nextState.logs = Array.isArray(rawState.logs) ? rawState.logs.slice(0, MAX_LOGS) : [];
         nextState.ending = rawState.ending || null;
         nextState.levelStoryState = normalizeLevelStoryState(rawState.levelStoryState);
@@ -477,14 +582,16 @@
         const tradeoff = choice.tradeoff && typeof choice.tradeoff === 'object'
             ? choice.tradeoff
             : { battleWillGain: 2, tribulationGain: 1 };
-        const consequences = normalizeStoryConsequences(state.storyConsequences);
-        const battleWillGain = clampConsequenceValue(tradeoff.battleWillGain, 3);
-        const tribulationGain = clampConsequenceValue(tradeoff.tribulationGain, 2);
-        const nextBattleWill = consequences.battleWill + battleWillGain;
-        const nextTribulation = consequences.tribulation + tribulationGain;
-
-        consequences.battleWill = Math.min(STORY_CONSEQUENCE_LIMITS.battleWill, nextBattleWill);
-        consequences.tribulation = Math.min(STORY_CONSEQUENCE_LIMITS.tribulation, nextTribulation);
+        const previousConsequences = normalizeStoryConsequences(state.storyConsequences);
+        const battleWillGain = clampConsequenceValue(choice.resolveDelta ?? tradeoff.battleWillGain, 3);
+        const tribulationGain = clampConsequenceValue(choice.pressureDelta ?? tradeoff.tribulationGain, 3);
+        const nextBattleWill = previousConsequences.battleWill + battleWillGain;
+        const nextTribulation = previousConsequences.tribulation + tribulationGain;
+        const consequences = normalizeStoryConsequences({
+            battleWill: Math.min(STORY_CONSEQUENCE_LIMITS.battleWill, nextBattleWill),
+            tribulation: Math.min(STORY_CONSEQUENCE_LIMITS.tribulation, nextTribulation),
+            pressureTrend: getPressureTrendLabel(tribulationGain),
+        });
         state.storyConsequences = consequences;
         recalculateState(state, false);
 
@@ -499,13 +606,71 @@
             hpBonus: totalBonus.hp,
         };
 
-        pushLog(state, `抉择余波：战意 +${battleWillGain}，劫煞 +${tribulationGain}`, tribulationGain > battleWillGain ? 'bad' : 'normal');
+        pushLog(
+            state,
+            `抉择余波：${choice.promiseLabel || '承诺'}已落定，失败压力转为${consequences.pressureTier}（${consequences.pressureTrend}）。`,
+            tribulationGain > battleWillGain ? 'bad' : 'normal',
+        );
 
         return {
             battleWillGain,
             tribulationGain,
             totalBonus,
-            triggeredDeath: nextTribulation > STORY_CONSEQUENCE_LIMITS.tribulation,
+            pressureTier: consequences.pressureTier,
+            pressureTrend: consequences.pressureTrend,
+            triggeredDeath: nextTribulation >= PRESSURE_COLLAPSE_THRESHOLD,
+        };
+    }
+
+    function appendDecisionHistory(state, entry) {
+        state.decisionHistory = normalizeDecisionHistory([...(state.decisionHistory || []), entry]);
+    }
+
+    function appendPendingEchoes(state, story, choice) {
+        const currentEntries = normalizePendingEchoes(state.pendingEchoes);
+        const nextEntries = (choice.delayedEchoes || []).map((entry) => ({
+            id: entry.id,
+            sourceChapterId: story.id,
+            sourceChoiceId: choice.id,
+            title: entry.title,
+            detail: entry.detail,
+            eligibleFromProgress: entry.eligibleFromProgress,
+            eligibleToProgress: entry.eligibleToProgress,
+            consumed: Boolean(entry.consumed),
+        }));
+        state.pendingEchoes = normalizePendingEchoes([...currentEntries, ...nextEntries]);
+    }
+
+    function appendEndingSeeds(state, story, choice) {
+        const currentSeeds = normalizeEndingSeeds(state.endingSeeds);
+        const nextSeeds = (choice.endingSeeds || []).map((entry) => ({
+            id: entry.id,
+            sourceChapterId: story.id,
+            sourceChoiceId: choice.id,
+            promiseType: entry.promiseType || choice.promiseType,
+            note: entry.note,
+        }));
+        state.endingSeeds = normalizeEndingSeeds([...currentSeeds, ...nextSeeds]);
+    }
+
+    function getRecentDecisionEntries(state, limit = 4) {
+        const entries = normalizeDecisionHistory(state.decisionHistory);
+        return entries.slice(Math.max(0, entries.length - limit));
+    }
+
+    function getEndingRecapLines(state, choice) {
+        const chain = getRecentDecisionEntries(state, 4).map((entry) => `${entry.promiseLabel} · ${entry.riskLabel}：${entry.immediateSummary || entry.longTermHint}`);
+        if (choice) {
+            chain.push(`收束于「${choice.text}」：最终把此前积累的承诺与压力一起推到了门前。`);
+        }
+        return chain.slice(-4);
+    }
+
+    function decorateEnding(ending, state, choice) {
+        return {
+            ...clone(ending),
+            recapTitle: '关键承诺链',
+            recapLines: getEndingRecapLines(state, choice),
         };
     }
 
@@ -631,6 +796,16 @@
         return getChapterById(cursor.storyId ?? state.storyProgress);
     }
 
+    function getChoiceDisabledReason(state, choice) {
+        if (canAffordCosts(state, choice.costs)) {
+            return '';
+        }
+        const missing = Object.entries(choice.costs || {})
+            .filter(([itemId, amount]) => getInventoryCount(state, itemId) < amount)
+            .map(([itemId, amount]) => `${ITEMS[itemId]?.name || itemId} x${amount}`);
+        return missing.length > 0 ? `不足：${missing.join('、')}` : '资源不足';
+    }
+
     function resolveStoryDefinition(definition, state, source) {
         if (!definition) {
             return null;
@@ -643,9 +818,11 @@
                 // 小境界事件允许用文本驱动定义，但运行期必须有稳定 id，避免选择和测试都落到 undefined。
                 normalizedChoice.id = `${definition.id}_choice_${index}`;
             }
+            const disabled = !canAffordCosts(state, normalizedChoice.costs);
             return {
                 ...normalizedChoice,
-                disabled: !canAffordCosts(state, normalizedChoice.costs),
+                disabled,
+                disabledReason: disabled ? getChoiceDisabledReason(state, normalizedChoice) : '',
             };
         });
         return { ...definition, source, beats, choices };
@@ -824,7 +1001,7 @@
             return { ok: false, error: '选项不存在。' };
         }
         if (choice.disabled) {
-            return { ok: false, error: '资源不足，无法选择该选项。' };
+            return { ok: false, error: choice.disabledReason || '资源不足，无法选择该选项。' };
         }
         if (!applyCosts(state, choice.costs)) {
             return { ok: false, error: '资源不足，无法支付代价。' };
@@ -848,8 +1025,24 @@
             state.levelStoryState.currentEventId = null;
         }
 
+        appendDecisionHistory(state, {
+            chapterId: story.id,
+            choiceId: choice.id,
+            promiseType: choice.promiseType,
+            promiseLabel: choice.promiseLabel,
+            riskTier: choice.riskTier,
+            riskLabel: choice.riskLabel,
+            costLabel: choice.visibleCostLabel || formatCosts(choice.costs),
+            immediateSummary: choice.immediateResult?.detail || choice.text,
+            longTermHint: choice.longTermHint || '',
+            pressureDelta: tradeoffResult.tribulationGain,
+            endingSeedIds: (choice.endingSeeds || []).map((entry) => entry.id),
+        });
+        appendPendingEchoes(state, story, choice);
+        appendEndingSeeds(state, story, choice);
+
         if (tradeoffResult.triggeredDeath) {
-            state.ending = createTribulationEnding(state);
+            state.ending = decorateEnding(createTribulationEnding(state), state, choice);
             state.storyCursor = {
                 source: 'ending',
                 storyId: null,
@@ -858,12 +1051,12 @@
                 mode: 'idle',
             };
             state.storyProgress = -1;
-            pushLog(state, '劫煞积满，心神失守，本局在走火入魔中终结。', 'fail');
+            pushLog(state, '失败压力进入失控，本局在走火入魔中终结。', 'fail');
             return { ok: true, ending: true, death: true };
         }
 
         if (choice.ending) {
-            state.ending = clone(choice.ending);
+            state.ending = decorateEnding(choice.ending, state, choice);
             state.storyCursor = {
                 source: 'ending',
                 storyId: null,
@@ -979,11 +1172,11 @@
             },
             {
                 title: '战意',
-                detail: `战意 ${consequences.battleWill}/${STORY_CONSEQUENCE_LIMITS.battleWill}：当前战斗加成 攻击 +${battleWillBonuses.attack} / 防御 +${battleWillBonuses.defense} / 气血 +${battleWillBonuses.hp}`,
+                detail: `当前战斗加成：攻击 +${battleWillBonuses.attack} / 防御 +${battleWillBonuses.defense} / 气血 +${battleWillBonuses.hp}`,
             },
             {
-                title: '劫煞',
-                detail: `劫煞 ${consequences.tribulation}/${STORY_CONSEQUENCE_LIMITS.tribulation}：劫煞过盛将走火入魔`,
+                title: '失败压力',
+                detail: `当前处于${consequences.pressureTier}，趋势${consequences.pressureTrend}。进入失控后将触发走火入魔终局。`,
             },
         ];
     }
@@ -1215,46 +1408,69 @@
     }
 
     function getChoiceOutcomeEcho(state) {
-        const outcome = normalizeRecentChoiceOutcome(state.recentChoiceOutcome);
-        if (!outcome) {
+        const latestDecision = getRecentDecisionEntries(state, 1)[0] || null;
+        if (!latestDecision) {
             return null;
         }
 
         return {
-            title: '抉择余波',
-            detail: `本次抉择：战意 +${outcome.battleWillGain}，劫煞 +${outcome.tribulationGain}。当前战斗加成：攻击 +${outcome.attackBonus}、防御 +${outcome.defenseBonus}、气血 +${outcome.hpBonus}。`,
+            title: '即时结果',
+            detail: latestDecision.immediateSummary,
         };
+    }
+
+    function getChoiceLongTermEcho(state) {
+        const latestDecision = getRecentDecisionEntries(state, 1)[0] || null;
+        if (!latestDecision || !latestDecision.longTermHint) {
+            return null;
+        }
+        return {
+            title: '长期提示',
+            detail: latestDecision.longTermHint,
+        };
+    }
+
+    function getEligiblePendingEchoes(state) {
+        const storyProgress = getMainStoryProgressValue(state);
+        return normalizePendingEchoes(state.pendingEchoes)
+            .filter((entry) => !entry.consumed && storyProgress >= entry.eligibleFromProgress && storyProgress <= entry.eligibleToProgress)
+            .slice(-4)
+            .map((entry) => ({
+                title: entry.title,
+                detail: entry.detail,
+            }));
     }
 
     function getEchoes(state) {
         const echoes = [];
         const outcomeEcho = getChoiceOutcomeEcho(state);
         if (outcomeEcho) {
-            echoes.push({
-                title: outcomeEcho.title,
-                detail: outcomeEcho.detail,
-            });
+            echoes.push(outcomeEcho);
         }
 
-        const recentEcho = getChoiceImmediateEcho(state.recentChoiceEcho?.chapterId, state.recentChoiceEcho?.choiceId);
-        if (recentEcho) {
-            echoes.push({
-                title: recentEcho.title,
-                detail: recentEcho.detail,
-            });
+        const longTermEcho = getChoiceLongTermEcho(state);
+        if (longTermEcho) {
+            echoes.push(longTermEcho);
         }
 
-        const seenDelayedTitles = new Set();
-        getSortedChapterChoiceEntries(state).forEach(([chapterId, choiceId]) => {
-            const delayedEcho = getChoiceDelayedEcho(chapterId, choiceId);
-            if (delayedEcho && !seenDelayedTitles.has(delayedEcho.title)) {
-                seenDelayedTitles.add(delayedEcho.title);
-                echoes.push({
-                    title: delayedEcho.title,
-                    detail: delayedEcho.detail,
-                });
-            }
+        const allPendingEchoes = normalizePendingEchoes(state.pendingEchoes);
+        const pendingEchoes = getEligiblePendingEchoes(state);
+        pendingEchoes.forEach((entry) => {
+            echoes.push(entry);
         });
+        if (pendingEchoes.length === 0 && allPendingEchoes.length === 0) {
+            const seenDelayedTitles = new Set();
+            getSortedChapterChoiceEntries(state).forEach(([chapterId, choiceId]) => {
+                const delayedEcho = getChoiceDelayedEcho(chapterId, choiceId);
+                if (delayedEcho && !seenDelayedTitles.has(delayedEcho.title)) {
+                    seenDelayedTitles.add(delayedEcho.title);
+                    echoes.push({
+                        title: delayedEcho.title,
+                        detail: delayedEcho.detail,
+                    });
+                }
+            });
+        }
 
         if (state.flags.startPath === 'disciple') {
             echoes.push({ title: '神手谷旧痕', detail: '你以弟子身份接近墨大夫，这让后续面对“师门”时更容易被旧记忆拉扯。' });
@@ -1272,7 +1488,12 @@
             echoes.push({ title: '并肩飞升', detail: '血色禁地埋下的那条线，最后被你们一起带过了界壁。' });
         }
         if (echoes.length === 0) {
-            echoes.push({ title: '尚在起势', detail: '关键选择还不够多，继续推进剧情会看到更明显的回响。' });
+            const recentEcho = getChoiceImmediateEcho(state.recentChoiceEcho?.chapterId, state.recentChoiceEcho?.choiceId);
+            if (recentEcho) {
+                echoes.push(recentEcho);
+            } else {
+                echoes.push({ title: '尚在起势', detail: '关键选择还不够多，继续推进剧情会看到更明显的回响。' });
+            }
         }
         return echoes;
     }
@@ -1581,7 +1802,17 @@
         return JSON.stringify(state, null, 2);
     }
 
+    function isSupportedSaveData(rawState) {
+        return Boolean(rawState && typeof rawState === 'object' && Number.isFinite(rawState.version) && rawState.version >= SAVE_VERSION);
+    }
+
+    function getPressureStatusText(state) {
+        const consequences = normalizeStoryConsequences(state?.storyConsequences);
+        return `失败压力：${consequences.pressureTier}（${consequences.pressureTrend}）`;
+    }
+
     const GameCore = {
+        SAVE_VERSION,
         CONFIG,
         REALMS,
         ITEMS,
@@ -1598,6 +1829,7 @@
         getBattleWillBonuses,
         getRouteDisplay,
         getRouteSummary,
+        getPressureStatusText,
         getEchoes,
         getLocationMeta,
         getAvailableSideStories,
@@ -1620,6 +1852,7 @@
         canBreakthrough,
         attemptBreakthrough,
         canAutoCultivate,
+        isSupportedSaveData,
         touchSaveTimestamp,
         resolveOfflineCultivation,
         useItem,

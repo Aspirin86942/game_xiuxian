@@ -14,6 +14,8 @@ test('背包可使用丹药并同步更新主界面与存档', async ({ page }) 
     await page.click(selectors.inventory.useButton(scenario.itemId));
     await expect(page.locator(selectors.status.cultivation)).toHaveText(scenario.expectedCultivationText);
     await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('渡劫突破');
+    await expect(page.locator(selectors.cultivation.adventureButton)).toHaveText('出门游历');
+    await expect(page.locator(selectors.cultivation.adventureButton)).not.toBeDisabled();
 
     const save = await readSave(page);
     expect(save.inventory.juqidan || 0).toBe(scenario.expectedInventoryCount);

@@ -497,7 +497,7 @@ function createJourneyScenario() {
         expectedAfterTraining: {
             cultivationText: `${afterTraining.cultivation}/${afterTraining.maxCultivation}`,
             lingshi: afterTraining.inventory.lingshi || 0,
-            mainButtonText: '出门游历',
+            mainButtonText: '闭关修炼',
         },
         expectedAfterBreakthrough: {
             realmLabel: GameCore.getRealmLabel(afterBreakthrough),

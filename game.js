@@ -44,6 +44,7 @@
             'summary-lingshi-display',
             'breakthrough-inline',
             'main-btn',
+            'adventure-btn',
             'hint-text',
             'training-panel',
             'train-cost-text',
@@ -192,6 +193,7 @@
     function restoreGameState(parsedState) {
         gameState = GameCore.mergeSave(parsedState);
         GameCore.ensureStoryCursor(gameState);
+        syncUnreadStoryState();
         selectedTrainBatch = TRAINING_BATCH_KEYS.includes(selectedTrainBatch) ? selectedTrainBatch : '1';
         primeNaturalRecoveryState(Date.now());
     }
@@ -243,9 +245,7 @@
             return false;
         }
         gameState.ui.activeTab = tabName;
-        if (tabName === 'story') {
-            gameState.unreadStory = false;
-        }
+        syncUnreadStoryState();
         render();
         saveGame();
         return true;
@@ -274,7 +274,14 @@
         return `最近游历：${latest.message}`;
     }
 
-    function getPrimaryActionState() {
+    function syncUnreadStoryState() {
+        // “新剧情”只代表离开剧情页后出现的未读章节；停留在剧情页时要立即清零，避免刷新和章节衔接后残留徽标。
+        if (gameState.ui.activeTab === 'story') {
+            gameState.unreadStory = false;
+        }
+    }
+
+    function getCultivationActionState() {
         if (GameCore.canBreakthrough(gameState)) {
             return { mode: 'breakthrough', preview: null };
         }
@@ -284,7 +291,7 @@
             return { mode: 'train', preview };
         }
 
-        return { mode: 'adventure', preview };
+        return { mode: 'disabled', preview };
     }
 
     function renderStatus() {
@@ -324,16 +331,16 @@
 
     function renderCultivationPage() {
         const storyView = GameCore.getStoryView(gameState);
-        const actionState = getPrimaryActionState();
+        const actionState = getCultivationActionState();
         const { mode, preview } = actionState;
         const location = GameCore.getLocationMeta(gameState);
 
         elements.mainBtn.textContent = mode === 'breakthrough'
             ? '渡劫突破'
-            : mode === 'train'
-                ? '闭关修炼'
-                : '出门游历';
+            : '闭关修炼';
         elements.mainBtn.classList.toggle('breakthrough', mode === 'breakthrough');
+        elements.mainBtn.disabled = !!combatState || mode === 'disabled';
+        elements.adventureBtn.disabled = !!combatState;
 
         if (storyView && storyView.source === 'level' && storyView.mode !== 'ending') {
             elements.hintText.textContent = `当前有小境界事件：${storyView.chapter.title}`;
@@ -346,7 +353,7 @@
                 : '，足以触及突破门槛。';
             elements.hintText.textContent = `已选 ${getTrainBatchLabel(selectedTrainBatch)}，将炼化 ${preview.stonesSpent} 枚灵石，修为 +${preview.gain}${suffix}`;
         } else {
-            elements.hintText.textContent = '灵石不足，先出门游历，再回来闭关修炼。';
+            elements.hintText.textContent = '当前灵石不足，闭关暂不可用，可先出门游历搜集灵石。';
         }
 
         if (mode === 'breakthrough') {
@@ -354,7 +361,7 @@
         } else if (mode === 'train') {
             elements.trainCostText.textContent = `每枚灵石可炼化 10 点修为。本次将消耗 ${preview.stonesSpent} 枚灵石，获得 ${preview.gain} 点修为。`;
         } else {
-            elements.trainCostText.textContent = '每枚灵石可炼化 10 点修为。当前批次无法闭关，主按钮将转为游历。';
+            elements.trainCostText.textContent = '每枚灵石可炼化 10 点修为。当前批次灵石不足，闭关按钮已禁用。';
         }
 
         elements.trainingBatchButtons.forEach((button) => {
@@ -656,7 +663,7 @@
     }
 
     function handleCultivate() {
-        const actionState = getPrimaryActionState();
+        const actionState = getCultivationActionState();
 
         if (actionState.mode === 'breakthrough') {
             const result = GameCore.attemptBreakthrough(gameState);
@@ -683,11 +690,13 @@
                 playSound('click');
             }
         } else {
-            startAdventure();
+            showFloatingText('灵石不足', 'loss');
+            playSound('fail');
             return;
         }
 
         GameCore.ensureStoryCursor(gameState);
+        syncUnreadStoryState();
         render();
         saveGame();
     }
@@ -885,6 +894,7 @@
 
     function bindEvents() {
         elements.mainBtn.addEventListener('click', handleCultivate);
+        elements.adventureBtn.addEventListener('click', startAdventure);
 
         elements.trainBatchControls.addEventListener('click', (event) => {
             const button = event.target.closest('[data-train-batch]');
@@ -911,7 +921,7 @@
                 return;
             }
             GameCore.advanceStoryBeat(gameState);
-            gameState.unreadStory = false;
+            syncUnreadStoryState();
             playSound('story');
             render();
             saveGame();
@@ -920,6 +930,7 @@
         elements.storySkipBtn.addEventListener('click', () => {
             const result = GameCore.skipStoryPlayback(gameState);
             if (result.ok) {
+                syncUnreadStoryState();
                 render();
                 saveGame();
             }
@@ -945,7 +956,7 @@
                 window.alert(result.error);
                 return;
             }
-            gameState.unreadStory = false;
+            syncUnreadStoryState();
             playSound(result.death ? 'fail' : (result.ending ? 'victory' : 'story'));
             render();
             saveGame();

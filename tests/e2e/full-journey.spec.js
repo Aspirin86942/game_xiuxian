@@ -21,7 +21,7 @@ async function runJourneyToExport(page, scenario, downloadPath, testInfo) {
         nowMs: FIXED_NOW,
     });
 
-    await page.click(selectors.cultivation.mainButton);
+    await page.click(selectors.cultivation.adventureButton);
     await expect(page.locator(selectors.status.lingshi)).toHaveText(String(scenario.expectedAfterResource.lingshi));
     await expect(page.locator(selectors.status.cultivation)).toHaveText(scenario.expectedAfterResource.cultivationText);
     await expect(page.locator(selectors.cultivation.mainButton)).toHaveText(scenario.expectedAfterResource.mainButtonText);

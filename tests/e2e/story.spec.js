@@ -1,7 +1,27 @@
 const { test, expect } = require('@playwright/test');
+const GameCore = require('../../game-core.js');
 const selectors = require('./helpers/selectors');
 const { openGame, readSave } = require('./helpers/harness');
 const { createStoryScenario, createTribulationEndingScenario } = require('./helpers/saveFactory');
+
+function createQueuedStoryBadgeScenario() {
+    const state = GameCore.createInitialState();
+    state.ui.activeTab = 'cultivation';
+    GameCore.ensureStoryCursor(state);
+    state.unreadStory = true;
+
+    const nextChapterState = GameCore.mergeSave(JSON.parse(GameCore.serializeState(state)));
+    GameCore.skipStoryPlayback(nextChapterState);
+    const choiceView = GameCore.getStoryView(nextChapterState);
+    const selectedChoice = choiceView.choices.find((choice) => !choice.disabled) || choiceView.choices[0];
+    GameCore.chooseStoryOption(nextChapterState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        expectedStoryProgress: nextChapterState.storyProgress,
+    };
+}
 
 test('剧情页支持继续、跳至抉择和完成分支选择', async ({ page }) => {
     const scenario = createStoryScenario();
@@ -51,6 +71,28 @@ test('剧情页支持继续、跳至抉择和完成分支选择', async ({ page 
     expect(save.storyConsequences.pressureTier).toBe('安全');
     expect(save.storyConsequences).not.toHaveProperty('battleWillGain');
     expect(save.storyConsequences).not.toHaveProperty('tribulationGain');
+});
+
+test('剧情新徽标在进入剧情页后清除，且剧情页内衔接下一章时不残留', async ({ page }) => {
+    const scenario = createQueuedStoryBadgeScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await expect(page.locator(selectors.nav.storyBadge)).toHaveClass(/show/);
+
+    await page.click(selectors.tabs.story);
+    await expect(page.locator(selectors.nav.storyBadge)).not.toHaveClass(/show/);
+
+    let save = await readSave(page);
+    expect(save.unreadStory).toBe(false);
+
+    await page.click(selectors.story.skipButton);
+    await page.click(selectors.story.choice(scenario.choiceId));
+
+    await expect(page.locator(selectors.nav.storyBadge)).not.toHaveClass(/show/);
+
+    save = await readSave(page);
+    expect(save.storyProgress).toBe(scenario.expectedStoryProgress);
+    expect(save.unreadStory).toBe(false);
 });
 
 test('劫煞积满时进入走火入魔结局并可重开', async ({ page }) => {

@@ -12,5 +12,6 @@ test('刷新后不再出现离线收益弹层，也不存在旧离线锚点', as
 
     await page.reload();
     await expect(page.locator('#offline-modal')).toHaveCount(0);
-    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('出门游历');
+    await expect(page.locator(selectors.cultivation.mainButton)).toHaveText('闭关修炼');
+    await expect(page.locator(selectors.cultivation.adventureButton)).toHaveText('出门游历');
 });

@@ -50,6 +50,8 @@ function testMergedAnchors(indexHtml, gameJs, gameCoreJs, styleCss) {
     assert(/<div class="status-overview">[\s\S]*<div class="status-summary" id="status-summary">/.test(indexHtml), 'status-summary 应位于 status-overview 内部');
     assert(indexHtml.includes('id="summary-lingshi-display"'), '顶栏应展示灵石摘要');
     assert(indexHtml.includes('id="breakthrough-inline"'), '修炼区应存在新的突破率占位');
+    assert(indexHtml.includes('id="adventure-btn"'), '修炼区应存在独立游历按钮');
+    assert(indexHtml.includes('class="primary-actions"'), '修炼区应存在双按钮布局容器');
     assert(indexHtml.includes('id="train-cost-text"'), '修炼页应存在闭关成本说明');
     assert(indexHtml.includes('id="train-batch-controls"'), '修炼页应存在批量闭关控件');
     assert(indexHtml.includes('id="location-title"'), '修行页应保留当前地点摘要');
@@ -70,11 +72,13 @@ function testMergedAnchors(indexHtml, gameJs, gameCoreJs, styleCss) {
     assert(!indexHtml.includes('id="offline-modal"'), '离线收益弹层应已移除');
     assert(!indexHtml.includes('data-page="adventure"'), '独立游历页面应已移除');
     assert(!indexHtml.includes('data-tab="adventure"'), '独立游历页签应已移除');
-    assert(!indexHtml.includes('id="adventure-btn"'), '独立游历按钮应已移除');
     assert(!indexHtml.includes('id="battle-prep-summary"'), '旧战备摘要锚点应已移除');
 
     assert(gameJs.includes('trainWithLingshi'), 'game.js 应调用闭关接口');
     assert(gameJs.includes('resolveExpedition'), 'game.js 应调用游历事件池');
+    assert(gameJs.includes('syncUnreadStoryState'), 'game.js 应统一维护剧情未读状态');
+    assert(gameJs.includes('elements.mainBtn.disabled'), 'game.js 应维护闭关按钮禁用态');
+    assert(gameJs.includes('elements.adventureBtn.disabled'), 'game.js 应维护游历按钮禁用态');
     assert(gameJs.includes('breakthroughInline'), 'game.js 应更新修炼区突破率文案');
     assert(gameJs.includes('renderAlchemyPage'), 'game.js 应渲染丹炉页');
     assert(gameJs.includes('startNaturalRecoveryLoop'), 'game.js 应维护自然回血定时器');
@@ -109,6 +113,8 @@ function testMergedAnchors(indexHtml, gameJs, gameCoreJs, styleCss) {
     assert(gameCoreJs.includes('isSupportedSaveData'), 'game-core.js 应显式校验旧版存档');
 
     assert(styleCss.includes('.training-panel'), '样式应存在闭关面板定义');
+    assert(styleCss.includes('.primary-actions'), '样式应存在双按钮布局定义');
+    assert(styleCss.includes('.secondary-main-button'), '样式应存在独立游历按钮定义');
     assert(styleCss.includes('.training-batch-btn'), '样式应存在闭关批次按钮定义');
     assert(styleCss.includes('.settings-note'), '样式应存在单机提示定义');
     assert(styleCss.includes('grid-template-columns: repeat(5, minmax(0, 1fr))'), '底部导航应扩展为 5 列');

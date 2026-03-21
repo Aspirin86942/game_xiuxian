@@ -1283,6 +1283,36 @@ function testStoryPagingState() {
     assert.strictEqual(view.currentBeat.text, view.story.beats[view.story.beats.length - 1].text);
 }
 
+function testMainStoryChoiceQueuesUnreadForNextChapter() {
+    const state = GameCore.createInitialState();
+    GameCore.ensureStoryCursor(state);
+
+    const initialStoryId = state.storyCursor.storyId;
+    const choiceView = playToChoices(state);
+    const selectedChoice = choiceView.choices.find((choice) => !choice.disabled) || choiceView.choices[0];
+    topUpCosts(state, selectedChoice);
+
+    const result = GameCore.chooseStoryOption(state, selectedChoice.id);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(state.unreadStory, true, '主线推进到下一章时应标记存在未读剧情');
+    assert.notStrictEqual(state.storyCursor.storyId, initialStoryId, '主线推进后应切换到下一段剧情');
+    assert.strictEqual(state.storyCursor.mode, 'playing');
+}
+
+function testMainStoryChoiceKeepsReadStateInsideStoryTab() {
+    const state = GameCore.createInitialState();
+    state.ui.activeTab = 'story';
+    GameCore.ensureStoryCursor(state);
+
+    const choiceView = playToChoices(state);
+    const selectedChoice = choiceView.choices.find((choice) => !choice.disabled) || choiceView.choices[0];
+    topUpCosts(state, selectedChoice);
+
+    const result = GameCore.chooseStoryOption(state, selectedChoice.id);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(state.unreadStory, false, '剧情页内衔接下一章时不应重新标记未读');
+}
+
 function testBranchEchoes() {
     const orthodoxState = runMainPath(withInsertedChoices({
         0: 'set_out_now',
@@ -1559,6 +1589,8 @@ testNpcDialogueUsesChapterEchoes();
 testEndingEchoTextsStayReflective();
 testStringChapterLogsNoNaN();
 testStoryPagingState();
+testMainStoryChoiceQueuesUnreadForNextChapter();
+testMainStoryChoiceKeepsReadStateInsideStoryTab();
 testBranchEchoes();
 testExplicitBranchImpactCoverage();
 

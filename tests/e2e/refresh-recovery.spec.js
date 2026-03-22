@@ -9,8 +9,10 @@ const {
     waitForModalShown,
 } = require('./helpers/harness');
 const {
+    createBlockedMainChapterScenario,
     createCombatScenario,
     createCustomSaveScenario,
+    createReadStoryAwayScenario,
     createStoryScenario,
 } = require('./helpers/saveFactory');
 
@@ -112,7 +114,7 @@ test('剧情页读档与刷新不会残留未读徽标', async ({ page }) => {
 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator(selectors.story.line)).toHaveText(scenario.expectedLine);
-    await expect(page.locator(selectors.nav.storyBadge)).not.toHaveClass(/show/);
+    await expect(page.locator(selectors.nav.storyBadge)).toBeHidden();
 
     let save = await snapshotSave(page);
     expect(save.ui.activeTab).toBe('story');
@@ -121,7 +123,62 @@ test('剧情页读档与刷新不会残留未读徽标', async ({ page }) => {
     const reloadedSave = await reloadAndReadSave(page);
     expect(reloadedSave.ui.activeTab).toBe('story');
     expect(reloadedSave.unreadStory).toBe(false);
-    await expect(page.locator(selectors.nav.storyBadge)).not.toHaveClass(/show/);
+    await expect(page.locator(selectors.nav.storyBadge)).toBeHidden();
+});
+
+test('剧情页空窗态在同次 render 内清掉未读后，徽标不会吃到旧值', async ({ page }) => {
+    const scenario = createBlockedMainChapterScenario();
+    await openGame(page, {
+        serializedSave: scenario.serialized,
+        nowMs: FIXED_NOW,
+    });
+
+    await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
+    await expect(page.locator(selectors.story.title)).toHaveText('暂无新剧情');
+    await expect(page.locator(selectors.nav.storyBadge)).toBeHidden();
+
+    await page.evaluate(() => {
+        const originalGetRealmLabel = window.GameCore.getRealmLabel;
+        const originalGetStoryView = window.GameCore.getStoryView;
+        window.GameCore.getRealmLabel = (state) => {
+            state.unreadStory = true;
+            return originalGetRealmLabel(state);
+        };
+        window.GameCore.getStoryView = (state) => {
+            state.unreadStory = false;
+            return originalGetStoryView(state);
+        };
+    });
+
+    await page.evaluate(() => {
+        document.getElementById('toggle-log-btn')?.click();
+    });
+
+    const save = await snapshotSave(page);
+    expect(save.ui.activeTab).toBe('story');
+    expect(save.unreadStory).toBe(false);
+    await expect(page.locator(selectors.story.line)).toContainText(scenario.expectedHint);
+    await expect(page.locator(selectors.nav.storyBadge)).toBeHidden();
+});
+
+test('已读剧情在非剧情页读档与刷新后不会伪装成剧情新', async ({ page }) => {
+    const scenario = createReadStoryAwayScenario();
+    await openGame(page, {
+        serializedSave: scenario.serialized,
+        nowMs: FIXED_NOW,
+    });
+
+    await expect(page.locator(selectors.pages.cultivation)).toHaveClass(/active/);
+    await expect(page.locator(selectors.nav.storyBadge)).toBeHidden();
+
+    let save = await snapshotSave(page);
+    expect(save.ui.activeTab).toBe('cultivation');
+    expect(save.unreadStory).toBe(false);
+
+    const reloadedSave = await reloadAndReadSave(page);
+    expect(reloadedSave.ui.activeTab).toBe('cultivation');
+    expect(reloadedSave.unreadStory).toBe(false);
+    await expect(page.locator(selectors.nav.storyBadge)).toBeHidden();
 });
 
 test('剧情页内衔接下一章时不会错误残留未读徽标', async ({ page }) => {
@@ -138,7 +195,7 @@ test('剧情页内衔接下一章时不会错误残留未读徽标', async ({ pa
     const save = await snapshotSave(page);
     expect(save.storyProgress).toBe(scenario.expectedStoryProgress);
     expect(save.unreadStory).toBe(false);
-    await expect(page.locator(selectors.nav.storyBadge)).not.toHaveClass(/show/);
+    await expect(page.locator(selectors.nav.storyBadge)).toBeHidden();
 });
 
 test('战斗进行中刷新不会残留战斗模态，也不会重复结算', async ({ page }) => {

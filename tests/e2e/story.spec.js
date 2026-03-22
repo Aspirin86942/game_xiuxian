@@ -2,7 +2,12 @@ const { test, expect } = require('@playwright/test');
 const GameCore = require('../../game-core.js');
 const selectors = require('./helpers/selectors');
 const { openGame, readSave } = require('./helpers/harness');
-const { createStoryScenario, createTribulationEndingScenario } = require('./helpers/saveFactory');
+const {
+    createBlockedMainChapterScenario,
+    createShengxianlingChapterScenario,
+    createStoryScenario,
+    createTribulationEndingScenario,
+} = require('./helpers/saveFactory');
 
 function createQueuedStoryBadgeScenario() {
     const state = GameCore.createInitialState();
@@ -20,6 +25,49 @@ function createQueuedStoryBadgeScenario() {
         serialized: GameCore.serializeState(state),
         choiceId: selectedChoice.id,
         expectedStoryProgress: nextChapterState.storyProgress,
+    };
+}
+
+function createAvailableSideQuestScenario() {
+    const state = GameCore.createInitialState();
+    state.ui.activeTab = 'story';
+    state.storyProgress = 8;
+    state.flags.protectedMoHouse = true;
+    GameCore.ensureStoryCursor(state);
+
+    const visibleQuest = GameCore.getVisibleSideQuests(state).find((quest) => quest.id === 'old_medicine_ledger');
+    const previewState = GameCore.mergeSave(JSON.parse(GameCore.serializeState(state)));
+    GameCore.acceptSideQuest(previewState, 'old_medicine_ledger');
+    GameCore.chooseSideQuestOption(previewState, 'old_medicine_ledger', 'return_ledgers');
+
+    return {
+        serialized: GameCore.serializeState(state),
+        questId: 'old_medicine_ledger',
+        title: visibleQuest.title,
+        choiceId: 'return_ledgers',
+        choiceText: visibleQuest.choices.find((choice) => choice.id === 'return_ledgers').text,
+        completedSummary: previewState.sideQuests.old_medicine_ledger.lastResult.summary,
+        expectedLingshi: previewState.inventory.lingshi,
+        expectedRelation: previewState.npcRelations['墨彩环'],
+    };
+}
+
+function createMissedSideQuestScenario() {
+    const state = GameCore.createInitialState();
+    state.ui.activeTab = 'story';
+    state.storyProgress = 8;
+    state.flags.protectedMoHouse = true;
+    GameCore.getVisibleSideQuests(state);
+    state.storyProgress = 11;
+    GameCore.getVisibleSideQuests(state);
+    GameCore.ensureStoryCursor(state);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        questId: 'old_medicine_ledger',
+        title: '旧药账',
+        expectedSummary: state.sideQuests.old_medicine_ledger.lastResult.summary,
+        expectedDetail: state.sideQuests.old_medicine_ledger.lastResult.detail,
     };
 }
 
@@ -73,14 +121,87 @@ test('剧情页支持继续、跳至抉择和完成分支选择', async ({ page 
     expect(save.storyConsequences).not.toHaveProperty('tribulationGain');
 });
 
+test('主线待解锁时会明确提示太南小会与筑基门槛', async ({ page }) => {
+    const scenario = createBlockedMainChapterScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
+    await expect(page.locator(selectors.story.title)).toHaveText('暂无新剧情');
+    await expect(page.locator(selectors.story.line)).toContainText(scenario.expectedHint);
+    await expect(page.locator(selectors.story.goal)).toContainText(scenario.expectedGoal);
+});
+
+test('太南小会竞拍升仙令后会正常入包并推进到下一章', async ({ page }) => {
+    const scenario = createShengxianlingChapterScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
+    const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
+    await expect(choiceLocator).toContainText(scenario.choiceText);
+    await choiceLocator.click();
+
+    await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
+    await page.click(selectors.tabs.inventory);
+    await expect(page.locator(selectors.inventory.list)).toContainText('升仙令');
+
+    const save = await readSave(page);
+    expect(save.inventory.shengxianling).toBe(scenario.expectedTokenCount);
+    expect(save.flags.hasShengxianling).toBe(true);
+    expect(save.storyProgress).toBe(11);
+});
+
+test('正式支线可在同行回响区接取并卡内结算', async ({ page }) => {
+    const scenario = createAvailableSideQuestScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await page.click(selectors.tabs.story);
+    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.title);
+    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('可接支线');
+    await expect(page.locator(selectors.journey.sideQuestAccept(scenario.questId))).toHaveText('接下这桩事');
+
+    await page.click(selectors.journey.sideQuestAccept(scenario.questId));
+    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('进行中');
+
+    const choiceButton = page.locator(selectors.journey.sideQuestChoice(scenario.questId, scenario.choiceId));
+    await expect(choiceButton).toBeVisible();
+    await expect(choiceButton).toContainText(scenario.choiceText);
+    await page.click(selectors.journey.sideQuestChoice(scenario.questId, scenario.choiceId));
+
+    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('已了结');
+    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.completedSummary);
+    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText('奖励已结算');
+
+    const save = await readSave(page);
+    expect(save.sideQuests.old_medicine_ledger.state).toBe('completed');
+    expect(save.sideQuests.old_medicine_ledger.selectedChoiceId).toBe(scenario.choiceId);
+    expect(save.inventory.lingshi).toBe(scenario.expectedLingshi);
+    expect(save.npcRelations['墨彩环']).toBe(scenario.expectedRelation);
+});
+
+test('错过窗口的正式支线会在同行回响区显示错过结果', async ({ page }) => {
+    const scenario = createMissedSideQuestScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await page.click(selectors.tabs.story);
+    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.title);
+    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('已错过');
+    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.expectedSummary);
+    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.expectedDetail);
+    await expect(page.locator(selectors.journey.sideQuestAccept(scenario.questId))).toHaveCount(0);
+
+    const save = await readSave(page);
+    expect(save.sideQuests.old_medicine_ledger.state).toBe('missed');
+    expect(save.sideQuests.old_medicine_ledger.lastResult.outcome).toBe('missed');
+});
+
 test('剧情新徽标在进入剧情页后清除，且剧情页内衔接下一章时不残留', async ({ page }) => {
     const scenario = createQueuedStoryBadgeScenario();
     await openGame(page, { serializedSave: scenario.serialized });
 
-    await expect(page.locator(selectors.nav.storyBadge)).toHaveClass(/show/);
+    await expect(page.locator(selectors.nav.storyBadge)).toBeVisible();
 
     await page.click(selectors.tabs.story);
-    await expect(page.locator(selectors.nav.storyBadge)).not.toHaveClass(/show/);
+    await expect(page.locator(selectors.nav.storyBadge)).toBeHidden();
 
     let save = await readSave(page);
     expect(save.unreadStory).toBe(false);
@@ -88,7 +209,7 @@ test('剧情新徽标在进入剧情页后清除，且剧情页内衔接下一�
     await page.click(selectors.story.skipButton);
     await page.click(selectors.story.choice(scenario.choiceId));
 
-    await expect(page.locator(selectors.nav.storyBadge)).not.toHaveClass(/show/);
+    await expect(page.locator(selectors.nav.storyBadge)).toBeHidden();
 
     save = await readSave(page);
     expect(save.storyProgress).toBe(scenario.expectedStoryProgress);

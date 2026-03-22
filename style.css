@@ -608,6 +608,8 @@ button {
 .echo-item,
 .side-story-item {
     padding: 12px 14px;
+    display: grid;
+    gap: 10px;
 }
 
 .route-pill strong,
@@ -622,6 +624,133 @@ button {
     color: rgba(75, 58, 39, 0.72);
     font-size: 0.75rem;
     line-height: 1.5;
+}
+
+.side-story-item--quest {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(248, 242, 226, 0.78)),
+        radial-gradient(circle at top right, rgba(143, 106, 42, 0.08), transparent 36%);
+}
+
+.side-story-item--legacy {
+    background: rgba(255, 255, 255, 0.48);
+}
+
+.side-story-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.side-story-head > div {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.side-story-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.side-story-badge,
+.side-story-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    letter-spacing: 0.02em;
+}
+
+.side-story-badge {
+    background: rgba(143, 106, 42, 0.1);
+    color: var(--ink-soft);
+}
+
+.side-story-status {
+    border: 1px solid rgba(143, 106, 42, 0.12);
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--ink-soft);
+    white-space: nowrap;
+}
+
+.side-story-status--available {
+    background: rgba(104, 132, 85, 0.14);
+    color: #4a6a3f;
+}
+
+.side-story-status--active {
+    background: rgba(110, 122, 148, 0.14);
+    color: #45556f;
+}
+
+.side-story-status--completed {
+    background: rgba(63, 128, 98, 0.14);
+    color: #33664f;
+}
+
+.side-story-status--failed,
+.side-story-status--missed {
+    background: rgba(159, 79, 54, 0.12);
+    color: #8c4f3a;
+}
+
+.side-story-status--legacy {
+    background: rgba(143, 106, 42, 0.08);
+    color: rgba(75, 58, 39, 0.82);
+}
+
+.side-story-note {
+    display: grid;
+    gap: 4px;
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.side-story-note strong {
+    margin-bottom: 0;
+    font-size: 0.74rem;
+    color: var(--gold);
+}
+
+.side-quest-actions,
+.side-quest-choices {
+    display: grid;
+    gap: 8px;
+}
+
+.side-quest-btn {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(143, 106, 42, 0.16);
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--ink);
+    text-align: left;
+    line-height: 1.5;
+}
+
+.side-quest-btn:disabled {
+    opacity: 0.58;
+}
+
+.side-quest-btn--choice {
+    display: grid;
+    gap: 4px;
+}
+
+.side-quest-choice-title {
+    font-weight: 700;
+}
+
+.side-quest-choice-cost {
+    color: var(--ink-soft);
+    font-size: 0.78rem;
 }
 
 .log-card {
@@ -1333,6 +1462,29 @@ button {
         line-height: 1.45;
     }
 
+    .side-story-head {
+        flex-direction: column;
+    }
+
+    .side-story-status {
+        align-self: flex-start;
+    }
+
+    .side-story-badge,
+    .side-story-status {
+        min-height: 22px;
+        font-size: 0.72rem;
+    }
+
+    .side-quest-btn {
+        padding: 10px 11px;
+    }
+
+    .side-story-note,
+    .side-quest-choice-cost {
+        font-size: 0.76rem;
+    }
+
     .story-card,
     .story-side-card,
     .location-card,
@@ -1412,7 +1564,7 @@ button {
         font-size: 0.76rem;
     }
 
-    .nav-btn span {
+    .nav-btn > span:not(.nav-badge) {
         display: block;
         line-height: 1.1;
     }

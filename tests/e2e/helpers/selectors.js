@@ -76,6 +76,10 @@ module.exports = {
         locationDesc: '#location-desc',
         npcs: '#location-npcs',
         clues: '#side-story-list',
+        sideQuestCard: (questId) => `#side-story-list [data-side-quest-id="${questId}"]`,
+        sideQuestStatus: (questId) => `#side-story-list [data-side-quest-id="${questId}"] .side-story-status`,
+        sideQuestAccept: (questId) => `#side-story-list [data-side-quest-id="${questId}"] [data-side-quest-action="accept"]`,
+        sideQuestChoice: (questId, choiceId) => `#side-story-list [data-side-quest-id="${questId}"] [data-side-quest-choice-id="${choiceId}"]`,
     },
     inventory: {
         modal: '#inventory-modal',

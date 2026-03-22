@@ -226,6 +226,253 @@
         '大晋': { name: '大晋', description: '人界最后一段路，谁都想在这里定出自己的答案。', npcs: [] },
     };
 
+    const SIDE_QUESTS_V1 = [
+        {
+            id: 'old_medicine_ledger',
+            title: '旧药账',
+            detail: '墨府旧账房中留下几页被水浸过的账册。账面不清，却隐约能看出一些人名与药材流向。',
+            category: '旧账',
+            npc: '墨彩环',
+            availableFromProgress: 8,
+            availableToProgress: 10,
+            triggerCondition: {
+                flagsAny: ['protectedMoHouse', 'promisedMoReturn', 'lootedMoHouse', 'daoLvPromise', 'tookTreasure'],
+            },
+            acceptCondition: {},
+            failCondition: {},
+            successCondition: { resolveByChoice: true },
+            rewards: {
+                items: { lingshi: 6 },
+                flags: { sideQuestOldMedicineLedgerCompleted: true },
+            },
+            rewardPreview: '灵石 x6、墨府旧账完成旗标',
+            branchEffects: {
+                return_ledgers: { title: '账页归主', detail: '你把账页交回活人手里，让旧事先有了能被清理的起点。' },
+                keep_names_only: { title: '只留人名', detail: '你烧去大半旧页，只记住最关键的名字，准备以后再择机补这一刀。' },
+            },
+            choices: [
+                {
+                    id: 'return_ledgers',
+                    text: '把账页交还墨彩环，请她亲自收尾',
+                    effects: {
+                        relations: { '墨彩环': 3 },
+                        routeScores: { orthodox: 1 },
+                        flags: { returnedOldMedicineLedger: true },
+                    },
+                    resultSummary: '你把账页交回墨府，让旧账重新落回活人手里。',
+                },
+                {
+                    id: 'keep_names_only',
+                    text: '焚去账页，只留下关键名字备后手',
+                    effects: {
+                        relations: { '墨彩环': 1 },
+                        routeScores: { secluded: 1 },
+                        flags: { keptMedicineLedgerNamesOnly: true },
+                    },
+                    resultSummary: '你没有继续摊开这笔旧账，只把最有用的名字留在自己手里。',
+                },
+            ],
+            priority: 90,
+            exclusiveGroup: null,
+        },
+        {
+            id: 'apothecary_boy_echo',
+            title: '药童残影',
+            detail: '你偶然又听见那句断断续续的话：师父让我们闭眼。也许这不是疯话，而是还没被说清的旧案。',
+            category: '旧案',
+            npc: '曲魂',
+            availableFromProgress: 9,
+            availableToProgress: 11,
+            triggerCondition: {
+                flagsAny: ['hasQuhun', 'sealedQuhun', 'quhunReleased', 'keptQuhun'],
+            },
+            acceptCondition: {},
+            failCondition: {},
+            successCondition: { resolveByChoice: true },
+            rewards: {
+                items: { jiedusan: 1 },
+                flags: { sideQuestApothecaryBoyEchoCompleted: true },
+            },
+            rewardPreview: '解毒散 x1、药童旧案完成旗标',
+            branchEffects: {
+                trace_the_voice: { title: '顺声追旧案', detail: '你顺着那句疯话再往回查了一步，等于承认这件事并没有随死人一起埋干净。' },
+                seal_the_memory: { title: '先把影子压住', detail: '你不再继续深翻，只给这段残影留下一道暂时不再扩散的封口。' },
+            },
+            choices: [
+                {
+                    id: 'trace_the_voice',
+                    text: '顺着药童残语再查一层',
+                    effects: {
+                        routeScores: { orthodox: 1 },
+                        flags: { tracedApothecaryBoyEcho: true },
+                    },
+                    resultSummary: '你顺着残影多问了一层，让这桩旧案终于多了一个继续被记住的理由。',
+                },
+                {
+                    id: 'seal_the_memory',
+                    text: '暂时压下残影，不再继续深翻',
+                    effects: {
+                        routeScores: { secluded: 1 },
+                        items: { lingcao: 1 },
+                        flags: { sealedApothecaryBoyEcho: true },
+                    },
+                    resultSummary: '你没有继续追索，只把这段残影先压下，免得再牵出更多活人的麻烦。',
+                },
+            ],
+            priority: 88,
+            exclusiveGroup: null,
+        },
+        {
+            id: 'li_feiyu_wine',
+            title: '厉飞雨的酒',
+            detail: '有旧友仍活在凡人江湖里。他不懂你如今的境界，却大概还记得你最早是什么样子。',
+            category: '旧友',
+            npc: '厉飞雨',
+            availableFromProgress: 16,
+            availableToProgress: 18,
+            triggerCondition: {
+                anyOf: [
+                    { relationsMin: { '厉飞雨': 15 } },
+                    { flagsAny: ['reconnectedWithLiFeiyu'] },
+                ],
+            },
+            acceptCondition: {},
+            failCondition: {},
+            successCondition: { resolveByChoice: true },
+            rewards: {
+                items: { lingshi: 10 },
+                flags: { sideQuestLiFeiyuWineCompleted: true },
+            },
+            rewardPreview: '灵石 x10、厉飞雨旧友完成旗标',
+            branchEffects: {
+                share_plain_wine: { title: '一杯旧酒', detail: '你没有谈大道，只陪旧友把凡人江湖里还没散干净的那点热气喝完。' },
+                leave_medicine_and_go: { title: '留药即走', detail: '你没久留，只把能救急的东西留下，让旧情保持在不再相互拖累的距离。' },
+            },
+            choices: [
+                {
+                    id: 'share_plain_wine',
+                    text: '陪厉飞雨喝一杯，把旧事说开一些',
+                    costs: { lingshi: 2 },
+                    effects: {
+                        relations: { '厉飞雨': 4 },
+                        routeScores: { orthodox: 1 },
+                        flags: { sharedWineWithLiFeiyu: true },
+                    },
+                    resultSummary: '你陪旧友喝完一杯浊酒，让那段凡人旧路重新有了可回头的地方。',
+                },
+                {
+                    id: 'leave_medicine_and_go',
+                    text: '留下一份药和银钱，不多停留',
+                    effects: {
+                        items: { jiedusan: 1 },
+                        relations: { '厉飞雨': 2 },
+                        routeScores: { secluded: 1 },
+                        flags: { leftMedicineForLiFeiyu: true },
+                    },
+                    resultSummary: '你没有久坐，只把该留的东西留下，让旧情停在彼此都还能承受的位置。',
+                },
+            ],
+            priority: 86,
+            exclusiveGroup: null,
+        },
+        {
+            id: 'spirit_mine_survivor',
+            title: '灵矿幸存者',
+            detail: '灵矿一战之后，活下来的人说法并不一样。有人念你的情，也有人记你的过。',
+            category: '战后',
+            npc: '李化元',
+            availableFromProgress: 19,
+            availableToProgress: 21,
+            triggerCondition: {
+                flagsAny: ['heldSpiritMineLine', 'ledMineBreakout', 'escapedMineWithCoreAssets'],
+            },
+            acceptCondition: {},
+            failCondition: {},
+            successCondition: { resolveByChoice: true },
+            rewards: {
+                items: { lingshi: 12 },
+                flags: { sideQuestSpiritMineSurvivorCompleted: true },
+            },
+            rewardPreview: '灵石 x12、灵矿余波完成旗标',
+            branchEffects: {
+                send_secret_support: { title: '暗中补给', detail: '你没有高调出面，只把能稳住局面的东西送到幸存者手里。' },
+                pay_and_cut_ties: { title: '付账断尾', detail: '你把这笔账当场了掉，不让幸存者和自己继续互相拖累。' },
+            },
+            choices: [
+                {
+                    id: 'send_secret_support',
+                    text: '暗中送去补给，留他们一条稳路',
+                    effects: {
+                        relations: { '李化元': 2 },
+                        routeScores: { orthodox: 1 },
+                        flags: { stabilizedSpiritMineSurvivors: true },
+                    },
+                    resultSummary: '你没有再站到台前，只是把补给送到，让幸存者知道这笔命债还没被你彻底丢开。',
+                },
+                {
+                    id: 'pay_and_cut_ties',
+                    text: '付一笔安置钱，今后不再深牵',
+                    effects: {
+                        items: { lingcao: 1 },
+                        routeScores: { secluded: 1 },
+                        flags: { paidOffSpiritMineSurvivors: true },
+                    },
+                    resultSummary: '你把该付的账付清，把这段战后余波止在还能收束的位置。',
+                },
+            ],
+            priority: 84,
+            exclusiveGroup: null,
+        },
+        {
+            id: 'void_map_aftermath',
+            title: '残图余波',
+            detail: '你以为事情已经过去，其实真正危险的往往不是争图那阵子，而是图早不在手里了，仍有人不确定你到底知道多少。',
+            category: '秘图',
+            npc: '南宫婉',
+            availableFromProgress: 22,
+            availableToProgress: 24,
+            triggerCondition: {
+                flagsAny: ['enteredVoidHeavenMapGame', 'soldFragmentMapForResources', 'avoidedVoidHeavenCoreConflict', 'hasXuTianTu', 'soldXuTianTu', 'avoidedXuTian'],
+            },
+            acceptCondition: {},
+            failCondition: {},
+            successCondition: { resolveByChoice: true },
+            rewards: {
+                items: { lingshi: 15 },
+                flags: { sideQuestVoidMapAftermathCompleted: true },
+            },
+            rewardPreview: '灵石 x15、残图余波完成旗标',
+            branchEffects: {
+                warn_nangong: { title: '先递警讯', detail: '你把残图余波先递给可信之人，让追索不至于只压到自己一人身上。' },
+                sell_false_trail: { title: '放出假线', detail: '你主动放出一条假路，把后续追索往别处引开，为自己换出喘息时间。' },
+            },
+            choices: [
+                {
+                    id: 'warn_nangong',
+                    text: '先把风声递给南宫婉，免得误伤旧盟',
+                    effects: {
+                        relations: { '南宫婉': 3 },
+                        routeScores: { orthodox: 1 },
+                        flags: { warnedNangongAboutVoidMapRumors: true },
+                    },
+                    resultSummary: '你没有独吞消息，而是先把余波递给可信之人，让风险不再只压在自己身上。',
+                },
+                {
+                    id: 'sell_false_trail',
+                    text: '放出一条假线，把追索引向别处',
+                    effects: {
+                        items: { lingcao: 2 },
+                        routeScores: { demonic: 1 },
+                        flags: { soldFalseTrailForVoidMap: true },
+                    },
+                    resultSummary: '你顺手布下一条假线，把残图之后的追索先拐到别处，为自己换来一段清净。',
+                },
+            ],
+            priority: 82,
+            exclusiveGroup: null,
+        },
+    ];
+
     const CHAPTER_ECHO_PACKS = {
         8: {
             protect_mo_house: {
@@ -4489,6 +4736,7 @@
         NEGATIVE_ENCOUNTERS,
         CHAPTER_ECHO_PACKS,
         BRANCH_IMPACT_PACKS,
+        SIDE_QUESTS_V1,
         LEVEL_STORY_EVENTS,
         STORY_CHAPTERS,
     };

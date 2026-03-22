@@ -17,6 +17,7 @@
         NEGATIVE_ENCOUNTERS,
         STORY_CHAPTERS,
         LEVEL_STORY_EVENTS,
+        SIDE_QUESTS_V1,
     } = dataSource;
 
     const STORY_LOOKUP = new Map(STORY_CHAPTERS.map((chapter) => [chapter.id, chapter]));
@@ -49,6 +50,9 @@
         risk: 12,
         clue: 8,
     });
+    const SIDE_QUEST_STATE_VALUES = Object.freeze(['locked', 'available', 'active', 'completed', 'failed', 'missed']);
+    const SIDE_QUEST_STATE_SET = new Set(SIDE_QUEST_STATE_VALUES);
+    const SIDE_QUEST_LOOKUP = new Map((SIDE_QUESTS_V1 || []).map((quest) => [quest.id, quest]));
 
     function clone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -104,6 +108,83 @@
 
     function createDefaultEndingSeeds() {
         return [];
+    }
+
+    function normalizeProgressCheckpoint(rawValue) {
+        if (Number.isFinite(rawValue)) {
+            return Math.floor(rawValue);
+        }
+        const matched = String(rawValue ?? '').match(/^(-?\d+)/);
+        return matched ? Number.parseInt(matched[1], 10) : null;
+    }
+
+    function createDefaultSideQuestEntry(definition) {
+        return {
+            questId: definition.id,
+            state: 'locked',
+            availableAtProgress: null,
+            acceptedAtProgress: null,
+            deadlineProgress: Number.isFinite(definition.availableToProgress) ? definition.availableToProgress : null,
+            resolvedAtProgress: null,
+            selectedChoiceId: null,
+            lastResult: null,
+        };
+    }
+
+    function createDefaultSideQuests() {
+        return SIDE_QUESTS_V1.reduce((result, definition) => {
+            result[definition.id] = createDefaultSideQuestEntry(definition);
+            return result;
+        }, {});
+    }
+
+    function normalizeSideQuestLastResult(rawValue) {
+        if (!rawValue || typeof rawValue !== 'object') {
+            return null;
+        }
+
+        const outcome = SIDE_QUEST_STATE_SET.has(rawValue.outcome) ? rawValue.outcome : null;
+        if (!outcome || outcome === 'locked' || outcome === 'available' || outcome === 'active') {
+            return null;
+        }
+
+        return {
+            outcome,
+            choiceId: typeof rawValue.choiceId === 'string' && rawValue.choiceId ? rawValue.choiceId : null,
+            summary: typeof rawValue.summary === 'string' ? rawValue.summary : '',
+            detail: typeof rawValue.detail === 'string' ? rawValue.detail : '',
+        };
+    }
+
+    function normalizeSideQuestRecords(rawRecords) {
+        const defaults = createDefaultSideQuests();
+        if (!rawRecords || typeof rawRecords !== 'object') {
+            return defaults;
+        }
+
+        SIDE_QUESTS_V1.forEach((definition) => {
+            const rawEntry = rawRecords[definition.id];
+            if (!rawEntry || typeof rawEntry !== 'object') {
+                return;
+            }
+
+            const normalized = defaults[definition.id];
+            const rawState = typeof rawEntry.state === 'string' ? rawEntry.state : '';
+            normalized.state = SIDE_QUEST_STATE_SET.has(rawState) ? rawState : 'locked';
+            normalized.availableAtProgress = normalizeProgressCheckpoint(rawEntry.availableAtProgress);
+            normalized.acceptedAtProgress = normalizeProgressCheckpoint(rawEntry.acceptedAtProgress);
+            normalized.deadlineProgress = normalizeProgressCheckpoint(rawEntry.deadlineProgress);
+            if (normalized.deadlineProgress === null) {
+                normalized.deadlineProgress = Number.isFinite(definition.availableToProgress) ? definition.availableToProgress : null;
+            }
+            normalized.resolvedAtProgress = normalizeProgressCheckpoint(rawEntry.resolvedAtProgress);
+            normalized.selectedChoiceId = typeof rawEntry.selectedChoiceId === 'string' && rawEntry.selectedChoiceId
+                ? rawEntry.selectedChoiceId
+                : null;
+            normalized.lastResult = normalizeSideQuestLastResult(rawEntry.lastResult);
+        });
+
+        return defaults;
     }
 
     function normalizeOfflineTrainingState(rawState) {
@@ -408,6 +489,7 @@
             decisionHistory: createDefaultDecisionHistory(),
             pendingEchoes: createDefaultPendingEchoes(),
             endingSeeds: createDefaultEndingSeeds(),
+            sideQuests: createDefaultSideQuests(),
             storyCursor: {
                 source: 'main',
                 storyId: null,
@@ -471,6 +553,7 @@
         nextState.decisionHistory = normalizeDecisionHistory(rawState.decisionHistory);
         nextState.pendingEchoes = normalizePendingEchoes(rawState.pendingEchoes);
         nextState.endingSeeds = normalizeEndingSeeds(rawState.endingSeeds);
+        nextState.sideQuests = normalizeSideQuestRecords(rawState.sideQuests);
         nextState.logs = Array.isArray(rawState.logs) ? rawState.logs.slice(0, MAX_LOGS) : [];
         nextState.ending = rawState.ending || null;
         nextState.levelStoryState = normalizeLevelStoryState(rawState.levelStoryState);
@@ -488,7 +571,50 @@
         delete nextState.autoCultivate;
         recalculateState(nextState, false);
         nextState.cultivation = Math.max(0, Math.min(nextState.maxCultivation, nextState.cultivation));
+        syncSideQuestAvailability(nextState);
         return nextState;
+    }
+
+    function isSameStoryCursor(cursor, story) {
+        if (!cursor || !story) {
+            return false;
+        }
+        return cursor.mode !== 'idle'
+            && cursor.source === story.source
+            && cursor.storyId === story.id;
+    }
+
+    function syncUnreadStoryState(state, options = {}) {
+        if (!state || typeof state !== 'object') {
+            return false;
+        }
+
+        const currentStory = Object.prototype.hasOwnProperty.call(options, 'currentStory')
+            ? options.currentStory
+            : getCurrentPlayableStory(state);
+        const previousCursor = normalizeStoryCursor(Object.prototype.hasOwnProperty.call(options, 'previousCursor')
+            ? options.previousCursor
+            : state.storyCursor);
+        const previousUnread = Object.prototype.hasOwnProperty.call(options, 'previousUnread')
+            ? Boolean(options.previousUnread)
+            : Boolean(state.unreadStory);
+
+        if (state?.ui?.activeTab === 'story' || !currentStory) {
+            state.unreadStory = false;
+            return state.unreadStory;
+        }
+
+        const preserveRestoreReadState = Boolean(options.preserveRestoreReadState)
+            && previousCursor.mode === 'idle'
+            && previousUnread === false;
+
+        if (isSameStoryCursor(previousCursor, currentStory) || preserveRestoreReadState) {
+            state.unreadStory = previousUnread;
+            return state.unreadStory;
+        }
+
+        state.unreadStory = true;
+        return state.unreadStory;
     }
 
     function getRealmScore(state) {
@@ -724,6 +850,44 @@
         }
 
         recalculateState(state, false);
+    }
+
+    function mergeEffectPayload(baseEffects, extraEffects) {
+        const merged = {};
+        const numericKeys = ['cultivation', 'breakthroughBonus', 'healRatio'];
+        numericKeys.forEach((key) => {
+            const total = (baseEffects?.[key] || 0) + (extraEffects?.[key] || 0);
+            if (total) {
+                merged[key] = total;
+            }
+        });
+
+        ['items', 'relations', 'routeScores', 'flags'].forEach((key) => {
+            const combined = {};
+            if (baseEffects?.[key] && typeof baseEffects[key] === 'object') {
+                Object.entries(baseEffects[key]).forEach(([name, value]) => {
+                    combined[name] = value;
+                });
+            }
+            if (extraEffects?.[key] && typeof extraEffects[key] === 'object') {
+                Object.entries(extraEffects[key]).forEach(([name, value]) => {
+                    if (key === 'flags') {
+                        combined[name] = value;
+                    } else {
+                        combined[name] = (combined[name] || 0) + value;
+                    }
+                });
+            }
+            if (Object.keys(combined).length > 0) {
+                merged[key] = combined;
+            }
+        });
+
+        if (extraEffects?.location || baseEffects?.location) {
+            merged.location = extraEffects?.location || baseEffects?.location;
+        }
+
+        return merged;
     }
 
     function applyChoiceTradeoff(state, story, choice) {
@@ -966,6 +1130,8 @@
             return null;
         }
 
+        const previousCursor = normalizeStoryCursor(state.storyCursor);
+        const previousUnread = Boolean(state.unreadStory);
         state.storyCursor = {
             source: 'level',
             storyId: pendingEvent.id,
@@ -976,7 +1142,11 @@
         state.levelStoryState.events[pendingEvent.id].triggered = true;
         state.levelStoryState.currentEventId = pendingEvent.id;
         state.currentLocation = pendingEvent.location || state.currentLocation;
-        state.unreadStory = shouldMarkStoryUnread(state);
+        syncUnreadStoryState(state, {
+            currentStory: pendingEvent,
+            previousCursor,
+            previousUnread,
+        });
         pushLog(state, `境界感悟浮现：${pendingEvent.title}`, 'breakthrough');
         return pendingEvent;
     }
@@ -1095,11 +1265,7 @@
         return `《${story.title}》`;
     }
 
-    function shouldMarkStoryUnread(state) {
-        return state?.ui?.activeTab !== 'story';
-    }
-
-    function ensureStoryCursor(state) {
+    function ensureStoryCursor(state, options = {}) {
         if (state.ending) {
             state.storyCursor = {
                 source: 'ending',
@@ -1113,6 +1279,8 @@
 
         const current = getCurrentPlayableStory(state);
         if (!current) {
+            const previousCursor = normalizeStoryCursor(state.storyCursor);
+            const previousUnread = Boolean(state.unreadStory);
             state.storyCursor = {
                 source: 'main',
                 storyId: null,
@@ -1121,10 +1289,16 @@
                 mode: 'idle',
             };
             state.levelStoryState.currentEventId = null;
+            syncUnreadStoryState(state, {
+                currentStory: null,
+                previousCursor,
+                previousUnread,
+            });
             return null;
         }
 
         const cursor = normalizeStoryCursor(state.storyCursor);
+        const previousUnread = Boolean(state.unreadStory);
         if (cursor.source !== current.source || cursor.storyId !== current.id || cursor.mode === 'idle') {
             state.storyCursor = {
                 source: current.source,
@@ -1140,7 +1314,12 @@
                 state.levelStoryState.currentEventId = null;
             }
             state.currentLocation = current.location || state.currentLocation;
-            state.unreadStory = shouldMarkStoryUnread(state);
+            syncUnreadStoryState(state, {
+                currentStory: current,
+                previousCursor: cursor,
+                previousUnread,
+                preserveRestoreReadState: Boolean(options.preserveRestoreReadState),
+            });
             const storyLabel = formatStoryLabel(current);
             pushLog(state, `新剧情开启：${storyLabel}`, 'breakthrough');
         }
@@ -1290,6 +1469,7 @@
             state.storyProgress = choice.nextChapterId;
         }
 
+        syncSideQuestAvailability(state);
         state.storyCursor = {
             source: 'main',
             storyId: null,
@@ -1298,6 +1478,12 @@
             mode: 'idle',
         };
         ensureStoryCursor(state);
+        if (story.source === 'main' && choice.nextChapterId !== undefined) {
+            const blockedMainStoryHint = getBlockedMainStoryHint(state);
+            if (blockedMainStoryHint) {
+                pushLog(state, blockedMainStoryHint, 'normal');
+            }
+        }
         return { ok: true };
     }
 
@@ -1391,41 +1577,76 @@
             return '结局已定，可重开体验另一条路。';
         }
         const chapter = getChapterById(state.storyProgress);
-        const mainReady = chapter && meetsRequirements(state, chapter.requirements);
-        if (!mainReady) {
-            const levelEvent = getAvailableLevelEvent(state);
-            if (levelEvent) {
-                return `下一条等级事件：${levelEvent.title}（${REALMS[Math.floor(levelEvent.realmScore / 3)].name}·${REALMS[Math.floor(levelEvent.realmScore / 3)].stages[levelEvent.realmScore % 3]}）`;
-            }
-        }
         if (!chapter) {
             return '暂无待触发剧情。';
         }
+        const blockedHint = getBlockedMainStoryHint(state);
+        if (blockedHint) {
+            return blockedHint;
+        }
+
+        const levelEvent = getAvailableLevelEvent(state);
+        if (levelEvent) {
+            return `下一条等级事件：${levelEvent.title}（${REALMS[Math.floor(levelEvent.realmScore / 3)].name}·${REALMS[Math.floor(levelEvent.realmScore / 3)].stages[levelEvent.realmScore % 3]}）`;
+        }
+
+        return '下一章条件已满足，请前往剧情页。';
+    }
+
+    function getChapterRequirementHints(state, chapter) {
+        if (!chapter || !chapter.requirements) {
+            return [];
+        }
+
         const requirements = chapter.requirements || {};
         const hints = [];
         if (requirements.realmScoreAtLeast !== undefined && getRealmScore(state) < requirements.realmScoreAtLeast) {
             const realmIndex = Math.floor(requirements.realmScoreAtLeast / 3);
             const stageIndex = requirements.realmScoreAtLeast % 3;
-            hints.push(`修至 ${REALMS[realmIndex].name}${REALMS[realmIndex].stages[stageIndex]}`);
+            hints.push(`修至${REALMS[realmIndex].name}${REALMS[realmIndex].stages[stageIndex]}`);
         }
         if (requirements.cultivationAtLeast !== undefined && state.cultivation < requirements.cultivationAtLeast) {
-            hints.push(`当前修为达到 ${requirements.cultivationAtLeast}`);
+            hints.push(`当前修为达到${requirements.cultivationAtLeast}`);
         }
         if (requirements.relationsMin) {
             Object.entries(requirements.relationsMin).forEach(([npcName, value]) => {
                 if ((state.npcRelations[npcName] || 0) < value) {
-                    hints.push(`${npcName} 关系至少 ${value}`);
+                    hints.push(`${npcName}关系至少${value}`);
                 }
             });
         }
         if (requirements.items) {
             Object.entries(requirements.items).forEach(([itemId, value]) => {
                 if (getInventoryCount(state, itemId) < value) {
-                    hints.push(`持有 ${ITEMS[itemId].name} x${value}`);
+                    const itemName = ITEMS[itemId]?.name || itemId;
+                    hints.push(`持有${itemName} x${value}`);
                 }
             });
         }
-        return hints.length > 0 ? `下一章触发条件：${hints.join('，')}` : '下一章条件已满足，请前往剧情页。';
+        return hints;
+    }
+
+    function getBlockedMainStoryHint(state) {
+        const chapter = getChapterById(state.storyProgress);
+        if (!chapter || meetsRequirements(state, chapter.requirements)) {
+            return '';
+        }
+
+        const hints = getChapterRequirementHints(state, chapter);
+        if (hints.length === 0) {
+            return '';
+        }
+
+        const baseHint = `主线《${chapter.title}》待解锁：需先${hints.join('，')}。`;
+        const extraHint = chapter.id === 10
+            ? '升仙令线会在满足条件后继续。'
+            : '当前主线并未中断，只是还没到火候。';
+        const levelEvent = getAvailableLevelEvent(state);
+        if (!levelEvent) {
+            return `${baseHint}${extraHint}`;
+        }
+
+        return `${baseHint}${extraHint}当前可先处理小境界事件《${levelEvent.title}》。`;
     }
 
     function getRouteSummary(state) {
@@ -1485,6 +1706,69 @@
     function hasAnyStateFlag(state, flagNames) {
         const flags = state?.flags || {};
         return flagNames.some((flagName) => Boolean(flags[flagName]));
+    }
+
+    function evaluateRelationThresholds(state, thresholds, comparator) {
+        if (!thresholds || typeof thresholds !== 'object') {
+            return true;
+        }
+        return Object.entries(thresholds).every(([npcName, threshold]) => comparator((state.npcRelations[npcName] || 0), threshold));
+    }
+
+    function evaluateSideQuestCondition(state, condition) {
+        if (!condition || typeof condition !== 'object') {
+            return true;
+        }
+
+        if (Array.isArray(condition.anyOf) && condition.anyOf.length > 0) {
+            const matched = condition.anyOf.some((entry) => evaluateSideQuestCondition(state, entry));
+            if (!matched) {
+                return false;
+            }
+        }
+
+        if (Array.isArray(condition.allOf) && condition.allOf.length > 0) {
+            const matched = condition.allOf.every((entry) => evaluateSideQuestCondition(state, entry));
+            if (!matched) {
+                return false;
+            }
+        }
+
+        if (condition.not && evaluateSideQuestCondition(state, condition.not)) {
+            return false;
+        }
+
+        if (Array.isArray(condition.flagsAny) && condition.flagsAny.length > 0 && !hasAnyStateFlag(state, condition.flagsAny)) {
+            return false;
+        }
+
+        if (Array.isArray(condition.flagsNone) && condition.flagsNone.some((flagName) => Boolean(state.flags[flagName]))) {
+            return false;
+        }
+
+        if (condition.flagsAll && typeof condition.flagsAll === 'object') {
+            const allFlagsMatched = Object.entries(condition.flagsAll).every(([flagName, expectedValue]) => state.flags[flagName] === expectedValue);
+            if (!allFlagsMatched) {
+                return false;
+            }
+        }
+
+        if (!evaluateRelationThresholds(state, condition.relationsMin, (current, threshold) => current >= threshold)) {
+            return false;
+        }
+
+        if (!evaluateRelationThresholds(state, condition.relationsMax, (current, threshold) => current <= threshold)) {
+            return false;
+        }
+
+        if (condition.requiredItems && typeof condition.requiredItems === 'object') {
+            const enoughItems = Object.entries(condition.requiredItems).every(([itemId, amount]) => getInventoryCount(state, itemId) >= amount);
+            if (!enoughItems) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     function getChoiceImmediateEcho(chapterId, choiceId) {
@@ -1813,7 +2097,194 @@
         return [{ title: '尚在起势', detail: '关键选择还不够多，继续推进剧情会看到更明显的分支影响。', meta: '' }];
     }
 
+    function getSideQuestDefinition(questId) {
+        return SIDE_QUEST_LOOKUP.get(questId) || null;
+    }
+
+    function hasQuestConditionRules(condition) {
+        return Boolean(condition && typeof condition === 'object' && Object.keys(condition).length > 0);
+    }
+
+    function createSideQuestResult(outcome, quest, overrides = {}) {
+        return {
+            outcome,
+            choiceId: overrides.choiceId || null,
+            summary: overrides.summary || '',
+            detail: overrides.detail || '',
+        };
+    }
+
+    function syncSideQuestAvailability(state) {
+        if (!state || typeof state !== 'object') {
+            return state;
+        }
+
+        state.sideQuests = normalizeSideQuestRecords(state.sideQuests);
+        const storyProgress = getMainStoryProgressValue(state);
+
+        SIDE_QUESTS_V1.forEach((definition) => {
+            const record = state.sideQuests[definition.id];
+            if (!record) {
+                return;
+            }
+
+            const previousState = record.state;
+            if (previousState === 'completed' || previousState === 'failed' || previousState === 'missed') {
+                return;
+            }
+
+            const withinWindow = storyProgress >= definition.availableFromProgress
+                && storyProgress <= definition.availableToProgress;
+            const triggerMatched = evaluateSideQuestCondition(state, definition.triggerCondition);
+            const acceptMatched = evaluateSideQuestCondition(state, definition.acceptCondition);
+            const explicitFail = hasQuestConditionRules(definition.failCondition)
+                && evaluateSideQuestCondition(state, definition.failCondition);
+
+            record.deadlineProgress = Number.isFinite(definition.availableToProgress)
+                ? definition.availableToProgress
+                : record.deadlineProgress;
+
+            if (previousState === 'active') {
+                if (explicitFail || storyProgress > definition.availableToProgress) {
+                    record.state = 'failed';
+                    record.resolvedAtProgress = storyProgress;
+                    record.lastResult = createSideQuestResult('failed', definition, {
+                        summary: `${definition.title}已失手。`,
+                        detail: explicitFail ? '任务命中了显式失败条件。' : '主线进度越过了任务窗口，你没能及时了结这笔事。',
+                    });
+                }
+                return;
+            }
+
+            if (storyProgress > definition.availableToProgress) {
+                const shouldMiss = record.availableAtProgress !== null || (triggerMatched && acceptMatched);
+                if (shouldMiss) {
+                    record.state = 'missed';
+                    record.resolvedAtProgress = storyProgress;
+                    record.lastResult = createSideQuestResult('missed', definition, {
+                        summary: `${definition.title}已错过。`,
+                        detail: '你没有在主线窗口内接下这桩支线，旧账已经自行滑过去了。',
+                    });
+                }
+                return;
+            }
+
+            if (withinWindow && triggerMatched && acceptMatched) {
+                record.state = 'available';
+                if (record.availableAtProgress === null) {
+                    record.availableAtProgress = storyProgress;
+                }
+                return;
+            }
+
+            record.state = 'locked';
+        });
+
+        return state;
+    }
+
+    function getVisibleSideQuests(state) {
+        syncSideQuestAvailability(state);
+        return SIDE_QUESTS_V1
+            .map((definition) => {
+                const runtime = state.sideQuests[definition.id];
+                return {
+                    id: definition.id,
+                    title: definition.title,
+                    detail: definition.detail,
+                    category: definition.category,
+                    npc: definition.npc || null,
+                    priority: definition.priority || 0,
+                    exclusiveGroup: definition.exclusiveGroup || null,
+                    availableFromProgress: definition.availableFromProgress,
+                    availableToProgress: definition.availableToProgress,
+                    rewardPreview: definition.rewardPreview || '',
+                    choices: clone(definition.choices || []),
+                    state: runtime.state,
+                    availableAtProgress: runtime.availableAtProgress,
+                    acceptedAtProgress: runtime.acceptedAtProgress,
+                    deadlineProgress: runtime.deadlineProgress,
+                    resolvedAtProgress: runtime.resolvedAtProgress,
+                    selectedChoiceId: runtime.selectedChoiceId,
+                    lastResult: runtime.lastResult ? clone(runtime.lastResult) : null,
+                };
+            })
+            .filter((entry) => entry.state !== 'locked')
+            .sort((left, right) => (right.priority - left.priority)
+                || (left.availableFromProgress - right.availableFromProgress)
+                || left.title.localeCompare(right.title, 'zh-CN'));
+    }
+
+    function acceptSideQuest(state, questId) {
+        syncSideQuestAvailability(state);
+        const definition = getSideQuestDefinition(questId);
+        if (!definition) {
+            return { ok: false, error: '支线任务不存在。' };
+        }
+
+        const record = state.sideQuests[questId];
+        if (!record || record.state !== 'available') {
+            return { ok: false, error: '当前无法接取该支线。' };
+        }
+
+        const activeQuest = Object.values(state.sideQuests).find((entry) => entry.state === 'active' && entry.questId !== questId);
+        if (activeQuest) {
+            return { ok: false, error: '已有进行中的支线，请先完成当前支线。' };
+        }
+
+        record.state = 'active';
+        if (record.availableAtProgress === null) {
+            record.availableAtProgress = getMainStoryProgressValue(state);
+        }
+        record.acceptedAtProgress = getMainStoryProgressValue(state);
+        record.deadlineProgress = definition.availableToProgress;
+        record.lastResult = null;
+        pushLog(state, `接取支线：${definition.title}`, 'normal');
+        return { ok: true, quest: getVisibleSideQuests(state).find((entry) => entry.id === questId) || null };
+    }
+
+    function chooseSideQuestOption(state, questId, choiceId) {
+        syncSideQuestAvailability(state);
+        const definition = getSideQuestDefinition(questId);
+        if (!definition) {
+            return { ok: false, error: '支线任务不存在。' };
+        }
+
+        const record = state.sideQuests[questId];
+        if (!record || record.state !== 'active') {
+            return { ok: false, error: '当前没有可结算的支线选项。' };
+        }
+
+        const choice = (definition.choices || []).find((item) => item.id === choiceId);
+        if (!choice) {
+            return { ok: false, error: '支线选项不存在。' };
+        }
+
+        if (!applyCosts(state, choice.costs)) {
+            return { ok: false, error: '资源不足，无法支付支线代价。' };
+        }
+
+        const totalEffects = mergeEffectPayload(definition.rewards, choice.effects);
+        applyEffects(state, totalEffects);
+        pushLog(state, `支线抉择：${choice.text}`, 'normal');
+
+        const branchMeta = definition.branchEffects?.[choice.id] || null;
+        record.state = 'completed';
+        record.selectedChoiceId = choice.id;
+        record.resolvedAtProgress = getMainStoryProgressValue(state);
+        record.lastResult = createSideQuestResult('completed', definition, {
+            choiceId: choice.id,
+            summary: choice.resultSummary || `你已了结支线：${definition.title}。`,
+            detail: branchMeta?.detail || '',
+        });
+        pushLog(state, `完成支线：${definition.title}`, 'good');
+
+        syncSideQuestAvailability(state);
+        return { ok: true, quest: getVisibleSideQuests(state).find((entry) => entry.id === questId) || null };
+    }
+
     function getAvailableSideStories(state) {
+        syncSideQuestAvailability(state);
         const storyProgress = getMainStoryProgressValue(state);
         const stories = [];
         const seenTitles = new Set();
@@ -1824,18 +2295,25 @@
             seenTitles.add(title);
             stories.push(npc ? { title, detail, npc } : { title, detail });
         };
+        const pushQuestStory = (questId) => {
+            const quest = getSideQuestDefinition(questId);
+            if (!quest) {
+                return;
+            }
+            pushStory(quest.title, quest.detail, quest.npc);
+        };
 
         if (storyProgress >= 8 && hasAnyStateFlag(state, ['protectedMoHouse', 'promisedMoReturn', 'lootedMoHouse', 'daoLvPromise', 'tookTreasure'])) {
-            pushStory('旧药账', '墨府旧账房中留下几页被水浸过的账册。账面不清，却隐约能看出一些人名与药材流向。', '墨彩环');
+            pushQuestStory('old_medicine_ledger');
         }
         if (storyProgress >= 9 && hasAnyStateFlag(state, ['hasQuhun', 'sealedQuhun', 'quhunReleased', 'keptQuhun'])) {
-            pushStory('药童残影', '你偶然又听见那句断断续续的话：师父让我们闭眼。也许这不是疯话，而是还没被说清的旧案。', '曲魂');
+            pushQuestStory('apothecary_boy_echo');
         }
         if (hasAnyStateFlag(state, ['fanxinAnchor1', 'fanxinAnchor2'])) {
             pushStory('青牛旧路', '离家太久后，最容易被忘的不是地方，而是自己最初为什么要走。', '厉飞雨');
         }
         if ((state.npcRelations['厉飞雨'] || 0) >= 15 || state.flags.reconnectedWithLiFeiyu) {
-            pushStory('厉飞雨的酒', '有旧友仍活在凡人江湖里。他不懂你如今的境界，却大概还记得你最早是什么样子。', '厉飞雨');
+            pushQuestStory('li_feiyu_wine');
         }
         if (storyProgress >= 8 && (state.npcRelations['墨彩环'] || 0) >= 0) {
             pushStory('墨府来信', '信纸平常，字迹也平常。可越平常的信，越说明写信的人早已学会不把希望全压在你身上。', '墨彩环');
@@ -1847,13 +2325,13 @@
             pushStory('禁地旧名', '血色禁地过去很久了，可仍有人会在提起你时，先想起那一次你究竟是先救人、先夺药，还是先保自己。', '南宫婉');
         }
         if (storyProgress >= 19 && hasAnyStateFlag(state, ['heldSpiritMineLine', 'ledMineBreakout', 'escapedMineWithCoreAssets'])) {
-            pushStory('灵矿幸存者', '灵矿一战之后，活下来的人说法并不一样。有人念你的情，也有人记你的过。', '李化元');
+            pushQuestStory('spirit_mine_survivor');
         }
         if (storyProgress >= 21) {
             pushStory('海上契约', '星海不认旧名，只认账。你若想在这里真正站住脚，总要有一两次让人觉得和你合作不亏。', '万小山');
         }
         if (storyProgress >= 22 && hasAnyStateFlag(state, ['enteredVoidHeavenMapGame', 'soldFragmentMapForResources', 'avoidedVoidHeavenCoreConflict', 'hasXuTianTu', 'soldXuTianTu', 'avoidedXuTian'])) {
-            pushStory('残图余波', '你以为事情已经过去，其实真正危险的往往不是争图那阵子，而是图早不在手里了，仍有人不确定你到底知道多少。', '南宫婉');
+            pushQuestStory('void_map_aftermath');
         }
         if (storyProgress >= 24) {
             pushStory('旧地重光', '你已走得太远。可人走得越远，有些旧地越会在某个时候忽然显得很重。');
@@ -2423,7 +2901,9 @@
         getAlchemyRecipes,
         getEchoes,
         getLocationMeta,
+        getBlockedMainStoryHint,
         getAvailableSideStories,
+        getVisibleSideQuests,
         getNpcDialogue,
         getAvailableMainChapter,
         getAvailableLevelEvent,
@@ -2441,7 +2921,10 @@
         getStoryView,
         advanceStoryBeat,
         skipStoryPlayback,
+        syncUnreadStoryState,
         chooseStoryOption,
+        acceptSideQuest,
+        chooseSideQuestOption,
         getTrainingPreview,
         trainWithLingshi,
         resolveExpedition,
@@ -2458,6 +2941,7 @@
         resolveCombatRound,
         pushLog,
         serializeState,
+        SIDE_QUESTS_V1,
     };
 
     if (typeof module !== 'undefined' && module.exports) {

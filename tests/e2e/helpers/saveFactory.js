@@ -242,6 +242,58 @@ function createStoryScenario() {
     };
 }
 
+function createReadStoryAwayScenario() {
+    const state = GameCore.createInitialState();
+    state.ui.activeTab = 'cultivation';
+    state.unreadStory = false;
+
+    return {
+        serialized: GameCore.serializeState(state),
+    };
+}
+
+function createBlockedMainChapterScenario() {
+    const state = GameCore.createInitialState();
+    state.ui.activeTab = 'story';
+    state.storyProgress = 10;
+    state.unreadStory = false;
+    GameCore.LEVEL_STORY_EVENTS.forEach((event) => {
+        state.levelStoryState.events[event.id] = { triggered: true, completed: true };
+    });
+    state.storyCursor = {
+        source: 'main',
+        storyId: null,
+        chapterId: null,
+        beatIndex: 0,
+        mode: 'idle',
+    };
+
+    return {
+        serialized: GameCore.serializeState(state),
+        expectedHint: '主线《太南小会》待解锁：需先修至筑基初期。升仙令线会在满足条件后继续。',
+        expectedGoal: '主线《太南小会》待解锁：需先修至筑基初期。升仙令线会在满足条件后继续。',
+    };
+}
+
+function createShengxianlingChapterScenario() {
+    const state = createChoiceState(10, (draft) => {
+        draft.inventory.lingshi = 20;
+        draft.flags.fulfilledMoWill = true;
+    });
+    const view = GameCore.getStoryView(state);
+    const bidChoice = view.choices.find((choice) => choice.id === 'bid_token');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, bidChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: bidChoice.id,
+        choiceText: bidChoice.text,
+        expectedTitle: '第 12 章 · 升仙令',
+        expectedTokenCount: previewState.inventory.shengxianling,
+    };
+}
+
 function createTribulationEndingScenario() {
     const { state, serialized } = createSerializedState((draft) => {
         draft.storyProgress = 14;
@@ -647,6 +699,9 @@ module.exports = {
     createAlchemyScenario,
     createTrainingScenario,
     createStoryScenario,
+    createReadStoryAwayScenario,
+    createBlockedMainChapterScenario,
+    createShengxianlingChapterScenario,
     createTribulationEndingScenario,
     createResourceExpeditionScenario,
     createCombatScenario,

@@ -18,6 +18,7 @@
         STORY_CHAPTERS,
         LEVEL_STORY_EVENTS,
         SIDE_QUESTS_V1,
+        VOLUME_ONE_CHAPTERS,
     } = dataSource;
 
     const STORY_LOOKUP = new Map(STORY_CHAPTERS.map((chapter) => [chapter.id, chapter]));
@@ -53,6 +54,14 @@
     const SIDE_QUEST_STATE_VALUES = Object.freeze(['locked', 'available', 'active', 'completed', 'failed', 'missed']);
     const SIDE_QUEST_STATE_SET = new Set(SIDE_QUEST_STATE_VALUES);
     const SIDE_QUEST_LOOKUP = new Map((SIDE_QUESTS_V1 || []).map((quest) => [quest.id, quest]));
+    const VOLUME_ONE_CHAPTER_LOOKUP = new Map((VOLUME_ONE_CHAPTERS || []).map((chapter, index) => [
+        chapter.id,
+        {
+            id: chapter.id,
+            title: chapter.title,
+            volumeOrder: index + 1,
+        },
+    ]));
 
     function clone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -1187,6 +1196,29 @@
         return missing.length > 0 ? `不足：${missing.join('、')}` : '当前条件不足';
     }
 
+    function getVolumeChapterMeta(chapter) {
+        if (!chapter || typeof chapter !== 'object') {
+            return null;
+        }
+
+        const targetId = typeof chapter.legacyVolumeTarget === 'string'
+            ? chapter.legacyVolumeTarget
+            : (typeof chapter.id === 'string' ? chapter.id : null);
+        if (!targetId) {
+            return null;
+        }
+
+        const volumeChapter = VOLUME_ONE_CHAPTER_LOOKUP.get(targetId);
+        if (!volumeChapter) {
+            return null;
+        }
+
+        return {
+            label: `第一卷·第 ${volumeChapter.volumeOrder} 章`,
+            title: volumeChapter.title,
+        };
+    }
+
     function resolveStoryDefinition(definition, state, source) {
         if (!definition) {
             return null;
@@ -1206,7 +1238,15 @@
                 disabledReason: disabled ? getChoiceDisabledReason(state, normalizedChoice) : '',
             };
         });
-        return { ...definition, source, beats, choices };
+        const volumeMeta = source === 'main' ? getVolumeChapterMeta(definition) : null;
+        return {
+            ...definition,
+            source,
+            beats,
+            choices,
+            chapterLabel: definition.chapterLabel || volumeMeta?.label,
+            volumeChapterTitle: volumeMeta?.title || null,
+        };
     }
 
     function resolveChapter(chapter, state) {
@@ -2021,8 +2061,9 @@
     function getChapterSourceLabel(chapterId) {
         const chapter = getChapterById(chapterId);
         if (chapter) {
-            const prefix = chapter.chapterLabel || (typeof chapter.id === 'number' ? `第 ${chapter.id + 1} 章` : '主线章节');
-            return `${prefix} · ${chapter.title}`;
+            const volumeMeta = getVolumeChapterMeta(chapter);
+            const prefix = chapter.chapterLabel || volumeMeta?.label || (typeof chapter.id === 'number' ? `第 ${chapter.id + 1} 章` : '主线章节');
+            return `${prefix} · ${volumeMeta?.title || chapter.title}`;
         }
 
         const levelEvent = getLevelEventById(chapterId);

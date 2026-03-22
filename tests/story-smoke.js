@@ -1663,6 +1663,197 @@ function testExplicitBranchImpactCoverage() {
     });
 }
 
+function testVolumeOneRemapCoverage() {
+    assert(Array.isArray(StoryData.VOLUME_ONE_CHAPTERS), '应导出第一卷 8 章结构');
+    assert.strictEqual(StoryData.VOLUME_ONE_CHAPTERS.length, 8, '第一卷应固定为 8 章');
+
+    const map = StoryData.VOLUME_ONE_LEGACY_CHAPTER_MAP;
+    assert(map, '应导出第一卷旧章映射');
+    const keys = Object.keys(map).map((value) => Number(value)).sort((left, right) => left - right);
+    assert.deepStrictEqual(keys, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], '旧 0~11 章必须全部被映射');
+
+    const actions = new Set(['merge_main', 'keep_main', 'downgrade_to_sidequest']);
+    const sideQuestDowngrades = [];
+    Object.entries(map).forEach(([legacyId, entry]) => {
+        assert(entry.targetChapterId, `旧章节 ${legacyId} 缺少目标章`);
+        assert(actions.has(entry.action), `旧章节 ${legacyId} 的 action 非法`);
+        if (entry.action === 'downgrade_to_sidequest') {
+            assert(entry.sideQuestId, `旧章节 ${legacyId} 下放支线时缺少 sideQuestId`);
+            sideQuestDowngrades.push(entry.sideQuestId);
+        }
+    });
+    assert.deepStrictEqual(sideQuestDowngrades.sort(), ['apothecary_boy_echo', 'old_medicine_ledger']);
+
+    const exitChapter = StoryData.VOLUME_ONE_CHAPTERS.find((chapter) => chapter.id === 'volume_one_chapter_8');
+    assert(exitChapter, '第一卷应存在升仙路口章节');
+    assert.strictEqual(exitChapter.volumeRole, 'exit');
+    assert(exitChapter.nextReads.length <= 3, '第一卷卷末跨卷读取点不应超过 3 条');
+}
+
+function testVolumeOneMetadataScaffold() {
+    const firstVolumeChapters = StoryData.STORY_CHAPTERS.filter((chapter) => typeof chapter.id === 'number' && chapter.id >= 0 && chapter.id <= 11);
+    assert.strictEqual(firstVolumeChapters.length, 12, '应保留旧 0~11 章以供兼容映射');
+    firstVolumeChapters.forEach((chapter) => {
+        assert.strictEqual(chapter.volumeId, 'volume_one_qixuanmen', `章节 ${chapter.id} 缺少第一卷锚点`);
+        assert(typeof chapter.volumeRole === 'string' && chapter.volumeRole.length > 0, `章节 ${chapter.id} 缺少卷内角色`);
+        assert(typeof chapter.legacyVolumeTarget === 'string' && chapter.legacyVolumeTarget.length > 0, `章节 ${chapter.id} 缺少兼容目标章`);
+    });
+
+    const firstVolumeSeeds = StoryData.VOLUME_ONE_SIDE_QUEST_SEEDS;
+    assert(Array.isArray(firstVolumeSeeds) && firstVolumeSeeds.length >= 2, '第一卷应导出支线种子');
+    firstVolumeSeeds.forEach((seed) => {
+        assert.strictEqual(seed.volumeAnchor, 'volume_one_qixuanmen');
+        assert(['volume_close', 'seed_forward', 'convert_to_main'].includes(seed.closureMode), `支线 ${seed.id} closureMode 非法`);
+        assert(Array.isArray(seed.linkedLegacyChapterIds) && seed.linkedLegacyChapterIds.length > 0, `支线 ${seed.id} 缺少旧章来源`);
+    });
+
+    ['old_medicine_ledger', 'apothecary_boy_echo'].forEach((questId) => {
+        const quest = StoryData.SIDE_QUESTS_V1.find((entry) => entry.id === questId);
+        assert(quest, `支线 ${questId} 应存在`);
+        assert.strictEqual(quest.volumeAnchor, 'volume_one_qixuanmen');
+        assert(['volume_close', 'seed_forward', 'convert_to_main'].includes(quest.closureMode));
+        assert(quest.followupHook && quest.followupHook.type && quest.followupHook.note, `支线 ${questId} 缺少卷末回收说明`);
+    });
+}
+
+function testVolumeOneLegacyChapterLabelsUseRemappedVolumeStructure() {
+    const chapter8View = getChapterChoiceView(8).view;
+    assert.strictEqual(chapter8View.chapter.chapterLabel, '第一卷·第 7 章');
+    assert.strictEqual(chapter8View.chapter.volumeChapterTitle, '七玄门风波');
+
+    const chapter9View = getChapterChoiceView(9).view;
+    assert.strictEqual(chapter9View.chapter.chapterLabel, '第一卷·第 7 章');
+    assert.strictEqual(chapter9View.chapter.volumeChapterTitle, '七玄门风波');
+
+    const chapter10View = getChapterChoiceView(10).view;
+    assert.strictEqual(chapter10View.chapter.chapterLabel, '第一卷·第 8 章');
+    assert.strictEqual(chapter10View.chapter.volumeChapterTitle, '升仙路口');
+
+    const chapter11View = getChapterChoiceView(11).view;
+    assert.strictEqual(chapter11View.chapter.chapterLabel, '第一卷·第 8 章');
+    assert.strictEqual(chapter11View.chapter.volumeChapterTitle, '升仙路口');
+}
+
+function getVolumeOneExitArcTexts(configure) {
+    const chapter10 = getChapterChoiceView(10, (state) => {
+        GameCore.setRealmScore(state, 3);
+        if (configure) {
+            configure(state);
+        }
+    }).view.story.beats.map((item) => item.text).join('\n');
+    const chapter11 = getChapterChoiceView(11, (state) => {
+        if (configure) {
+            configure(state);
+        }
+    }).view.story.beats.map((item) => item.text).join('\n');
+    return `${chapter10}\n${chapter11}`;
+}
+
+function assertTextContainsOneOf(text, fragments, message) {
+    assert(fragments.some((fragment) => text.includes(fragment)), message);
+}
+
+function testVolumeOneLateArcLegacyProgressStaysReadable() {
+    const scenarios = [
+        {
+            progress: 8,
+            configure(state) {
+                state.flags.protectedMoHouse = true;
+            },
+            expectedVolumeTitle: '七玄门风波',
+        },
+        {
+            progress: 9,
+            configure(state) {
+                state.flags.hasQuhun = true;
+                state.flags.keptQuhun = true;
+                state.npcRelations['墨彩环'] = 25;
+            },
+            expectedVolumeTitle: '七玄门风波',
+        },
+        {
+            progress: 10,
+            configure(state) {
+                GameCore.setRealmScore(state, 3);
+                state.flags.fulfilledMoWill = true;
+            },
+            expectedVolumeTitle: '升仙路口',
+        },
+        {
+            progress: 11,
+            configure(state) {
+                state.flags.hasShengxianling = true;
+            },
+            expectedVolumeTitle: '升仙路口',
+        },
+    ];
+
+    scenarios.forEach(({ progress, configure, expectedVolumeTitle }) => {
+        const state = GameCore.mergeSave({ storyProgress: progress });
+        GameCore.LEVEL_STORY_EVENTS.forEach((event) => {
+            state.levelStoryState.events[event.id] = { triggered: true, completed: true };
+        });
+        state.storyCursor = {
+            source: 'main',
+            storyId: null,
+            chapterId: null,
+            beatIndex: 0,
+            mode: 'idle',
+        };
+        if (configure) {
+            configure(state);
+        }
+        GameCore.ensureStoryCursor(state);
+
+        const view = GameCore.getStoryView(state);
+        assert(view, `旧存档 storyProgress=${progress} 不应出现空剧情`);
+        assert.strictEqual(view.source, 'main');
+        assert.strictEqual(view.chapter.volumeChapterTitle, expectedVolumeTitle);
+        assert.strictEqual(view.chapter.chapterLabel.startsWith('第一卷·第 '), true);
+    });
+}
+
+function testVolumeOneLedgerClosureReadsReturnLedgersPath() {
+    const text = getVolumeOneExitArcTexts((state) => {
+        state.flags.fulfilledMoWill = true;
+        state.flags.returnedOldMedicineLedger = true;
+        state.npcRelations['墨彩环'] = 55;
+    });
+    assert(text.includes('墨府'), '旧药账归还路径的卷末解释应继续指向墨府');
+    assertTextContainsOneOf(text, ['活人', '交回', '账页'], '旧药账归还路径应在卷末主线解释“账已回到活人手里”');
+}
+
+function testVolumeOneLedgerClosureReadsNamesOnlyPath() {
+    const text = getVolumeOneExitArcTexts((state) => {
+        state.flags.keptMedicineLedgerNamesOnly = true;
+        state.flags.fulfilledMoWill = true;
+        state.npcRelations['墨彩环'] = 20;
+    });
+    assertTextContainsOneOf(text, ['旧账', '墨府'], '只留名字路径仍应被卷末主线认作一笔旧账');
+    assertTextContainsOneOf(text, ['名字', '按住', '压住'], '只留名字路径应在卷末主线明确解释为“先把账按住”');
+}
+
+function testVolumeOneApothecaryClosureReadsTracePath() {
+    const text = getVolumeOneExitArcTexts((state) => {
+        state.flags.tracedApothecaryBoyEcho = true;
+        state.flags.keptQuhun = true;
+        state.flags.quhunIdentityMystery = true;
+        state.npcRelations['墨彩环'] = 30;
+    });
+    assertTextContainsOneOf(text, ['药童', '旧案', '残影'], '药童残影追查路径应在卷末主线继续被点名');
+    assertTextContainsOneOf(text, ['记住', '追索', '带着'], '追查路径应在卷末主线明确说明这件事被记住并带上路');
+}
+
+function testVolumeOneApothecaryClosureReadsSealPath() {
+    const text = getVolumeOneExitArcTexts((state) => {
+        state.flags.sealedQuhun = true;
+        state.flags.quhunIdentityMystery = true;
+        state.npcRelations['墨彩环'] = 35;
+    });
+    assertTextContainsOneOf(text, ['曲魂', '残影', '旧案'], '压下残影路径应在卷末主线继续解释曲魂或旧案');
+    assertTextContainsOneOf(text, ['压下', '封住', '不再继续', '没有回答'], '压下残影路径应在卷末主线明确说明是暂时封住而非完全消失');
+}
+
 testStoryCursorSwitching();
 testAlchemyRecipeCraftingSuccess();
 testAlchemyRecipeInsufficientMaterialsDoesNotPolluteInventory();
@@ -1708,5 +1899,13 @@ testBlockedMainChapterHintStaysConcrete();
 testChapter10BidTokenAwardsShengxianling();
 testBranchEchoes();
 testExplicitBranchImpactCoverage();
+testVolumeOneRemapCoverage();
+testVolumeOneMetadataScaffold();
+testVolumeOneLegacyChapterLabelsUseRemappedVolumeStructure();
+testVolumeOneLateArcLegacyProgressStaysReadable();
+testVolumeOneLedgerClosureReadsReturnLedgersPath();
+testVolumeOneLedgerClosureReadsNamesOnlyPath();
+testVolumeOneApothecaryClosureReadsTracePath();
+testVolumeOneApothecaryClosureReadsSealPath();
 
 console.log('story smoke passed');

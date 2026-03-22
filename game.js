@@ -619,11 +619,12 @@
         const sourceLabel = isLevelStory
             ? '小境界事件'
             : view.chapter.chapterLabel || (typeof view.chapter.id === 'number' ? `第 ${view.chapter.id + 1} 章` : '主线章节');
+        const chapterTitle = isLevelStory ? view.chapter.title : (view.chapter.volumeChapterTitle || view.chapter.title);
         const realmLabel = isLevelStory ? ` · ${GameCore.getRealmLabel(gameState)}` : '';
         const totalPages = view.story.beats.length;
         const currentPage = Math.min(totalPages, gameState.storyCursor.beatIndex + 1);
 
-        elements.storyTitle.textContent = `${sourceLabel} · ${view.chapter.title}`;
+        elements.storyTitle.textContent = `${sourceLabel} · ${chapterTitle}`;
         elements.storyMeta.textContent = `${isLevelStory ? '悟境' : '主线'}${realmLabel}`;
         elements.storySummary.textContent = isLevelStory
             ? `${view.chapter.summary} 这一层会直接影响你的道心、资源或后续人情。`

@@ -55,7 +55,8 @@ function formatRenderedStoryTitle(state) {
     const sourceLabel = view.source === 'level'
         ? '小境界事件'
         : view.chapter.chapterLabel || (typeof view.chapter.id === 'number' ? `第 ${view.chapter.id + 1} 章` : '主线章节');
-    return `${sourceLabel} · ${view.chapter.title}`;
+    const chapterTitle = view.source === 'level' ? view.chapter.title : (view.chapter.volumeChapterTitle || view.chapter.title);
+    return `${sourceLabel} · ${chapterTitle}`;
 }
 
 function formatRenderedStoryProgress(state) {
@@ -289,8 +290,69 @@ function createShengxianlingChapterScenario() {
         serialized: GameCore.serializeState(state),
         choiceId: bidChoice.id,
         choiceText: bidChoice.text,
-        expectedTitle: '第 12 章 · 升仙令',
+        expectedTitle: formatRenderedStoryTitle(previewState),
         expectedTokenCount: previewState.inventory.shengxianling,
+    };
+}
+
+function createVolumeOneLedgerClosureScenario() {
+    const state = createChoiceState(10, (draft) => {
+        GameCore.setRealmScore(draft, 3);
+        draft.flags.protectedMoHouse = true;
+        draft.flags.fulfilledMoWill = true;
+        draft.npcRelations['墨彩环'] = 36;
+    });
+    GameCore.getVisibleSideQuests(state);
+    GameCore.acceptSideQuest(state, 'old_medicine_ledger');
+    GameCore.chooseSideQuestOption(state, 'old_medicine_ledger', 'return_ledgers');
+    state.storyCursor = {
+        source: 'main',
+        storyId: null,
+        chapterId: null,
+        beatIndex: 0,
+        mode: 'idle',
+    };
+    GameCore.ensureStoryCursor(state);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        questId: 'old_medicine_ledger',
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedKeywordGroups: [
+            ['墨府', '旧账'],
+            ['活人', '交回', '账页'],
+        ],
+    };
+}
+
+function createVolumeOneApothecaryClosureScenario() {
+    const state = createChoiceState(10, (draft) => {
+        GameCore.setRealmScore(draft, 3);
+        draft.flags.hasQuhun = true;
+        draft.flags.keptQuhun = true;
+        draft.flags.quhunIdentityMystery = true;
+        draft.npcRelations['墨彩环'] = 34;
+    });
+    GameCore.getVisibleSideQuests(state);
+    GameCore.acceptSideQuest(state, 'apothecary_boy_echo');
+    GameCore.chooseSideQuestOption(state, 'apothecary_boy_echo', 'trace_the_voice');
+    state.storyCursor = {
+        source: 'main',
+        storyId: null,
+        chapterId: null,
+        beatIndex: 0,
+        mode: 'idle',
+    };
+    GameCore.ensureStoryCursor(state);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        questId: 'apothecary_boy_echo',
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedKeywordGroups: [
+            ['药童', '旧案', '残影'],
+            ['记住', '追索', '带着'],
+        ],
     };
 }
 
@@ -702,6 +764,8 @@ module.exports = {
     createReadStoryAwayScenario,
     createBlockedMainChapterScenario,
     createShengxianlingChapterScenario,
+    createVolumeOneLedgerClosureScenario,
+    createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,
     createResourceExpeditionScenario,
     createCombatScenario,

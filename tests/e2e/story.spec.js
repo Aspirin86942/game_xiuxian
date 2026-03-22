@@ -6,6 +6,8 @@ const {
     createBlockedMainChapterScenario,
     createShengxianlingChapterScenario,
     createStoryScenario,
+    createVolumeOneLedgerClosureScenario,
+    createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,
 } = require('./helpers/saveFactory');
 
@@ -69,6 +71,25 @@ function createMissedSideQuestScenario() {
         expectedSummary: state.sideQuests.old_medicine_ledger.lastResult.summary,
         expectedDetail: state.sideQuests.old_medicine_ledger.lastResult.detail,
     };
+}
+
+async function advanceStoryUntilKeywordGroupsMatch(page, keywordGroups, maxSteps = 6) {
+    for (let step = 0; step <= maxSteps; step += 1) {
+        const titleText = await page.locator(selectors.story.title).textContent();
+        const summaryText = await page.locator('#story-summary').textContent();
+        const lineText = await page.locator(selectors.story.line).textContent();
+        const pageText = [titleText, summaryText, lineText].filter(Boolean).join('\n');
+        const matched = keywordGroups.every((group) => group.some((keyword) => pageText.includes(keyword)));
+        if (matched) {
+            return;
+        }
+        const continueButton = page.locator(selectors.story.continueButton);
+        if (await continueButton.isDisabled()) {
+            break;
+        }
+        await continueButton.click();
+    }
+    throw new Error(`剧情页未能在 ${maxSteps} 次翻页内命中关键词组：${JSON.stringify(keywordGroups)}`);
 }
 
 test('剧情页支持继续、跳至抉择和完成分支选择', async ({ page }) => {
@@ -192,6 +213,34 @@ test('错过窗口的正式支线会在同行回响区显示错过结果', async
     const save = await readSave(page);
     expect(save.sideQuests.old_medicine_ledger.state).toBe('missed');
     expect(save.sideQuests.old_medicine_ledger.lastResult.outcome).toBe('missed');
+});
+
+test('旧药账完成后会在第一卷卷末主线出现收口解释', async ({ page }) => {
+    const scenario = createVolumeOneLedgerClosureScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await page.click(selectors.tabs.story);
+    await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
+    await advanceStoryUntilKeywordGroupsMatch(page, scenario.expectedKeywordGroups, 6);
+    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).not.toHaveText('进行中');
+
+    const save = await readSave(page);
+    expect(save.sideQuests.old_medicine_ledger.state).toBe('completed');
+    expect(save.sideQuests.old_medicine_ledger.selectedChoiceId).toBe('return_ledgers');
+});
+
+test('药童残影完成后会在第一卷卷末主线解释曲魂旧案', async ({ page }) => {
+    const scenario = createVolumeOneApothecaryClosureScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await page.click(selectors.tabs.story);
+    await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
+    await advanceStoryUntilKeywordGroupsMatch(page, scenario.expectedKeywordGroups, 6);
+    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).not.toHaveText('进行中');
+
+    const save = await readSave(page);
+    expect(save.sideQuests.apothecary_boy_echo.state).toBe('completed');
+    expect(save.sideQuests.apothecary_boy_echo.selectedChoiceId).toBe('trace_the_voice');
 });
 
 test('剧情新徽标在进入剧情页后清除，且剧情页内衔接下一章时不残留', async ({ page }) => {

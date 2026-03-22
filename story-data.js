@@ -3,6 +3,72 @@
         return { speaker, text };
     }
 
+    // 第一卷卷末需要把支线结果翻译成主线可见解释，避免旧 8~11 章只剩种子没有收口。
+    function getVolumeOneDebtClosureLine(state, phase = 'market') {
+        const flags = state?.flags || {};
+        const relationMo = state?.npcRelations?.['墨彩环'] || 0;
+
+        if (flags.returnedOldMedicineLedger) {
+            return phase === 'market'
+                ? '墨府那几页旧账最终还是回到了活人手里。你离开嘉元城时没再把它当成自己的后手，而是知道这笔因果至少已经有人能亲手收尾。'
+                : '你后来再想起墨府时，最先记住的已不是那本账册，而是你终究把它交还给了还要继续过日子的人。第一卷走到这里，这笔账算是收回了凡人的手中。';
+        }
+
+        if (flags.keptMedicineLedgerNamesOnly) {
+            return phase === 'market'
+                ? '那几页账册并没有被你重新摊开到底。你只留下最关键的名字，把其余旧页按了回去，也等于承认自己是带着一笔没再深翻的旧账离开嘉元城。'
+                : '你终究没有替墨府把每一页旧账都翻到天光下，只把最要紧的名字记在心里。到了离卷时，这已经不是悬着没说的尾巴，而是你亲手按住的一笔旧账。';
+        }
+
+        if (flags.mendedMoHouseDebt || flags.daoLvPromise || flags.fulfilledMoWill || relationMo >= 45) {
+            return phase === 'market'
+                ? '就算账页没有真正一张张交还，你也没有把墨府丢回死人堆里。替人挡过的风声、认下的承诺和补上的情分，已经让这笔旧账不再只是“以后再说”。'
+                : '你未必把每一页账都交割干净，却已经用承诺、照拂或补偿替墨府把最重的那层债接了回来。对第一卷而言，这笔账到这里已经有了明白去处。';
+        }
+
+        return phase === 'market'
+            ? '你没有再回头细翻墨府旧账，可也明白那件事该停在第一卷的门口：它留成一笔你认得出的凡俗旧因果，而不是下一卷还能拿来装新谜案的尾巴。'
+            : '你终究没把墨府每一层旧账都补得漂亮，但也没有再假装它不存在。到了离卷时，这件事已经被你看成一笔认得出的旧因果，而不是悬着不提的空白。';
+    }
+
+    function getVolumeOneQuhunClosureLine(state, phase = 'market') {
+        const flags = state?.flags || {};
+
+        if (flags.quhunReleased) {
+            return phase === 'market'
+                ? '曲魂既已归去，神手谷旧案留下来的就不再是一件好用器物，而是一道你自己不肯彻底踩过去的底线。你是带着这层清楚离开嘉元城的。'
+                : '你最终没有把曲魂留成工具。等第一卷走到出口，真正跟着你上路的不是一具可驱使的躯壳，而是“有些东西不能只按好不好用来算”的那条底线。';
+        }
+
+        if (flags.sealedQuhun) {
+            return phase === 'market'
+                ? '你没有继续深翻残影，也没有急着替曲魂定最终用法。被你带走的不是答案，而是一个明知迟早还要再回答、却先被你压下并暂时封住的问题。'
+                : '第一卷离卷前，你终究还是没有把曲魂这件事回答到底。可它也不再是悬空旧案，而是一个被你亲手压下、暂时封住、以后迟早还要重新作答的问题。';
+        }
+
+        if (flags.tookQuhunByForce) {
+            return phase === 'market'
+                ? '你把曲魂连同墨府最后一点体面一起带离了嘉元城。从那一刻起，这条线真正留下来的已经不是“拿没拿到手”，而是你往后还肯不肯承认自己拿走了什么。'
+                : '到了离卷时，你已经知道自己带走的从来不只是曲魂本身。神手谷旧案在你这里被写成了一条更锋利的分界: 以后你若再说“只是工具”，也得先过自己这一关。';
+        }
+
+        if (flags.curedQuhun && flags.keptQuhun) {
+            return phase === 'market'
+                ? '你把曲魂留在身边，却没把它只当成一件顺手兵器。这让药童残影不再只是旧案余波，而成了你以后分辨“人”和“可用之物”的一把尺。'
+                : '曲魂最终还是跟在你身边，可第一卷已经替这件事定了性：你留下的不是一件纯粹工具，而是一道会逼你往后继续分清轻重的心障。';
+        }
+
+        if (flags.keptQuhun || flags.tracedApothecaryBoyEcho || flags.learnedQuhunIdentityFragment || flags.quhunIdentityMystery) {
+            return phase === 'market'
+                ? '无论你是顺着残影追下去，还是把曲魂留在身边，神手谷旧案都已经不可能再被当成“死人死尽就算完”的事情。你带着走的，是一条以后还会回来问你的分界线，也是一桩已经被你记住的旧案。'
+                : '第一卷到了出口，药童残影这件事真正留下来的，不只是曲魂在不在身边，而是你今后还能不能把“活过的人”和“趁手之物”分清。你是带着这桩被记住的旧案离开的。';
+        }
+
+        return phase === 'market'
+            ? '就算你没有把残影一路追到底，神手谷留下来的也早不只是一个模糊传闻。到了嘉元城之后，你已经知道这件事真正会跟着你走的，是它逼你以后再分轻重善恶的方式。'
+            : '你未必把药童旧案全都查明了，但第一卷离卷前，这件事的意义已经说清：它不是下一卷的新悬念，而是你往后看待禁魂、尸炼与因果时绕不开的一道旧影。';
+    }
+
     const STORAGE_KEY = 'xiuxian_save_v2';
 
     const CONFIG = {
@@ -233,6 +299,12 @@
             detail: '墨府旧账房中留下几页被水浸过的账册。账面不清，却隐约能看出一些人名与药材流向。',
             category: '旧账',
             npc: '墨彩环',
+            volumeAnchor: 'volume_one_qixuanmen',
+            closureMode: 'volume_close',
+            followupHook: {
+                type: 'volume_one_closure',
+                note: '卷末需明确交代墨府旧账是交还活人、留作后手，还是被主线判定为止步于此。',
+            },
             availableFromProgress: 8,
             availableToProgress: 10,
             triggerCondition: {
@@ -281,6 +353,12 @@
             detail: '你偶然又听见那句断断续续的话：师父让我们闭眼。也许这不是疯话，而是还没被说清的旧案。',
             category: '旧案',
             npc: '曲魂',
+            volumeAnchor: 'volume_one_qixuanmen',
+            closureMode: 'convert_to_main',
+            followupHook: {
+                type: 'main_chapter_read',
+                note: '卷末需由七玄门风波或升仙出口前的主线回收这段残影，不能继续悬空。',
+            },
             availableFromProgress: 9,
             availableToProgress: 11,
             triggerCondition: {
@@ -328,6 +406,12 @@
             detail: '有旧友仍活在凡人江湖里。他不懂你如今的境界，却大概还记得你最早是什么样子。',
             category: '旧友',
             npc: '厉飞雨',
+            volumeAnchor: 'volume_two_ascending_path',
+            closureMode: 'seed_forward',
+            followupHook: {
+                type: 'relationship_seed',
+                note: '旧友重逢应结算在本卷窗口内，只把关系余波留给后续章节读取。',
+            },
             availableFromProgress: 16,
             availableToProgress: 18,
             triggerCondition: {
@@ -381,6 +465,12 @@
             detail: '灵矿一战之后，活下来的人说法并不一样。有人念你的情，也有人记你的过。',
             category: '战后',
             npc: '李化元',
+            volumeAnchor: 'volume_three_modao_conflict',
+            closureMode: 'volume_close',
+            followupHook: {
+                type: 'reputation_seed',
+                note: '灵矿余波必须在当前战争窗口内完成定性，不能继续挂成常驻旧账。',
+            },
             availableFromProgress: 19,
             availableToProgress: 21,
             triggerCondition: {
@@ -429,6 +519,12 @@
             detail: '你以为事情已经过去，其实真正危险的往往不是争图那阵子，而是图早不在手里了，仍有人不确定你到底知道多少。',
             category: '秘图',
             npc: '南宫婉',
+            volumeAnchor: 'volume_four_star_sea',
+            closureMode: 'seed_forward',
+            followupHook: {
+                type: 'rumor_seed',
+                note: '残图余波要在当前卷内结算风险，只允许把情报与名声余波带去后续章节。',
+            },
             availableFromProgress: 22,
             availableToProgress: 24,
             triggerCondition: {
@@ -472,6 +568,120 @@
             exclusiveGroup: null,
         },
     ];
+
+    // 第一卷先用静态映射固定“新 8 章结构”和“旧 0~11 章归类”，避免后续改代码时边改边漂移。
+    const VOLUME_ONE_CHAPTERS = Object.freeze([
+        {
+            id: 'volume_one_chapter_1',
+            title: '入门七玄',
+            legacyChapterIds: Object.freeze([0, 1]),
+            volumeRole: 'opening',
+            chapterGoal: '建立凡俗起点、离乡动机与进入七玄门的最初承诺。',
+            chapterConflict: '资质平常的少年如何进入门内，并决定要用什么姿态开始活下去。',
+            closureWrites: Object.freeze(['leaves_mortal_village', 'enters_qixuanmen']),
+            nextReads: Object.freeze(['mo_invitation', 'sect_survival_logic']),
+        },
+        {
+            id: 'volume_one_chapter_2',
+            title: '神手谷试徒',
+            legacyChapterIds: Object.freeze([2]),
+            volumeRole: 'escalation',
+            chapterGoal: '把修炼机会与危险师承绑定在一起。',
+            chapterConflict: '墨大夫是机缘还是陷阱，玩家第一次要主动选边站。',
+            closureWrites: Object.freeze(['accepts_or_resists_mo']),
+            nextReads: Object.freeze(['li_feiyu_bond', 'herb_valley_suspicion']),
+        },
+        {
+            id: 'volume_one_chapter_3',
+            title: '门内旧友',
+            legacyChapterIds: Object.freeze([3]),
+            volumeRole: 'bonding',
+            chapterGoal: '建立厉飞雨与门内旧友线，让第一卷真正带上人情重量。',
+            chapterConflict: '玩家要不要把自己的活路分给别人，第一次让人情变成债。',
+            closureWrites: Object.freeze(['li_feiyu_bond_seed']),
+            nextReads: Object.freeze(['apothecary_case', 'mortal_bond_cost']),
+        },
+        {
+            id: 'volume_one_chapter_4',
+            title: '药童与绿瓶',
+            legacyChapterIds: Object.freeze([4, 5]),
+            volumeRole: 'reversal',
+            chapterGoal: '从门内修行转向暗局求生，并引出绿瓶这一条长期主线。',
+            chapterConflict: '药童旧案与绿瓶异象同时出现，普通修炼路径开始失效。',
+            closureWrites: Object.freeze(['apothecary_case_exposed', 'green_bottle_seeded']),
+            nextReads: Object.freeze(['mo_showdown', 'hidden_growth_path']),
+        },
+        {
+            id: 'volume_one_chapter_5',
+            title: '夺舍杀局',
+            legacyChapterIds: Object.freeze([6]),
+            volumeRole: 'climax',
+            chapterGoal: '完成第一卷第一高潮，让主角从被动弟子转为主动求生者。',
+            chapterConflict: '墨居仁与弟子之间只能活下一种身份，师徒关系彻底翻面。',
+            closureWrites: Object.freeze(['mo_showdown_resolved']),
+            nextReads: Object.freeze(['mo_letter_truth', 'first_contact_with_immortal_world']),
+        },
+        {
+            id: 'volume_one_chapter_6',
+            title: '遗书与真相',
+            legacyChapterIds: Object.freeze([7]),
+            volumeRole: 'fallout',
+            chapterGoal: '把高潮后的遗产、解毒与修仙真相说明白。',
+            chapterConflict: '杀局虽解，但遗书、解药与后续道路要求玩家重新定义自己站在什么世界门前。',
+            closureWrites: Object.freeze(['mo_letter_owned', 'immortal_world_confirmed']),
+            nextReads: Object.freeze(['mo_house_debt', 'ascension_path_seed']),
+        },
+        {
+            id: 'volume_one_chapter_7',
+            title: '七玄门风波',
+            legacyChapterIds: Object.freeze([8, 9]),
+            volumeRole: 'closure',
+            chapterGoal: '回收墨府旧账、药童残影与门内旧人情，让凡俗阶段完成一次清账。',
+            chapterConflict: '凡俗恩义、旧案余波与修仙前路第一次正面冲突，玩家必须决定带谁上路、把谁留在身后。',
+            closureWrites: Object.freeze(['mo_house_debt_resolved', 'apothecary_echo_resolved']),
+            nextReads: Object.freeze(['shengxian_exit', 'carry_forward_debts']),
+        },
+        {
+            id: 'volume_one_chapter_8',
+            title: '升仙路口',
+            legacyChapterIds: Object.freeze([10, 11]),
+            volumeRole: 'exit',
+            chapterGoal: '给出离开凡俗与进入真正修仙路的明确出口。',
+            chapterConflict: '太南小会与升仙令不再只是事件列表，而是第一卷卷末唯一合法出口。',
+            closureWrites: Object.freeze(['volume_one_exit_locked']),
+            nextReads: Object.freeze(['yellow_maple_entry', 'green_bottle_secrecy', 'one_unfinished_debt']),
+        },
+    ]);
+
+    const VOLUME_ONE_LEGACY_CHAPTER_MAP = Object.freeze({
+        0: Object.freeze({ targetChapterId: 'volume_one_chapter_1', action: 'merge_main' }),
+        1: Object.freeze({ targetChapterId: 'volume_one_chapter_1', action: 'merge_main' }),
+        2: Object.freeze({ targetChapterId: 'volume_one_chapter_2', action: 'keep_main' }),
+        3: Object.freeze({ targetChapterId: 'volume_one_chapter_3', action: 'keep_main' }),
+        4: Object.freeze({ targetChapterId: 'volume_one_chapter_4', action: 'merge_main' }),
+        5: Object.freeze({ targetChapterId: 'volume_one_chapter_4', action: 'merge_main' }),
+        6: Object.freeze({ targetChapterId: 'volume_one_chapter_5', action: 'keep_main' }),
+        7: Object.freeze({ targetChapterId: 'volume_one_chapter_6', action: 'keep_main' }),
+        8: Object.freeze({ targetChapterId: 'volume_one_chapter_7', action: 'downgrade_to_sidequest', sideQuestId: 'old_medicine_ledger' }),
+        9: Object.freeze({ targetChapterId: 'volume_one_chapter_7', action: 'downgrade_to_sidequest', sideQuestId: 'apothecary_boy_echo' }),
+        10: Object.freeze({ targetChapterId: 'volume_one_chapter_8', action: 'merge_main' }),
+        11: Object.freeze({ targetChapterId: 'volume_one_chapter_8', action: 'merge_main' }),
+    });
+
+    const VOLUME_ONE_SIDE_QUEST_SEEDS = Object.freeze([
+        Object.freeze({
+            id: 'old_medicine_ledger',
+            volumeAnchor: 'volume_one_qixuanmen',
+            closureMode: 'volume_close',
+            linkedLegacyChapterIds: Object.freeze([8]),
+        }),
+        Object.freeze({
+            id: 'apothecary_boy_echo',
+            volumeAnchor: 'volume_one_qixuanmen',
+            closureMode: 'convert_to_main',
+            linkedLegacyChapterIds: Object.freeze([9]),
+        }),
+    ]);
 
     const CHAPTER_ECHO_PACKS = {
         8: {
@@ -2545,6 +2755,9 @@
             id: 0,
             title: '山村少年',
             summary: '青牛镇的柴刀、月光与残卷，给了你走出凡尘的第一步。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'opening',
+            legacyVolumeTarget: 'volume_one_chapter_1',
             location: '青牛镇',
             requirements: { storyProgress: 0 },
             beats() {
@@ -2576,6 +2789,9 @@
             id: 1,
             title: '七玄门考核',
             summary: '灵根并不出众，但你还有心性、耐性和一口不肯认输的气。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'opening',
+            legacyVolumeTarget: 'volume_one_chapter_1',
             location: '七玄门',
             requirements: { storyProgress: 1 },
             beats(state) {
@@ -2607,6 +2823,9 @@
             id: 2,
             title: '墨大夫收徒',
             summary: '药园里的平静只是假象，你第一次真正面对“选择师门”这件事。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'escalation',
+            legacyVolumeTarget: 'volume_one_chapter_2',
             location: '神手谷',
             requirements: { storyProgress: 2, cultivationAtLeast: 60 },
             beats() {
@@ -2659,6 +2878,9 @@
             id: 3,
             title: '厉飞雨之疾',
             summary: '你第一次能决定别人的命运，也第一次知道人情会变成债。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'bonding',
+            legacyVolumeTarget: 'volume_one_chapter_3',
             location: '七玄门',
             requirements: { storyProgress: 3, realmScoreAtLeast: 1 },
             beats(state) {
@@ -2700,6 +2922,9 @@
             id: 4,
             title: '消失的药童',
             summary: '神手谷真正的腥气终于溢了出来。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'reversal',
+            legacyVolumeTarget: 'volume_one_chapter_4',
             location: '神手谷',
             requirements: { storyProgress: 4, realmScoreAtLeast: 1 },
             beats(state) {
@@ -2731,6 +2956,9 @@
             id: 5,
             title: '绿瓶异象',
             summary: '你手里多了一件足够改变命运，也足够招来杀身之祸的东西。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'reversal',
+            legacyVolumeTarget: 'volume_one_chapter_4',
             location: '神手谷',
             requirements: { storyProgress: 5 },
             beats() {
@@ -2772,6 +3000,9 @@
             id: 6,
             title: '墨居仁摊牌',
             summary: '师徒、猎物、鼎炉，这几个身份只能活下来一个。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'climax',
+            legacyVolumeTarget: 'volume_one_chapter_5',
             location: '神手谷',
             requirements: { storyProgress: 6, realmScoreAtLeast: 2 },
             beats(state) {
@@ -2824,6 +3055,9 @@
             id: 7,
             title: '遗书与解毒',
             summary: '杀局已解，因果却还在你手里翻页。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'fallout',
+            legacyVolumeTarget: 'volume_one_chapter_6',
             location: '神手谷',
             requirements: { storyProgress: 7 },
             beats(state) {
@@ -2874,6 +3108,9 @@
             id: 8,
             title: '墨府旧事',
             summary: '凡俗宅门里的哭声，不比修仙界的刀光更轻。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'closure',
+            legacyVolumeTarget: 'volume_one_chapter_7',
             location: '嘉元城',
             requirements: { storyProgress: 8 },
             beats(state) {
@@ -2927,6 +3164,9 @@
             id: 9,
             title: '曲魂初现',
             summary: '墨府的暗格里不止藏金银，还藏着一个勉强算“活着”的人。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'closure',
+            legacyVolumeTarget: 'volume_one_chapter_7',
             location: '嘉元城',
             requirements: { storyProgress: 9 },
             beats(state) {
@@ -3026,13 +3266,20 @@
             id: 10,
             title: '太南小会',
             summary: '散修市集里最贵的不是法器，是别人比你早知道半步。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'exit',
+            legacyVolumeTarget: 'volume_one_chapter_8',
             location: '太南山',
             requirements: { storyProgress: 10, realmScoreAtLeast: 3 },
             beats(state) {
+                const debtClosureLine = getVolumeOneDebtClosureLine(state, 'market');
+                const quhunClosureLine = getVolumeOneQuhunClosureLine(state, 'market');
                 return [
                     beat('旁白', '筑基之后，你第一次走进真正的散修小会。'),
                     beat('万小山', '升仙令马上换手，想拿就趁现在，想省就只能换消息。'),
                     beat('旁白', state.flags.fulfilledMoWill ? '你身上还挂着墨府的人情，这让你在摊位间走得比别人更稳。' : '你知道自己没有背景，所以每一步都更像在赌。'),
+                    beat('旁白', debtClosureLine),
+                    beat('旁白', quhunClosureLine),
                     beat('旁白', '消息、灵石、名声，总得拿一个出去换。'),
                 ];
             },
@@ -3079,11 +3326,18 @@
             id: 11,
             title: '升仙令',
             summary: '令牌拿在手里，宗门却未必只有一个答案。',
+            volumeId: 'volume_one_qixuanmen',
+            volumeRole: 'exit',
+            legacyVolumeTarget: 'volume_one_chapter_8',
             location: '太南山',
             requirements: { storyProgress: 11 },
             beats(state) {
+                const debtExitLine = getVolumeOneDebtClosureLine(state, 'exit');
+                const quhunExitLine = getVolumeOneQuhunClosureLine(state, 'exit');
                 return [
                     beat('旁白', state.flags.hasShengxianling ? '令牌入手后，你终于有资格考虑更大的宗门。' : '你虽然没直接拿到令牌，却摸清了几条能换来入门资格的暗路。'),
+                    beat('旁白', debtExitLine),
+                    beat('旁白', quhunExitLine),
                     beat('旁白', '黄枫谷稳，别宗刺激，留在散修圈则最自由。'),
                     beat('旁白', '这一次不是“能不能进仙门”，而是“要把自己交给谁”。'),
                 ];
@@ -4737,6 +4991,9 @@
         CHAPTER_ECHO_PACKS,
         BRANCH_IMPACT_PACKS,
         SIDE_QUESTS_V1,
+        VOLUME_ONE_CHAPTERS,
+        VOLUME_ONE_LEGACY_CHAPTER_MAP,
+        VOLUME_ONE_SIDE_QUEST_SEEDS,
         LEVEL_STORY_EVENTS,
         STORY_CHAPTERS,
     };

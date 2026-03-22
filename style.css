@@ -224,6 +224,7 @@ button {
 .page-stack {
     overflow: hidden;
     position: relative;
+    min-height: 0;
 }
 
 .page {
@@ -939,6 +940,9 @@ button {
 }
 
 .bottom-nav {
+    position: relative;
+    z-index: 3;
+    flex-shrink: 0;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 8px;
@@ -950,10 +954,13 @@ button {
 
 .nav-btn {
     position: relative;
+    z-index: 1;
     min-height: 52px;
     padding: 8px 4px;
     border-radius: 14px;
     color: var(--ink-light);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .nav-btn.active {

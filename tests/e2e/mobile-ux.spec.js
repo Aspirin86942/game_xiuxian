@@ -30,13 +30,17 @@ for (const viewport of VIEWPORTS) {
             await expect(page.locator(selectors.nav.tab('inventory'))).toBeVisible();
             await expect(page.locator(selectors.nav.tab('settings'))).toBeVisible();
 
-            await page.click(selectors.nav.tab('cultivation'));
+            await page.tap(selectors.nav.tab('cultivation'));
             await expect(page.locator(selectors.cultivation.mainButton)).toBeVisible();
             await expect(page.locator(selectors.cultivation.adventureButton)).toBeVisible();
             await page.locator(selectors.cultivation.mainButton).click({ trial: true });
             await page.locator(selectors.cultivation.adventureButton).click({ trial: true });
 
-            await page.click(selectors.nav.tab('story'));
+            await page.tap(selectors.nav.tab('alchemy'));
+            await expect(page.locator(selectors.pages.alchemy)).toHaveClass(/active/);
+
+            await page.tap(selectors.nav.tab('story'));
+            await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
             await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
             await expect(page.locator(selectors.story.choiceButtons)).toHaveCount(scenario.expectedChoiceCount);
 
@@ -47,7 +51,7 @@ for (const viewport of VIEWPORTS) {
             expect(choiceBox.y).toBeLessThan(viewport.height);
             await choiceLocator.click({ trial: true });
 
-            await page.click(selectors.nav.tab('inventory'));
+            await page.tap(selectors.nav.tab('inventory'));
             await waitForModalShown(page, selectors.inventory.modal);
             await expect(page.locator(selectors.modal.close('inventory-modal'))).toBeVisible();
             const inventoryMetrics = await page.locator(selectors.modal.body('inventory-modal')).evaluate((node) => ({
@@ -63,7 +67,7 @@ for (const viewport of VIEWPORTS) {
             await page.click(selectors.modal.close('inventory-modal'));
             await waitForModalHidden(page, selectors.inventory.modal);
 
-            await page.click(selectors.nav.tab('settings'));
+            await page.tap(selectors.nav.tab('settings'));
             await waitForModalShown(page, selectors.settings.modal);
             await expect(page.locator(selectors.modal.close('settings-modal'))).toBeVisible();
             await page.click(selectors.modal.close('settings-modal'));

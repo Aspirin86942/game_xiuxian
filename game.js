@@ -192,7 +192,7 @@
 
     function restoreGameState(parsedState) {
         gameState = GameCore.mergeSave(parsedState);
-        GameCore.ensureStoryCursor(gameState);
+        GameCore.ensureStoryCursor(gameState, { preserveRestoreReadState: true });
         syncUnreadStoryState();
         selectedTrainBatch = TRAINING_BATCH_KEYS.includes(selectedTrainBatch) ? selectedTrainBatch : '1';
         primeNaturalRecoveryState(Date.now());
@@ -275,10 +275,7 @@
     }
 
     function syncUnreadStoryState() {
-        // “新剧情”只代表离开剧情页后出现的未读章节；停留在剧情页时要立即清零，避免刷新和章节衔接后残留徽标。
-        if (gameState.ui.activeTab === 'story') {
-            gameState.unreadStory = false;
-        }
+        GameCore.syncUnreadStoryState(gameState);
     }
 
     function getCultivationActionState() {
@@ -334,6 +331,7 @@
         const actionState = getCultivationActionState();
         const { mode, preview } = actionState;
         const location = GameCore.getLocationMeta(gameState);
+        const blockedMainStoryHint = GameCore.getBlockedMainStoryHint(gameState);
 
         elements.mainBtn.textContent = mode === 'breakthrough'
             ? '渡劫突破'
@@ -342,7 +340,9 @@
         elements.mainBtn.disabled = !!combatState || mode === 'disabled';
         elements.adventureBtn.disabled = !!combatState;
 
-        if (storyView && storyView.source === 'level' && storyView.mode !== 'ending') {
+        if (blockedMainStoryHint) {
+            elements.hintText.textContent = blockedMainStoryHint;
+        } else if (storyView && storyView.source === 'level' && storyView.mode !== 'ending') {
             elements.hintText.textContent = `当前有小境界事件：${storyView.chapter.title}`;
         } else if (mode === 'breakthrough') {
             elements.hintText.textContent = '修为已满，心神沉静后即可尝试突破。';
@@ -390,6 +390,157 @@
             : '<div class="log-entry">修行未起笔，先去走第一段剧情。</div>';
     }
 
+    function getSideQuestStateMeta(state) {
+        const metaMap = {
+            available: { label: '可接支线', tone: 'available' },
+            active: { label: '进行中', tone: 'active' },
+            completed: { label: '已了结', tone: 'completed' },
+            failed: { label: '已失手', tone: 'failed' },
+            missed: { label: '已错过', tone: 'missed' },
+        };
+        return metaMap[state] || { label: '线索', tone: 'legacy' };
+    }
+
+    function formatSideQuestCosts(costs) {
+        if (!costs || typeof costs !== 'object') {
+            return '';
+        }
+
+        return Object.entries(costs)
+            .filter(([, amount]) => amount > 0)
+            .map(([itemId, amount]) => {
+                const itemName = ITEMS[itemId]?.name || itemId;
+                return `需消耗 ${itemName} x${amount}`;
+            })
+            .join(' · ');
+    }
+
+    function renderVisibleSideQuestCard(quest, hasOtherActiveQuest) {
+        const stateMeta = getSideQuestStateMeta(quest.state);
+        const npcMeta = quest.npc ? `<span class="side-story-badge">${quest.npc}</span>` : '';
+        const categoryMeta = quest.category ? `<span class="side-story-badge">${quest.category}</span>` : '';
+        const rewardLine = quest.rewardPreview
+            ? `<div class="side-story-note"><strong>奖励</strong><span>${quest.rewardPreview}</span></div>`
+            : '';
+
+        if (quest.state === 'available') {
+            const disabled = hasOtherActiveQuest ? 'disabled' : '';
+            const buttonText = hasOtherActiveQuest ? '另有支线进行中' : '接下这桩事';
+            return `
+                <article class="side-story-item side-story-item--quest" data-side-quest-id="${quest.id}" data-side-quest-state="${quest.state}">
+                    <div class="side-story-head">
+                        <div>
+                            <strong>${quest.title}</strong>
+                            <p>${quest.detail}</p>
+                        </div>
+                        <span class="side-story-status side-story-status--${stateMeta.tone}">${stateMeta.label}</span>
+                    </div>
+                    <div class="side-story-meta-row">
+                        ${categoryMeta}
+                        ${npcMeta}
+                    </div>
+                    ${rewardLine}
+                    <div class="side-quest-actions">
+                        <button class="side-quest-btn" data-side-quest-action="accept" data-side-quest-target-id="${quest.id}" type="button" ${disabled}>${buttonText}</button>
+                    </div>
+                </article>
+            `;
+        }
+
+        if (quest.state === 'active') {
+            const choices = Array.isArray(quest.choices) ? quest.choices : [];
+            return `
+                <article class="side-story-item side-story-item--quest" data-side-quest-id="${quest.id}" data-side-quest-state="${quest.state}">
+                    <div class="side-story-head">
+                        <div>
+                            <strong>${quest.title}</strong>
+                            <p>${quest.detail}</p>
+                        </div>
+                        <span class="side-story-status side-story-status--${stateMeta.tone}">${stateMeta.label}</span>
+                    </div>
+                    <div class="side-story-meta-row">
+                        ${categoryMeta}
+                        ${npcMeta}
+                    </div>
+                    ${rewardLine}
+                    <div class="side-quest-choices">
+                        ${choices.map((choice) => {
+                            const costText = formatSideQuestCosts(choice.costs);
+                            return `
+                                <button
+                                    class="side-quest-btn side-quest-btn--choice"
+                                    data-side-quest-choice-id="${choice.id}"
+                                    data-side-quest-target-id="${quest.id}"
+                                    type="button"
+                                >
+                                    <span class="side-quest-choice-title">${choice.text}</span>
+                                    ${costText ? `<span class="side-quest-choice-cost">${costText}</span>` : ''}
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                </article>
+            `;
+        }
+
+        const result = quest.lastResult || {};
+        const resultDetail = result.detail ? `<div class="side-story-note"><span>${result.detail}</span></div>` : '';
+        const settlementLine = quest.state === 'completed'
+            ? '<div class="side-story-note"><strong>结果</strong><span>奖励已结算</span></div>'
+            : '';
+
+        return `
+            <article class="side-story-item side-story-item--quest" data-side-quest-id="${quest.id}" data-side-quest-state="${quest.state}">
+                <div class="side-story-head">
+                    <div>
+                        <strong>${quest.title}</strong>
+                        <p>${result.summary || quest.detail}</p>
+                    </div>
+                    <span class="side-story-status side-story-status--${stateMeta.tone}">${stateMeta.label}</span>
+                </div>
+                <div class="side-story-meta-row">
+                    ${categoryMeta}
+                    ${npcMeta}
+                </div>
+                ${settlementLine}
+                ${resultDetail}
+            </article>
+        `;
+    }
+
+    function renderLegacySideStoryCard(item) {
+        const npcMeta = item.npc ? `<span class="side-story-badge">${item.npc}</span>` : '';
+        return `
+            <article class="side-story-item side-story-item--legacy">
+                <div class="side-story-head">
+                    <div>
+                        <strong>${item.title}</strong>
+                        <p>${item.detail}</p>
+                    </div>
+                    <span class="side-story-status side-story-status--legacy">旁支线索</span>
+                </div>
+                ${npcMeta ? `<div class="side-story-meta-row">${npcMeta}</div>` : ''}
+            </article>
+        `;
+    }
+
+    // 正式任务与 legacy clues 共用同一块列表，但 formal quest 必须优先呈现并避免重复标题。
+    function renderSideStoryList() {
+        const visibleQuests = GameCore.getVisibleSideQuests(gameState);
+        const visibleQuestTitles = new Set(visibleQuests.map((quest) => quest.title));
+        const activeQuestId = visibleQuests.find((quest) => quest.state === 'active')?.id || null;
+        const legacyStories = GameCore.getAvailableSideStories(gameState)
+            .filter((item) => !visibleQuestTitles.has(item.title));
+
+        const formalCards = visibleQuests.map((quest) => renderVisibleSideQuestCard(quest, Boolean(activeQuestId && activeQuestId !== quest.id)));
+        const legacyCards = legacyStories.map((item) => renderLegacySideStoryCard(item));
+        const cards = [...formalCards, ...legacyCards];
+
+        elements.sideStoryList.innerHTML = cards.length > 0
+            ? cards.join('')
+            : '<article class="side-story-item side-story-item--legacy"><strong>暂无显性支线</strong><p>风声暂歇，先把手头主线推进一段。</p></article>';
+    }
+
     function renderStoryPage() {
         const view = GameCore.getStoryView(gameState);
         const echoes = GameCore.getEchoes(gameState);
@@ -421,22 +572,16 @@
                 `;
             }).join('')
             : '<div class="side-story-item">此地暂时没有可主动交谈的人物。</div>';
-
-        const sideStories = GameCore.getAvailableSideStories(gameState);
-        elements.sideStoryList.innerHTML = sideStories.map((item) => `
-            <article class="side-story-item">
-                <strong>${item.title}</strong>
-                <p>${item.detail}</p>
-            </article>
-        `).join('');
+        renderSideStoryList();
 
         if (!view) {
+            const blockedMainStoryHint = GameCore.getBlockedMainStoryHint(gameState);
             elements.storyTitle.textContent = '暂无新剧情';
             elements.storyMeta.textContent = '静候机缘';
-            elements.storySummary.textContent = '当前没有满足条件的新章节，先去修炼或游历。';
-            elements.storyProgress.textContent = '暂无可翻阅章节';
-            elements.storySpeaker.textContent = '旁白';
-            elements.storyLine.textContent = '前路暂时沉默。';
+            elements.storySummary.textContent = blockedMainStoryHint || '当前没有满足条件的新章节，先去修炼或游历。';
+            elements.storyProgress.textContent = blockedMainStoryHint ? '主线待解锁' : '暂无可翻阅章节';
+            elements.storySpeaker.textContent = blockedMainStoryHint ? '指引' : '旁白';
+            elements.storyLine.textContent = blockedMainStoryHint || '前路暂时沉默。';
             elements.storyChoices.innerHTML = '';
             elements.storyContinueBtn.disabled = true;
             elements.storySkipBtn.disabled = true;
@@ -638,14 +783,15 @@
     }
 
     function render() {
+        syncUnreadStoryState();
         renderStatus();
-        renderTabs();
         renderCultivationPage();
         renderAlchemyPage();
         renderStoryPage();
         renderInventory();
         renderSettings();
         renderCombat();
+        renderTabs();
     }
 
     function showFloatingText(text, type) {
@@ -985,6 +1131,51 @@
             if (button) {
                 openDialogue(button.dataset.npcName);
             }
+        });
+
+        elements.sideStoryList.addEventListener('click', (event) => {
+            const actionButton = event.target.closest('[data-side-quest-action], [data-side-quest-choice-id]');
+            if (!actionButton) {
+                return;
+            }
+
+            const questId = actionButton.dataset.sideQuestTargetId
+                || actionButton.closest('[data-side-quest-id]')?.dataset.sideQuestId;
+            if (!questId) {
+                return;
+            }
+
+            if (actionButton.dataset.sideQuestAction === 'accept') {
+                const result = GameCore.acceptSideQuest(gameState, questId);
+                if (!result.ok) {
+                    window.alert(result.error || '当前无法接取该支线。');
+                    playSound('fail');
+                    return;
+                }
+
+                showFloatingText('接下支线', 'breakthrough');
+                playSound('story');
+                render();
+                saveGame();
+                return;
+            }
+
+            const choiceId = actionButton.dataset.sideQuestChoiceId;
+            if (!choiceId) {
+                return;
+            }
+
+            const result = GameCore.chooseSideQuestOption(gameState, questId, choiceId);
+            if (!result.ok) {
+                window.alert(result.error || '当前无法了结该支线。');
+                playSound('fail');
+                return;
+            }
+
+            showFloatingText('支线已了结', 'gain');
+            playSound('click');
+            render();
+            saveGame();
         });
 
         elements.inventoryList.addEventListener('click', (event) => {

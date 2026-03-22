@@ -163,6 +163,10 @@ function getChapterChoiceView(chapterId, configure) {
     return { state, view };
 }
 
+function getVisibleSideQuestById(state, questId) {
+    return GameCore.getVisibleSideQuests(state).find((item) => item.id === questId) || null;
+}
+
 function withInsertedChoices(choiceMap, overrides) {
     return {
         ...choiceMap,
@@ -419,6 +423,7 @@ function testBreakthroughQueuesLevelStory() {
     assert(view);
     assert.strictEqual(view.source, 'level');
     assert.strictEqual(view.story.id, 'qi_1');
+    assert.strictEqual(state.unreadStory, true, '非剧情页突破触发小境界事件时应标记未读');
 }
 
 function testMissedLevelStoryCanRecover() {
@@ -1180,6 +1185,63 @@ function testEchoesAndSideStoriesIncludeNewSignals() {
     assert(sideStories.includes('飞升前夜'));
 }
 
+function testSideQuestStateLifecycleV1() {
+    const mergedLegacyState = GameCore.mergeSave({
+        storyProgress: 8,
+        flags: {
+            protectedMoHouse: true,
+        },
+    });
+    assert.strictEqual(Object.keys(mergedLegacyState.sideQuests).length, StoryData.SIDE_QUESTS_V1.length);
+    assert.strictEqual(mergedLegacyState.sideQuests.old_medicine_ledger.state, 'available');
+
+    const availableState = GameCore.createInitialState();
+    availableState.storyProgress = 8;
+    availableState.flags.protectedMoHouse = true;
+    const availableQuest = getVisibleSideQuestById(availableState, 'old_medicine_ledger');
+    assert(availableQuest, '命中窗口后应能看到正式支线');
+    assert.strictEqual(availableQuest.state, 'available');
+    assert.strictEqual(availableState.sideQuests.old_medicine_ledger.state, 'available');
+
+    const acceptResult = GameCore.acceptSideQuest(availableState, 'old_medicine_ledger');
+    assert.strictEqual(acceptResult.ok, true);
+    assert.strictEqual(availableState.sideQuests.old_medicine_ledger.state, 'active');
+
+    const lingshiBefore = GameCore.getInventoryCount(availableState, 'lingshi');
+    const relationBefore = availableState.npcRelations['墨彩环'] || 0;
+    const completeResult = GameCore.chooseSideQuestOption(availableState, 'old_medicine_ledger', 'return_ledgers');
+    assert.strictEqual(completeResult.ok, true);
+    assert.strictEqual(availableState.sideQuests.old_medicine_ledger.state, 'completed');
+    assert.strictEqual(GameCore.getInventoryCount(availableState, 'lingshi'), lingshiBefore + 6);
+    assert.strictEqual(availableState.npcRelations['墨彩环'], relationBefore + 3);
+
+    const repeatedBefore = GameCore.getInventoryCount(availableState, 'lingshi');
+    const repeatedResult = GameCore.chooseSideQuestOption(availableState, 'old_medicine_ledger', 'return_ledgers');
+    assert.strictEqual(repeatedResult.ok, false);
+    assert.strictEqual(GameCore.getInventoryCount(availableState, 'lingshi'), repeatedBefore);
+
+    const missedState = GameCore.createInitialState();
+    missedState.storyProgress = 8;
+    missedState.flags.protectedMoHouse = true;
+    GameCore.getVisibleSideQuests(missedState);
+    missedState.storyProgress = 11;
+    GameCore.getVisibleSideQuests(missedState);
+    assert.strictEqual(missedState.sideQuests.old_medicine_ledger.state, 'missed');
+    assert.strictEqual(missedState.sideQuests.old_medicine_ledger.lastResult.outcome, 'missed');
+
+    const failedState = GameCore.createInitialState();
+    failedState.storyProgress = 16;
+    failedState.flags.reconnectedWithLiFeiyu = true;
+    const feiyuQuest = getVisibleSideQuestById(failedState, 'li_feiyu_wine');
+    assert(feiyuQuest);
+    assert.strictEqual(feiyuQuest.state, 'available');
+    assert.strictEqual(GameCore.acceptSideQuest(failedState, 'li_feiyu_wine').ok, true);
+    failedState.storyProgress = 19;
+    GameCore.getVisibleSideQuests(failedState);
+    assert.strictEqual(failedState.sideQuests.li_feiyu_wine.state, 'failed');
+    assert.strictEqual(failedState.sideQuests.li_feiyu_wine.lastResult.outcome, 'failed');
+}
+
 function testNpcDialogueUsesChapterEchoes() {
     const mocaihuanState = GameCore.createInitialState();
     mocaihuanState.flags.protectedMoHouse = true;
@@ -1311,6 +1373,55 @@ function testMainStoryChoiceKeepsReadStateInsideStoryTab() {
     const result = GameCore.chooseStoryOption(state, selectedChoice.id);
     assert.strictEqual(result.ok, true);
     assert.strictEqual(state.unreadStory, false, '剧情页内衔接下一章时不应重新标记未读');
+}
+
+function testReadStoryDoesNotRelightUnreadOnRestore() {
+    const restoredState = GameCore.mergeSave({
+        version: GameCore.SAVE_VERSION,
+        ui: { activeTab: 'cultivation' },
+        storyProgress: 0,
+        unreadStory: false,
+    });
+
+    GameCore.ensureStoryCursor(restoredState, { preserveRestoreReadState: true });
+    assert.strictEqual(restoredState.unreadStory, false, '已读剧情在非剧情页恢复后不应被重新标记为未读');
+
+    restoredState.ui.activeTab = 'story';
+    GameCore.syncUnreadStoryState(restoredState);
+    assert.strictEqual(restoredState.unreadStory, false, '进入剧情页后未读状态应保持清零');
+}
+
+function testBlockedMainChapterHintStaysConcrete() {
+    const { state, view } = getChapterChoiceView(9);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'release_quhun') || view.choices.find((choice) => !choice.disabled);
+    topUpCosts(state, selectedChoice);
+
+    const result = GameCore.chooseStoryOption(state, selectedChoice.id);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(state.storyProgress, 10);
+    assert.strictEqual(GameCore.getStoryView(state), null, '境界不足时第 10 章不应提前可播放');
+
+    const nextGoal = GameCore.getNextGoalText(state);
+    const blockedHint = GameCore.getBlockedMainStoryHint(state);
+    assert(nextGoal.includes('太南小会'));
+    assert(nextGoal.includes('修至筑基初期'));
+    assert(blockedHint.includes('升仙令线会在满足条件后继续'));
+    assert(state.logs.some((entry) => entry.message.includes('太南小会') && entry.message.includes('筑基初期')));
+}
+
+function testChapter10BidTokenAwardsShengxianling() {
+    const { state, view } = getChapterChoiceView(10, (draft) => {
+        draft.inventory.lingshi = 20;
+        draft.flags.fulfilledMoWill = true;
+    });
+    const selectedChoice = view.choices.find((choice) => choice.id === 'bid_token');
+    assert(selectedChoice, '第 10 章应存在直接竞拍升仙令的选项');
+
+    const result = GameCore.chooseStoryOption(state, selectedChoice.id);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(state.inventory.shengxianling, 1, '升仙令应在第 10 章结算后进入背包');
+    assert.strictEqual(state.flags.hasShengxianling, true, '升仙令旗标应在第 10 章结算后写入');
+    assert.strictEqual(state.storyProgress, 11, '竞拍升仙令后应推进到第 11 章');
 }
 
 function testBranchEchoes() {
@@ -1585,12 +1696,16 @@ testChapter19RouteChoices();
 testChapter21StarSeaFlags();
 testChapter23BranchChoices();
 testEchoesAndSideStoriesIncludeNewSignals();
+testSideQuestStateLifecycleV1();
 testNpcDialogueUsesChapterEchoes();
 testEndingEchoTextsStayReflective();
 testStringChapterLogsNoNaN();
 testStoryPagingState();
 testMainStoryChoiceQueuesUnreadForNextChapter();
 testMainStoryChoiceKeepsReadStateInsideStoryTab();
+testReadStoryDoesNotRelightUnreadOnRestore();
+testBlockedMainChapterHintStaysConcrete();
+testChapter10BidTokenAwardsShengxianling();
 testBranchEchoes();
 testExplicitBranchImpactCoverage();
 

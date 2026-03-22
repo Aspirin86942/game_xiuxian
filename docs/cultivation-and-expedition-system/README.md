@@ -79,6 +79,7 @@
 - `inventory-and-item-system` 负责“灵石是什么、物品如何存进背包、哪些物品有持有被动、剧情如何扣费”。
 - 本册负责“灵石如何进入成长闭环、修炼入口如何消耗灵石、游历如何产出资源、战斗如何回写主循环”。
 - `narrative-decision-system` 负责“剧情选择如何形成承诺、回响、失败压力与终局回指”。
+- `side-quest-system` 负责“支线任务何时出现、如何接取、如何失败/错过、如何结算”；本册只负责支线依赖的游历、战斗与资源主循环语义。
 - 当一个 choice 同时涉及剧情后果与主循环资源时，choice 的叙事设计先看 `narrative-decision-system`，物品身份先看 `inventory-and-item-system`，主循环节奏与闭环再看本册。
 
 ## 10. 当前代码入口与事实来源

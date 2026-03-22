@@ -3,7 +3,7 @@
 ## 1. 系列目标
 
 - 用一组规则书持续维护《灵光修仙传》的系统设计，但把“目标态规范”和“当前实现事实”明确拆开。
-- 当前系列已不再只有叙事决策一个成熟分册；储物、炼丹制作、修炼与游历主循环都已具备独立建册条件。
+- 让叙事、支线、储物、炼丹、修炼与游历这些系统在扩容时都有稳定主责，不再靠聊天记录维持边界。
 - 系列索引只做导航、成熟度登记和维护规则，不保存系统事实、参数表或实现契约。
 
 ## 2. 定位
@@ -11,26 +11,26 @@
 - 本索引只负责导航、分册关系、成熟度说明与维护规则。
 - 真正的行为事实、参数、公式与实现契约必须落在对应 mature 分册内。
 - 当前系列目录：`rulebook-series`
-- 当前已成熟分册：`narrative-decision-system`、`inventory-and-item-system`、`alchemy-and-crafting-system`、`cultivation-and-expedition-system`
+- 当前已成熟分册：`narrative-decision-system`、`inventory-and-item-system`、`alchemy-and-crafting-system`、`cultivation-and-expedition-system`、`side-quest-system`
 
 ## 3. 当前已成熟分册
 
 - `narrative-decision-system`：当前第一本 mature 分册，负责理想化叙事决策系统 v2 的目标设计、现状基线与落地契约。
 - `inventory-and-item-system`：当前第二本 mature 分册，负责储物、灵石消费、物品直接使用与持有型被动效果的目标设计、现状基线与落地契约。
 - `alchemy-and-crafting-system`：当前第三本 mature 分册，负责材料、配方、成品丹药、非战斗保底回血与高阶突破准备的目标设计、现状基线与落地契约。
-- `cultivation-and-expedition-system`：当前第三本 mature 分册，负责游历事件池、闭关修炼、战斗回写、突破衔接剧情与单机存档边界。
 - `cultivation-and-expedition-system`：当前第四本 mature 分册，负责游历事件池、闭关修炼、战斗回写、突破衔接剧情与单机存档边界。
+- `side-quest-system`：当前第五本 mature 分册，负责支线任务分类、触发窗口、状态流转、奖励口径、冲突处理与作者接口。
 
 ## 4. 分册清单
 
 <!-- rulebook-series:volumes:start -->
 | 目录 | 主题 | 状态 | 定位 |
 | --- | --- | --- | --- |
-| `narrative-decision-system` | 理想化叙事决策系统 v2 | mature | 当前第一本成熟分册；负责目标态规范、落地契约与作者接口 |
-| `inventory-and-item-system` | 储物、灵石消费与物品作用系统 | mature | 当前第二本成熟分册；负责目标态规范、现状基线、参数与内容接入契约 |
-| `alchemy-and-crafting-system` | 炼丹、制作与丹药系统 | mature | 当前第三本成熟分册；负责配方、丹药、非战斗回血与高阶突破准备 |
-| `cultivation-and-expedition-system` | 修炼与游历主循环系统 | mature | 当前第三本成熟分册；负责主循环目标态、现状基线、参数与实施契约 |
-| `cultivation-and-expedition-system` | 修炼与游历主循环系统 | mature | 当前第四本成熟分册；负责主循环目标态、现状基线、参数与实施契约 |
+| `narrative-decision-system` | 理想化叙事决策系统 v2 | mature | 当前第一本成熟分册；负责 choice、回响、失败压力与终局回指 |
+| `inventory-and-item-system` | 储物、灵石消费与物品作用系统 | mature | 当前第二本成熟分册；负责物品身份、灵石消费与持有型被动 |
+| `alchemy-and-crafting-system` | 炼丹、制作与丹药系统 | mature | 当前第三本成熟分册；负责配方、丹药、制作与战后续航 |
+| `cultivation-and-expedition-system` | 修炼与游历主循环系统 | mature | 当前第四本成熟分册；负责主循环节奏、游历、战斗回写与闭关修炼 |
+| `side-quest-system` | 支线任务系统 | mature | 当前第五本成熟分册；负责支线任务线索、状态流转、奖励口径、冲突策略与作者接口 |
 <!-- rulebook-series:volumes:end -->
 
 ## 5. 计划中分册
@@ -42,16 +42,16 @@
 ## 6. 阅读顺序
 
 1. 先看 `narrative-decision-system/README.md`，确认 choice、回响、分支影响和失败压力的系统边界。
-2. 再看 `inventory-and-item-system/README.md`，确认物品身份、灵石去向、持有型被动与存档契约。
-3. 再看 `alchemy-and-crafting-system/README.md`，确认材料、配方、成品丹药、保底回血与突破准备的系统边界。
-4. 若当前任务偏剧情选择，按 `narrative-decision-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读。
-5. 若当前任务偏储物、消费、可使用物品，按 `inventory-and-item-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读。
-4. 再看 `cultivation-and-expedition-system/README.md`，确认游历、闭关、战斗和完整导出 / 导入的主循环边界。
-5. 若当前任务偏剧情选择，按 `narrative-decision-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读。
-6. 若当前任务偏储物、消费、可使用物品，按 `inventory-and-item-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读。
-7. 若当前任务偏炼丹、战后续航、高阶突破丹与丹炉页，按 `alchemy-and-crafting-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读。
-8. 若当前任务偏修炼、游历、战斗回写或单机存档边界，按 `cultivation-and-expedition-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读。
-9. 最后回到本索引，核对分册边界、成熟度与同步规则。
+2. 再看 `side-quest-system/README.md`，确认支线任务的线索层、状态流转、奖励口径和原著改写边界。
+3. 再看 `inventory-and-item-system/README.md`，确认物品身份、灵石去向、持有型被动与存档契约。
+4. 再看 `alchemy-and-crafting-system/README.md`，确认材料、配方、成品丹药、保底回血与突破准备的系统边界。
+5. 再看 `cultivation-and-expedition-system/README.md`，确认游历、闭关、战斗和完整导出/导入的主循环边界。
+6. 若当前任务偏剧情选择，按 `narrative-decision-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读。
+7. 若当前任务偏支线任务设计、任务状态与任务奖励，按 `side-quest-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读，再补看两个附录。
+8. 若当前任务偏储物、消费、可使用物品，按 `inventory-and-item-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读。
+9. 若当前任务偏炼丹、战后续航、高阶突破丹与丹炉页，按 `alchemy-and-crafting-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读。
+10. 若当前任务偏修炼、游历、战斗回写或单机存档边界，按 `cultivation-and-expedition-system` 的 `00 -> 01 -> 02 -> 03 -> 04 -> 05` 顺序阅读。
+11. 最后回到本索引，核对分册边界、成熟度与同步规则。
 
 ## 7. 维护规则
 

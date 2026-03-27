@@ -145,7 +145,7 @@
                         record.resolvedAtProgress = storyProgress;
                         record.lastResult = createSideQuestResult('missed', definition, {
                             summary: `${definition.title}已错过。`,
-                            detail: '你没有在主线窗口内接下这桩支线，旧账已经自行滑过去了。',
+                            detail: '你没有在主线窗口内应下这桩旧事，这笔旧账也就自己滑过去了。',
                         });
                     }
                     return;
@@ -201,17 +201,17 @@
             syncSideQuestAvailability(state);
             const definition = getSideQuestDefinition(questId);
             if (!definition) {
-                return { ok: false, error: '支线任务不存在。' };
+                return { ok: false, error: '旧事不存在。' };
             }
 
             const record = state.sideQuests[questId];
             if (!record || record.state !== 'available') {
-                return { ok: false, error: '当前无法接取该支线。' };
+                return { ok: false, error: '当前无法应下这桩旧事。' };
             }
 
             const activeQuest = Object.values(state.sideQuests).find((entry) => entry.state === 'active' && entry.questId !== questId);
             if (activeQuest) {
-                return { ok: false, error: '已有进行中的支线，请先完成当前支线。' };
+                return { ok: false, error: '另有旧事未了，请先把眼前这笔事收住。' };
             }
 
             record.state = 'active';
@@ -221,7 +221,7 @@
             record.acceptedAtProgress = deps.getMainStoryProgressValue(state);
             record.deadlineProgress = definition.availableToProgress;
             record.lastResult = null;
-            deps.pushLog(state, `接取支线：${definition.title}`, 'normal');
+            deps.pushLog(state, `应下旧事：${definition.title}`, 'normal');
             return { ok: true, quest: getVisibleSideQuests(state).find((entry) => entry.id === questId) || null };
         }
 
@@ -229,26 +229,26 @@
             syncSideQuestAvailability(state);
             const definition = getSideQuestDefinition(questId);
             if (!definition) {
-                return { ok: false, error: '支线任务不存在。' };
+                return { ok: false, error: '旧事不存在。' };
             }
 
             const record = state.sideQuests[questId];
             if (!record || record.state !== 'active') {
-                return { ok: false, error: '当前没有可结算的支线选项。' };
+                return { ok: false, error: '当前没有可了结的旧事抉择。' };
             }
 
             const choice = (definition.choices || []).find((item) => item.id === choiceId);
             if (!choice) {
-                return { ok: false, error: '支线选项不存在。' };
+                return { ok: false, error: '旧事抉择不存在。' };
             }
 
             if (!deps.applyCosts(state, choice.costs)) {
-                return { ok: false, error: '资源不足，无法支付支线代价。' };
+                return { ok: false, error: '资源不足，付不起这笔旧事的代价。' };
             }
 
             const totalEffects = deps.mergeEffectPayload(definition.rewards, choice.effects);
             deps.applyEffects(state, totalEffects);
-            deps.pushLog(state, `支线抉择：${choice.text}`, 'normal');
+            deps.pushLog(state, `旧事抉择：${choice.text}`, 'normal');
 
             const branchMeta = definition.branchEffects?.[choice.id] || null;
             record.state = 'completed';
@@ -256,10 +256,10 @@
             record.resolvedAtProgress = deps.getMainStoryProgressValue(state);
             record.lastResult = createSideQuestResult('completed', definition, {
                 choiceId: choice.id,
-                summary: choice.resultSummary || `你已了结支线：${definition.title}。`,
+                summary: choice.resultSummary || `你已了结旧事：${definition.title}。`,
                 detail: branchMeta?.detail || '',
             });
-            deps.pushLog(state, `完成支线：${definition.title}`, 'good');
+            deps.pushLog(state, `了结旧事：${definition.title}`, 'good');
 
             syncSideQuestAvailability(state);
             return { ok: true, quest: getVisibleSideQuests(state).find((entry) => entry.id === questId) || null };
@@ -326,7 +326,7 @@
                 pushStory('黑市暗桩', '太南山那条暗线仍然有用，后面可以继续借它探路或换资源。', '万小山');
             }
             if (stories.length === 0) {
-                stories.push({ title: '暂无显性支线', detail: '继续修炼或推进主线后，会解锁新的旁支回响。' });
+                stories.push({ title: '暂无旧事上门', detail: '继续修炼或推进主线后，自会有新的旧事找上门来。' });
             }
             return stories;
         }

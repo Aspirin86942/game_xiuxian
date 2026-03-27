@@ -133,7 +133,7 @@
 
         function getSideQuestStateMeta(state) {
             const metaMap = {
-                available: { label: '可接支线', tone: 'available' },
+                available: { label: '可应旧事', tone: 'available' },
                 active: { label: '进行中', tone: 'active' },
                 completed: { label: '已了结', tone: 'completed' },
                 failed: { label: '已失手', tone: 'failed' },
@@ -164,7 +164,7 @@
 
             if (quest.state === 'available') {
                 const disabled = hasOtherActiveQuest ? 'disabled' : '';
-                const buttonText = hasOtherActiveQuest ? '另有支线进行中' : '接下这桩事';
+                const buttonText = hasOtherActiveQuest ? '另有旧事未了' : '应下这桩旧事';
                 return `
                     <article class="side-story-item side-story-item--quest" data-side-quest-id="${quest.id}" data-side-quest-state="${quest.state}">
                         <div class="side-story-head">
@@ -228,7 +228,7 @@
                 <article class="side-story-item side-story-item--legacy">
                     <div class="side-story-head">
                         <div><strong>${item.title}</strong><p>${item.detail}</p></div>
-                        <span class="side-story-status side-story-status--legacy">旁支线索</span>
+                        <span class="side-story-status side-story-status--legacy">旧事线索</span>
                     </div>
                     ${npcMeta ? `<div class="side-story-meta-row">${npcMeta}</div>` : ''}
                 </article>
@@ -248,7 +248,7 @@
 
             ctx.elements.sideStoryList.innerHTML = cards.length > 0
                 ? cards.join('')
-                : '<article class="side-story-item side-story-item--legacy"><strong>暂无显性支线</strong><p>风声暂歇，先把手头主线推进一段。</p></article>';
+                : '<article class="side-story-item side-story-item--legacy"><strong>暂无旧事上门</strong><p>风声暂歇，先把手头主线推进一段。</p></article>';
         }
 
         function renderStoryPage(ctx) {
@@ -345,7 +345,7 @@
                         <span class="choice-tag">${choice.promiseLabel || '承诺未定'}</span>
                         <span class="choice-tag risk-${choice.riskTier || 'steady'}">${choice.riskLabel || '稳妥'}</span>
                     </div>
-                    <span class="choice-cost">${choice.visibleCostLabel || (choice.costs ? `消耗：${ctx.GameCore.formatCosts(choice.costs)}` : '机会成本：会改写后续路线')}</span>
+                    <span class="choice-cost">${choice.visibleCostLabel || (choice.costs ? `消耗：${ctx.GameCore.formatCosts(choice.costs)}` : '此举代价：会牵动后面的因果')}</span>
                     ${choice.disabledReason ? `<span class="choice-disabled-reason">${choice.disabledReason}</span>` : ''}
                 </button>
             `).join('');

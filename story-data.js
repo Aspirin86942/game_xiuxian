@@ -683,6 +683,184 @@
         }),
     ]);
 
+    // 第二卷沿用现有主线结构接入，但卷级语义与运行时素材吸收点单独固定。
+    const VOLUME_TWO_CHAPTERS = Object.freeze([
+        {
+            id: 'volume_two_chapter_1',
+            title: '离开旧地',
+            legacyChapterIds: Object.freeze([12]),
+            volumeRole: 'opening',
+            chapterGoal: '建立真正离开七玄门旧阶段后的不稳感，让第二卷从“旧路已断”开始。',
+            chapterConflict: '人已经踏上修仙路，可凡俗旧名、旧债与旧活法还没有彻底退出。',
+            closureWrites: Object.freeze(['leaves_old_ground_for_good', 'admits_new_world_pressure']),
+            nextReads: Object.freeze(['mortal_debt_return', 'tainan_market_entry']),
+        },
+        {
+            id: 'volume_two_chapter_2',
+            title: '凡俗旧债未清',
+            legacyChapterIds: Object.freeze(['12_mortal_debt']),
+            volumeRole: 'escalation',
+            chapterGoal: '把墨府与墨彩环留下的凡俗旧债重新拉回主线上。',
+            chapterConflict: '韩立已能往前走，但别人早已替他承担了这些年的后果。',
+            closureWrites: Object.freeze(['mortal_debt_reframed', 'mocaihuan_seed_retained']),
+            nextReads: Object.freeze(['tainan_rules', 'market_caution']),
+        },
+        {
+            id: 'volume_two_chapter_3',
+            title: '太南山与散修交易场',
+            legacyChapterIds: Object.freeze(['12_tainan_market']),
+            volumeRole: 'bonding',
+            chapterGoal: '建立散修交易、情报与资源环境，让玩家第一次按修仙圈层规则思考。',
+            chapterConflict: '不是所有东西都能靠修为拿到，很多活路先得靠消息与代价换。',
+            closureWrites: Object.freeze(['tainan_rules_learned', 'market_contact_seeded']),
+            nextReads: Object.freeze(['token_conflict', 'black_market_route']),
+        },
+        {
+            id: 'volume_two_chapter_4',
+            title: '升仙令与修士杀机',
+            legacyChapterIds: Object.freeze(['12_token_kill']),
+            volumeRole: 'reversal',
+            chapterGoal: '让第二卷第一次真正进入修士视角的生死局。',
+            chapterConflict: '资格、令牌与门票本身就会引来杀机，修仙界并不比凡俗更讲理。',
+            closureWrites: Object.freeze(['token_conflict_resolved', 'sects_choice_forced']),
+            nextReads: Object.freeze(['yellow_maple_entry', 'survival_style_confirmed']),
+        },
+        {
+            id: 'volume_two_chapter_5',
+            title: '进入黄枫谷',
+            legacyChapterIds: Object.freeze(['12_enter_yellow_maple']),
+            volumeRole: 'climax',
+            chapterGoal: '完成第二卷的核心身份转换，让韩立真正进入宗门体系。',
+            chapterConflict: '立足需要秩序与庇护，但交出多少自由、交给谁，并非无代价。',
+            closureWrites: Object.freeze(['yellow_maple_identity_locked', 'sect_ladder_started']),
+            nextReads: Object.freeze(['herb_garden_low_start', 'sect_rule_pressure']),
+        },
+        {
+            id: 'volume_two_chapter_6',
+            title: '百药园立足',
+            legacyChapterIds: Object.freeze(['12_herb_garden']),
+            volumeRole: 'fallout',
+            chapterGoal: '把药园、绿瓶保密与长期积累变成稳定的宗门生存节奏。',
+            chapterConflict: '真正的根基不是一时出头，而是在不起眼的位置熬出可持续优势。',
+            closureWrites: Object.freeze(['herb_garden_foundation_built', 'green_bottle_hidden_again']),
+            nextReads: Object.freeze(['forbidden_ground_eve', 'foundation_prep_ready']),
+        },
+        {
+            id: 'volume_two_chapter_7',
+            title: '宗门人际与禁地前夜',
+            legacyChapterIds: Object.freeze([13]),
+            volumeRole: 'closure',
+            chapterGoal: '把门内人际、资源流转与禁地压力合成第二卷真正的卷末前夜。',
+            chapterConflict: '韩立已经站稳修仙第一层台阶，却也必须承认自己已走进更残酷的圈层。',
+            closureWrites: Object.freeze(['sect_position_established', 'forbidden_ground_ready']),
+            nextReads: Object.freeze(['volume_two_exit', 'third_volume_entry']),
+        },
+        {
+            id: 'volume_two_chapter_8',
+            title: '卷末收束',
+            legacyChapterIds: Object.freeze(['13_volume_close']),
+            volumeRole: 'exit',
+            chapterGoal: '明确第二卷为什么在这里结束，以及为什么下一卷必须进入血色禁地。',
+            chapterConflict: '真正踏上修仙路后，韩立已经不能再只按凡俗旧路处理人情、旧债与生死局。',
+            closureWrites: Object.freeze(['volume_two_exit_locked', 'third_volume_hooks_registered']),
+            nextReads: Object.freeze(['forbidden_ground_entry', 'foundation_prep_ready', 'mortal_debt_carryover', 'sect_identity_locked']),
+        },
+    ]);
+
+    const VOLUME_TWO_LEGACY_CHAPTER_MAP = Object.freeze({
+        10: Object.freeze({ targetChapterId: 'volume_two_chapter_3', action: 'reframe_runtime_material' }),
+        11: Object.freeze({ targetChapterId: 'volume_two_chapter_4', action: 'reframe_runtime_material' }),
+        12: Object.freeze({ targetChapterId: 'volume_two_chapter_6', action: 'reframe_runtime_material' }),
+        13: Object.freeze({ targetChapterId: 'volume_two_chapter_7', action: 'reframe_runtime_material' }),
+        14: Object.freeze({ targetChapterId: 'volume_two_chapter_8', action: 'forward_volume_boundary' }),
+        15: Object.freeze({ targetChapterId: 'volume_two_chapter_8', action: 'forward_volume_boundary' }),
+        16: Object.freeze({ targetChapterId: 'volume_two_chapter_8', action: 'forward_volume_boundary' }),
+    });
+
+    // 第三卷按现有 14~20 章节接入，18_nangong_return 升为核心章节，16_feiyu_return 保持卷内插章。
+    const VOLUME_THREE_CHAPTERS = Object.freeze([
+        {
+            id: 'volume_three_chapter_1',
+            title: '血色禁地',
+            legacyChapterIds: Object.freeze([14]),
+            volumeRole: 'opening',
+            chapterGoal: '把第三卷从“试炼会改写路数”这一卷级承诺正式立起来。',
+            chapterConflict: '韩立已经进场，但还没有决定自己会先保命、先认人还是先夺资源。',
+            closureWrites: Object.freeze(['forbidden_ground_rules_locked', 'trial_pressure_started']),
+            nextReads: Object.freeze(['nangong_first_bond', 'foundation_debt_choice']),
+        },
+        {
+            id: 'volume_three_chapter_2',
+            title: '情债与筑基',
+            legacyChapterIds: Object.freeze([15]),
+            volumeRole: 'escalation',
+            chapterGoal: '回收禁地结果，并把筑基与情债处理方式绑成同一压力节点。',
+            chapterConflict: '破境不再只是数值成长，而是你要决定如何背着这笔情债继续走。',
+            closureWrites: Object.freeze(['foundation_step_completed', 'nangong_debt_mode_locked']),
+            nextReads: Object.freeze(['li_lineage_pressure', 'old_friend_recall']),
+        },
+        {
+            id: 'volume_three_chapter_3',
+            title: '李化元门下',
+            legacyChapterIds: Object.freeze([16]),
+            volumeRole: 'bonding',
+            chapterGoal: '把门墙、归属与宗门任务代价真正绑进第三卷主冲突。',
+            chapterConflict: '韩立开始知道“站进门里”不是拿庇护，而是要连责任与代价一起拿。',
+            closureWrites: Object.freeze(['li_lineage_entry_locked', 'sect_duty_pressure_started']),
+            nextReads: Object.freeze(['yan_fort_board', 'feiyu_insert_window']),
+        },
+        {
+            id: 'volume_three_chapter_4',
+            title: '燕家堡风云',
+            legacyChapterIds: Object.freeze([17]),
+            volumeRole: 'reversal',
+            chapterGoal: '让韩立第一次被摆上更大的势力棋盘，并感到局势正在失控。',
+            chapterConflict: '家族、宗门、魔道势力已经不再允许他只按个人求生逻辑应对。',
+            closureWrites: Object.freeze(['yan_fort_position_exposed', 'war_board_revealed']),
+            nextReads: Object.freeze(['war_alignment_test', 'nangong_after_war']),
+        },
+        {
+            id: 'volume_three_chapter_5',
+            title: '魔道争锋',
+            legacyChapterIds: Object.freeze([18]),
+            volumeRole: 'climax',
+            chapterGoal: '用边境大战和阵营冲突把第三卷核心矛盾真正推到台前。',
+            chapterConflict: '正道 / 魔路 / 苟修不再只是路线标签，而要在生死局里给出代价。',
+            closureWrites: Object.freeze(['war_route_locked', 'nangong_joint_survival_written']),
+            nextReads: Object.freeze(['nangong_stage_one_settlement', 'mine_deadlock_entry']),
+        },
+        {
+            id: 'volume_three_chapter_6',
+            title: '并肩之后',
+            legacyChapterIds: Object.freeze(['18_nangong_return']),
+            volumeRole: 'fallout',
+            chapterGoal: '清算大战之后的人情、亏欠与关系第一阶段落点。',
+            chapterConflict: '南宫婉不再只是出场人物，而是终局级关系线的第一道锁点。',
+            closureWrites: Object.freeze(['nangong_bond_stage_one', 'war_emotion_aftershock']),
+            nextReads: Object.freeze(['mine_deadlock_entry', 'later_nangong_read']),
+        },
+        {
+            id: 'volume_three_chapter_7',
+            title: '灵矿死局',
+            legacyChapterIds: Object.freeze([19]),
+            volumeRole: 'closure',
+            chapterGoal: '把大战后的死局、资源伦理与路线气质收成可解释状态。',
+            chapterConflict: '韩立必须回答“更稳更快”和“还认不认人”到底谁排前面。',
+            closureWrites: Object.freeze(['mine_deadlock_resolved', 'postwar_resource_pressure_written']),
+            nextReads: Object.freeze(['star_sea_exit', 'route_identity_review']),
+        },
+        {
+            id: 'volume_three_chapter_8',
+            title: '再别天南',
+            legacyChapterIds: Object.freeze([20]),
+            volumeRole: 'exit',
+            chapterGoal: '完成第三卷出口，并把地图外扩送到第四卷入口。',
+            chapterConflict: '离开天南不是简单换地图，而是承认战争、旧债与关系已把他推到新阶段。',
+            closureWrites: Object.freeze(['volume_three_exit_locked', 'star_sea_entry_confirmed']),
+            nextReads: Object.freeze(['star_sea_entry', 'nangong_bond_stage_one', 'war_route_locked', 'postwar_resource_pressure']),
+        },
+    ]);
+
     const CHAPTER_ECHO_PACKS = {
         8: {
             protect_mo_house: {
@@ -1090,6 +1268,76 @@
             },
         },
         12: {
+            leave_without_return: {
+                title: '旧地推远',
+                detail: '你没有再给自己留一条“实在不行就回头”的退路。后来每当局势逼你选边时，你都会更快承认：这条路已经不允许你再按旧日活法求稳。',
+            },
+            send_word_back: {
+                title: '旧名仍有回声',
+                detail: '你没有回去，却还是让旧人知道你活着。这让很多凡俗旧债没有被彻底切断，也让你往后更难把“我已经走远了”说得太轻。',
+            },
+            cut_old_name: {
+                title: '连旧名都压下',
+                detail: '你把最能牵住自己的部分先按进了心底，像提前替自己剪断了回头路。往后每逢有人从旧地追来，你都会先本能地想：这一次该留哪一层名字，哪一层必须藏住。',
+            },
+        },
+        '12_mortal_debt': {
+            return_mortal_debt: {
+                title: '把旧账认给活人',
+                detail: '你没有把凡俗旧债继续拖成一句“以后再说”。此后很多人再想起你，先记住的不是你给过多少，而是你终究肯回来认那笔早该认的账。',
+            },
+            leave_resources_only: {
+                title: '只留资源不留人',
+                detail: '你把能补的东西留下，却没让自己真正停下来。往后每逢别人说你也算尽了心，你都会清楚知道：那更像是给旧账一个交代，而不是给旧人一个答案。',
+            },
+            keep_debt_distant: {
+                title: '旧债压成底色',
+                detail: '你没有真把这笔账结清，只是把它压成了一层以后会不断回来的底色。你越往上走，越难完全装作它已经过去。',
+            },
+        },
+        '12_tainan_market': {
+            buy_market_rule: {
+                title: '先把路数看明',
+                detail: '你第一次在散修圈层里学到的不是怎么赢，而是怎么不被别人轻易当成价码。后来每逢新局新地，你都会先找路数，再决定自己该亮出哪一面。',
+            },
+            take_black_route: {
+                title: '黑市先留后手',
+                detail: '你没有走最亮的那条路，而是先给自己埋了一条暗线。往后很多看似临时得来的消息，其实都能追回这次你肯花心思把路数摸黑一点。',
+            },
+            observe_without_buying: {
+                title: '价格先看人心',
+                detail: '你没有急着出手，只把摊位、口风和谁先抬价都记进了心里。后来别人说你谨慎，往往不是因为你不敢碰，而是你总先看见价钱后面那层人心。',
+            },
+        },
+        '12_token_kill': {
+            win_token_cleanly: {
+                title: '资格带着刀味',
+                detail: '你拿到的不只是令牌，还有别人立刻会盯上你的理由。往后每当资格、门票和资源摆在一起时，你都会先记得：修仙界最危险的，常常就是刚到手的那一下。',
+            },
+            trade_information_for_entry: {
+                title: '用消息换门票',
+                detail: '你没有硬冲最显眼的位置，而是拿别人没看懂的消息去换自己的入口。后来很多人以为你运气好，其实只是没看到你总肯先把消息当成命来算。',
+            },
+            kill_for_token_path: {
+                title: '门票沾血',
+                detail: '你把资格抢到手时，也第一次真切承认了“修士杀机”不是传闻。后来你再看那些名门正派的入场门槛，总会记得它们底下也压着血。',
+            },
+        },
+        '12_enter_yellow_maple': {
+            enter_as_low_profile_disciple: {
+                title: '把身放低进门',
+                detail: '你没有带着锋芒进去，而是先把自己安在最不起眼的位置。往后很多积累看起来像运气，其实都起于你这次愿意先低头站稳。',
+            },
+            enter_by_detour: {
+                title: '门内也先探价',
+                detail: '你进了宗门，却没让自己立刻变成宗门的一部分。此后每逢遇见大势与门墙，你都会比旁人多问一句：这份归属到底是庇护，还是另一种价码。',
+            },
+            enter_with_tradeoff: {
+                title: '先拿立足，再补代价',
+                detail: '你接受了这套秩序，也知道它不会白给。后来每当宗门给你路时，你都会先想清楚自己准备拿什么去换。',
+            },
+        },
+        '12_herb_garden': {
             farm_quietly: {
                 title: '药圃无声',
                 detail: '你把最要紧的东西都埋进土里，不让任何异样先长在脸上。后来越是能催熟命数的东西，你越知道得藏在无人看见的地方。',
@@ -1104,17 +1352,31 @@
             },
         },
         13: {
-            go_solo: {
-                title: '独自入局',
-                detail: '你把底牌只留给自己，进禁地时连背影都显得更轻。往后每逢生死压到一起，你都会本能先把最关键的一张牌按回掌心。',
+            align_with_fellow_disciples: {
+                title: '先认门内座次',
+                detail: '你没有急着只为自己铺路，而是先把门内谁能同行、谁会翻脸看清。后来很多队伍会愿意先来问你一句，不是因为你最强，而是因为你最早看懂了门内的人心秩序。',
             },
-            go_team: {
-                title: '结队求生',
-                detail: '你肯把生死与旁人系在一起，哪怕这样会让刀口变钝一些。后来很多人愿意在乱局里跟你站成一线，都是从这一步开始。',
+            keep_low_profile_before_trial: {
+                title: '试炼前先缩锋',
+                detail: '你把自己往阴影里再收了一层，不肯在禁地前夜先变成显眼目标。往后每逢大局将开时，你都会更习惯先把锋芒收住，再等别人先露出刀口。',
             },
-            prepare_heavy: {
-                title: '退路先埋',
-                detail: '你在真正进场前先把药阵与后路埋好，不肯拿命去赌一口气。往后别人说你稳，你都会先想起禁地前夜那些一寸寸补出来的退路。',
+            stock_foundation_supplies: {
+                title: '把破境准备先攒够',
+                detail: '你在真正进场前先把后面的筑基与补给准备好，不肯只凭一口气冲进去。别人以后说你算得细，很多都是从这一步开始的。',
+            },
+        },
+        '13_volume_close': {
+            enter_forbidden_ground_ready: {
+                title: '试炼前心里有数',
+                detail: '你没有把第二卷只走成“终于进了宗门”，而是把禁地之前该认的门墙、旧债和积累都先摆明。下一卷真正开始时，你会比很多人更清楚自己为什么进去。',
+            },
+            enter_forbidden_ground_with_debt: {
+                title: '带着旧债进试炼',
+                detail: '你已经站上修仙路，却没有把凡俗那一头彻底放下。正因如此，下一卷很多决定都不会只剩资源与生死，它们还会反复逼你认人、认债、认来路。',
+            },
+            enter_forbidden_ground_from_shadows: {
+                title: '先把自己藏进局里',
+                detail: '你准备好了进去，却还是把最重要的部分留在暗处。等真正进到血色禁地时，你会更像那个先算活路、再决定值不值得出手的人。',
             },
         },
         14: {
@@ -3382,10 +3644,286 @@
         },
         {
             id: 12,
-            title: '百药园杂役',
-            summary: '黄枫谷最不起眼的角落，恰好适合你慢慢积累。',
-            location: '黄枫谷',
+            title: '离开旧地',
+            summary: '真正离开旧地，不是走远，而是承认凡俗旧路已经不能再替你兜底。',
+            volumeId: 'volume_two_ascending_path',
+            volumeRole: 'opening',
+            legacyVolumeTarget: 'volume_two_chapter_1',
+            location: '越国边境',
             requirements: { storyProgress: 12 },
+            beats(state) {
+                return [
+                    beat('旁白', '离开第一卷之后，你终于明白，真正难的不是离开七玄门，而是承认自己已经不能再按七玄门那套活法回头。'),
+                    beat('旁白', state.flags.joinedYellowMaple ? '黄枫谷那条门路已经在前方等你，可真正压人的不是宗门，而是你知道自己从此得用修士的方式来过日子。' : '你眼前还没有完全稳妥的门路，所以每一步都比在凡俗时更像把命压上去。'),
+                    beat('旁白', '旧路像被风吹在背后，没完全断，也没有谁会替你再把它接回去。'),
+                    beat('旁白', '这不是简单的赶路，而是你第一次真正把“凡俗少年”留在身后。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'leave_without_return',
+                        text: '不再回头，先把活路算清',
+                        effects: {
+                            cultivation: 180,
+                            routeScores: { secluded: 1 },
+                            flags: { secondVolumeLeftOldLand: true },
+                        },
+                        nextChapterId: '12_mortal_debt',
+                    },
+                    {
+                        id: 'send_word_back',
+                        text: '托人捎话，至少让旧人知道你还活着',
+                        effects: {
+                            cultivation: 165,
+                            relations: { '墨彩环': 5 },
+                            routeScores: { orthodox: 1 },
+                            flags: { sentWordBackFromRoad: true },
+                        },
+                        nextChapterId: '12_mortal_debt',
+                    },
+                    {
+                        id: 'cut_old_name',
+                        text: '连旧名一起压下，只带能活命的那部分上路',
+                        effects: {
+                            cultivation: 190,
+                            routeScores: { demonic: 1 },
+                            flags: { buriedOldNameOnRoad: true },
+                        },
+                        nextChapterId: '12_mortal_debt',
+                    },
+                ];
+            },
+        },
+        {
+            id: '12_mortal_debt',
+            title: '凡俗旧债未清',
+            summary: '真正麻烦的，不是旧债还在，而是别人已经替你把这些年过完了。',
+            volumeId: 'volume_two_ascending_path',
+            volumeRole: 'escalation',
+            legacyVolumeTarget: 'volume_two_chapter_2',
+            location: '嘉元城',
+            requirements: { storyProgress: '12_mortal_debt' },
+            beats(state) {
+                const debtLine = state.flags.sentWordBackFromRoad
+                    ? '你没有亲自回去，却还是让旧人知道你活着。这让很多话都更像账，而不是纯粹的怀念。'
+                    : state.flags.buriedOldNameOnRoad
+                        ? '你本想把旧名一起压下，可真走到该认账的时候，才发现名字好藏，旧债不好藏。'
+                        : '你没有再给自己留“回头就是交代”的错觉，反而更清楚哪些债若不正视，只会一路跟着你。';
+                return [
+                    beat('旁白', '再走回嘉元城方向时，你忽然发现最让人发紧的不是仇家，也不是埋伏，而是那些不必开口也能让你知道时间已经过去了的屋舍与人。'),
+                    beat('旁白', debtLine),
+                    beat('旁白', '有些事你当然可以继续拖。可你也越来越明白，别人并没有暂停在原地等你回来做决定。'),
+                    beat('旁白', '修仙和凡俗并不是两张能彻底分开的纸。你走得越高，越会被迫回答：旧账到底是认，还是继续压。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'return_mortal_debt',
+                        text: '亲自认一部分旧账，不再把它全推给以后',
+                        effects: {
+                            cultivation: 180,
+                            relations: { '墨彩环': 10 },
+                            routeScores: { orthodox: 1 },
+                            flags: { volumeTwoMortalDebtFaced: true },
+                        },
+                        nextChapterId: '12_tainan_market',
+                    },
+                    {
+                        id: 'leave_resources_only',
+                        text: '留下资源补偿，但不让自己重新陷回旧日人情',
+                        effects: {
+                            cultivation: 190,
+                            items: { lingshi: -4 },
+                            routeScores: { secluded: 1 },
+                            flags: { volumeTwoLeftResourcesOnly: true },
+                        },
+                        nextChapterId: '12_tainan_market',
+                    },
+                    {
+                        id: 'keep_debt_distant',
+                        text: '先把这笔旧债压成底色，继续往前',
+                        effects: {
+                            cultivation: 205,
+                            routeScores: { demonic: 1 },
+                            flags: { volumeTwoDebtHeldAtDistance: true },
+                        },
+                        nextChapterId: '12_tainan_market',
+                    },
+                ];
+            },
+        },
+        {
+            id: '12_tainan_market',
+            title: '太南山与散修交易场',
+            summary: '散修世界最贵的从来不只是法器，而是别人比你早知道半步。',
+            volumeId: 'volume_two_ascending_path',
+            volumeRole: 'bonding',
+            legacyVolumeTarget: 'volume_two_chapter_3',
+            location: '太南山',
+            requirements: { storyProgress: '12_tainan_market', realmScoreAtLeast: 3 },
+            beats() {
+                return [
+                    beat('旁白', '真正走进太南山后，你才第一次清楚看见散修世界是怎么运转的：消息能卖，门路能卖，甚至谁先死都能卖。'),
+                    beat('旁白', '这里没有人关心你以前是谁，只关心你手里有什么、知不知道价、敢不敢把东西拿出来换。'),
+                    beat('旁白', '你很快明白，修仙并不只是变强。很多活路先得靠消息、交易和对风险的嗅觉换来。'),
+                    beat('旁白', '如果你不能先把规则看懂，很快就会被别人当成规则的一部分。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'buy_market_rule',
+                        text: '先花代价摸清路数，不急着抢东西',
+                        costs: { lingshi: 4 },
+                        effects: {
+                            cultivation: 205,
+                            routeScores: { orthodox: 1 },
+                            flags: { learnedTainanRules: true },
+                        },
+                        nextChapterId: '12_token_kill',
+                    },
+                    {
+                        id: 'take_black_route',
+                        text: '先埋一条黑市暗线，给自己留后手',
+                        costs: { lingshi: 3 },
+                        effects: {
+                            cultivation: 210,
+                            routeScores: { secluded: 1 },
+                            flags: { hasSecretInfo: true, securedBlackMarketRoute: true },
+                        },
+                        nextChapterId: '12_token_kill',
+                    },
+                    {
+                        id: 'observe_without_buying',
+                        text: '先看人心与价码，按兵不动',
+                        effects: {
+                            cultivation: 215,
+                            routeScores: { demonic: 1 },
+                            flags: { cautiousMarket: true, tainanWatchedSilently: true },
+                        },
+                        nextChapterId: '12_token_kill',
+                    },
+                ];
+            },
+        },
+        {
+            id: '12_token_kill',
+            title: '升仙令与修士杀机',
+            summary: '门票到手的那一刻，别人也会更快把你看成猎物。',
+            volumeId: 'volume_two_ascending_path',
+            volumeRole: 'reversal',
+            legacyVolumeTarget: 'volume_two_chapter_4',
+            location: '太南山',
+            requirements: { storyProgress: '12_token_kill' },
+            beats(state) {
+                return [
+                    beat('旁白', '升仙令不只是资格，更像一块把所有眼光都拽过来的石头。'),
+                    beat('旁白', state.flags.hasSecretInfo ? '你手里已有一条暗线，所以比旁人更早闻到那股不对劲的杀机。' : '你原以为抢到资格之后事情会简单一点，结果真正危险的反而是资格到手之后。'),
+                    beat('旁白', '你第一次完整感到修士视角的生死局：不是谁更讲理，而是谁先看见、谁先动、谁愿意把别人当代价。'),
+                    beat('旁白', '修仙世界并没有比凡俗更公平，它只是把杀机换成了更体面的说法。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'win_token_cleanly',
+                        text: '抢下升仙令，再立刻抽身',
+                        costs: { lingshi: 6 },
+                        effects: {
+                            cultivation: 230,
+                            items: { shengxianling: 1 },
+                            flags: { hasShengxianling: true, tokenConflictResolved: true },
+                            routeScores: { orthodox: 1 },
+                        },
+                        nextChapterId: '12_enter_yellow_maple',
+                    },
+                    {
+                        id: 'trade_information_for_entry',
+                        text: '用暗线消息换入门资格，少在明面上见血',
+                        effects: {
+                            cultivation: 225,
+                            flags: { hasShengxianling: true, tokenConflictResolved: true, hasSecretInfo: true },
+                            routeScores: { secluded: 1 },
+                        },
+                        nextChapterId: '12_enter_yellow_maple',
+                    },
+                    {
+                        id: 'kill_for_token_path',
+                        text: '借乱夺令，必要时先下手灭口',
+                        effects: {
+                            cultivation: 245,
+                            items: { shengxianling: 1 },
+                            flags: { hasShengxianling: true, tokenConflictResolved: true, firstCultivatorAmbushKill: true },
+                            routeScores: { demonic: 1 },
+                        },
+                        nextChapterId: '12_enter_yellow_maple',
+                    },
+                ];
+            },
+        },
+        {
+            id: '12_enter_yellow_maple',
+            title: '进入黄枫谷',
+            summary: '真正接进宗门体系时，你才知道“立足”也是一种代价结构。',
+            volumeId: 'volume_two_ascending_path',
+            volumeRole: 'climax',
+            legacyVolumeTarget: 'volume_two_chapter_5',
+            location: '黄枫谷',
+            requirements: { storyProgress: '12_enter_yellow_maple' },
+            beats(state) {
+                return [
+                    beat('旁白', state.flags.hasShengxianling ? '令牌在手，你终于能把自己放进一套更大的秩序里。' : '你终究还是摸到了进门的路子，只是比旁人更早知道这条路不是白给的。'),
+                    beat('旁白', '黄枫谷真正给你的，不只是庇护与门路，还有一整套以后会不断向你索取的规矩。'),
+                    beat('旁白', '从这一刻起，你不再只是“能不能进仙门”的问题，而是“准备把自己放进哪种秩序里活”。'),
+                    beat('旁白', '这一步决定了第二卷真正的主冲突：你不是进入修仙路，而是要学会怎么在修仙路上站住。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'enter_as_low_profile_disciple',
+                        text: '先把身放低，按最不起眼的弟子身份进去',
+                        effects: {
+                            cultivation: 240,
+                            flags: { joinedYellowMaple: true, enteredYellowMapleLowProfile: true },
+                            routeScores: { orthodox: 1 },
+                        },
+                        nextChapterId: '12_herb_garden',
+                    },
+                    {
+                        id: 'enter_by_detour',
+                        text: '先探门内门外口风，再借旁路入局',
+                        effects: {
+                            cultivation: 235,
+                            flags: { joinedYellowMaple: true, enteredByDetour: true },
+                            routeScores: { secluded: 1 },
+                        },
+                        nextChapterId: '12_herb_garden',
+                    },
+                    {
+                        id: 'enter_with_tradeoff',
+                        text: '先拿立足的门票，代价以后再慢慢补',
+                        effects: {
+                            cultivation: 250,
+                            flags: { joinedYellowMaple: true, enteredYellowMapleByTradeoff: true },
+                            routeScores: { demonic: 1 },
+                        },
+                        nextChapterId: '12_herb_garden',
+                    },
+                ];
+            },
+        },
+        {
+            id: '12_herb_garden',
+            title: '百药园立足',
+            summary: '黄枫谷最不起眼的角落，恰好适合你慢慢把根基攒出来。',
+            volumeId: 'volume_two_ascending_path',
+            volumeRole: 'fallout',
+            legacyVolumeTarget: 'volume_two_chapter_6',
+            location: '黄枫谷',
+            requirements: { storyProgress: '12_herb_garden' },
             beats(state) {
                 return [
                     beat('旁白', '进了黄枫谷，你仍从最不起眼的药园做起。'),
@@ -3434,49 +3972,119 @@
         },
         {
             id: 13,
-            title: '血色禁地前夜',
-            summary: '所有人都知道禁地危险，但所有人也都知道不进去就追不上别人。',
+            title: '宗门人际与禁地前夜',
+            summary: '所有人都知道禁地危险，但真正先逼近你的，是门内座次、人情与谁准备把你拉进队里。',
+            volumeId: 'volume_two_ascending_path',
+            volumeRole: 'closure',
+            legacyVolumeTarget: 'volume_two_chapter_7',
             location: '黄枫谷',
             requirements: { storyProgress: 13, realmScoreAtLeast: 4 },
             beats(state) {
+                const farmingLine = state.flags.lowProfileFarming
+                    ? '你藏得够深，所以没有人把你当作最先被盯上的目标。'
+                    : '你最近在药园名声渐起，这让很多人都开始试图和你结队。';
                 return [
                     beat('旁白', '血色禁地开放的消息一出，谷里像被火点着一样躁动。'),
-                    beat('旁白', state.flags.lowProfileFarming ? '你藏得够深，所以没有人把你当作最先被盯上的目标。' : '你最近在药园名声渐起，这让很多人都开始试图和你结队。'),
+                    beat('旁白', farmingLine),
+                    beat('旁白', state.flags.madeGardenConnections ? '你在药园里悄悄结下的人情开始回流，很多原本不会来找你的人也第一次把你看成了可同行的人。' : '你忽然意识到，宗门并不是单靠修为排序的地方。谁先来搭话、谁想结队、谁只想借你挡刀，都是另一套更细的座次。'),
                     beat('李化元', '进去之前先想好，机缘是抢来的，命却得自己保。'),
                     beat('旁白', '你该以什么姿态进禁地，会决定之后整段修仙路的味道。'),
+                    beat('旁白', '更重要的是，你已经不能再把自己当成一个只顾闷头修炼的人。真正的禁地前夜，先逼过来的是门内位置、人情债和谁会记住你这一回站在哪边。'),
                 ];
             },
             choices() {
                 return [
                     {
-                        id: 'go_solo',
-                        text: '独自进禁地，把底牌握在自己手里',
+                        id: 'align_with_fellow_disciples',
+                        text: '先认门内同行之人，把人情和队形都站稳',
                         effects: {
-                            cultivation: 230,
-                            routeScores: { secluded: 1 },
-                            flags: { soloIntoForbidden: true },
-                        },
-                        nextChapterId: 14,
-                    },
-                    {
-                        id: 'go_team',
-                        text: '结队进入，先保证活着出来',
-                        effects: {
-                            cultivation: 220,
-                            relations: { '李化元': 10 },
+                            cultivation: 235,
                             routeScores: { orthodox: 1 },
-                            flags: { soloIntoForbidden: false },
+                            flags: { alignedWithFellowDisciples: true, forbiddenGroundSocialReady: true },
+                        },
+                        nextChapterId: '13_volume_close',
+                    },
+                    {
+                        id: 'keep_low_profile_before_trial',
+                        text: '把锋芒再收一层，别在进禁地前先被人盯死',
+                        effects: {
+                            cultivation: 228,
+                            routeScores: { secluded: 1 },
+                            flags: { keptLowProfileBeforeTrial: true, forbiddenGroundSocialReady: true },
+                        },
+                        nextChapterId: '13_volume_close',
+                    },
+                    {
+                        id: 'stock_foundation_supplies',
+                        text: '把筑基与禁地的补给先攒够，再去争真正的试炼',
+                        effects: {
+                            cultivation: 242,
+                            items: { jiedusan: 1, lingcao: 2 },
+                            routeScores: { demonic: 1 },
+                            flags: { stockedFoundationSupplies: true, foundationPrepReady: true },
+                        },
+                        nextChapterId: '13_volume_close',
+                    },
+                ];
+            },
+        },
+        {
+            id: '13_volume_close',
+            title: '卷末收束',
+            summary: '第二卷真正要收住的，不是你有没有进宗门，而是你已经决定要以什么姿态进下一卷。',
+            volumeId: 'volume_two_ascending_path',
+            volumeRole: 'exit',
+            legacyVolumeTarget: 'volume_two_chapter_8',
+            location: '黄枫谷',
+            requirements: { storyProgress: '13_volume_close' },
+            beats(state) {
+                const debtLine = state.flags.volumeTwoMortalDebtFaced
+                    ? '凡俗旧债你并未彻底甩开，而是正面认了一部分。这样带进下一卷的，不是空白，而是一笔已经被承认的旧账。'
+                    : state.flags.volumeTwoLeftResourcesOnly
+                        ? '你给旧人留了补偿，却没把自己重新留回去。这让下一卷里的很多选择，都还会带着“你究竟算没算认过这笔账”的余味。'
+                        : '你把旧债压进了底色里。它没有消失，只是会在更高处继续回来认你。';
+                const sectLine = state.flags.alignedWithFellowDisciples
+                    ? '你已经在门内站出了一种会让人愿意来找你的位置。'
+                    : state.flags.keptLowProfileBeforeTrial
+                        ? '你还在把自己往阴影里收，可这已经是有意识的生存方式，而不是最初那种纯粹无助。'
+                        : '你把破境与补给先攒够了，也等于承认今后的修仙路不能只凭一口气硬冲。';
+                return [
+                    beat('旁白', '第二卷走到这里，真正定下来的不是你终于进了宗门，而是你已经学会：修仙世界里的人情、资源、门墙和旧债，都会一起追着你跑。'),
+                    beat('旁白', debtLine),
+                    beat('旁白', sectLine),
+                    beat('旁白', '血色禁地的门就在前方。你要带进去的，不只是一身修为和几件法器，还有这一路上认下或压下的那些东西。'),
+                    beat('旁白', '下一卷不会再问你能不能踏上修仙路，而会直接问：你准备拿什么代价，在这条路上活下去。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'enter_forbidden_ground_ready',
+                        text: '把准备、门墙与路数都带齐，再进禁地',
+                        effects: {
+                            cultivation: 250,
+                            flags: { volumeTwoExitLocked: true, forbiddenGroundEntryReady: true, sectIdentityLocked: true },
+                            routeScores: { orthodox: 1 },
                         },
                         nextChapterId: 14,
                     },
                     {
-                        id: 'prepare_heavy',
-                        text: '提前布药阵和退路，宁可慢也不莽',
+                        id: 'enter_forbidden_ground_with_debt',
+                        text: '带着未清旧债进场，看看它会把你逼成什么样',
                         effects: {
-                            cultivation: 210,
-                            items: { jiedusan: 1 },
+                            cultivation: 255,
+                            flags: { volumeTwoExitLocked: true, mortalDebtCarryover: true, forbiddenGroundEntryReady: true },
                             routeScores: { secluded: 1 },
-                            flags: { preparedForbiddenLand: true },
+                        },
+                        nextChapterId: 14,
+                    },
+                    {
+                        id: 'enter_forbidden_ground_from_shadows',
+                        text: '先把自己藏稳，再从暗处踏进下一卷',
+                        effects: {
+                            cultivation: 260,
+                            flags: { volumeTwoExitLocked: true, forbiddenGroundEntryReady: true, hiddenApproachToForbidden: true },
+                            routeScores: { demonic: 1 },
                         },
                         nextChapterId: 14,
                     },
@@ -3487,6 +4095,9 @@
             id: 14,
             title: '血色禁地',
             summary: '这一步之后，你的“路数”会真正被定型。',
+            volumeId: 'volume_three_magic_invasion',
+            volumeRole: 'opening',
+            legacyVolumeTarget: 'volume_three_chapter_1',
             location: '血色禁地',
             requirements: { storyProgress: 14 },
             beats(state) {
@@ -3553,6 +4164,9 @@
             id: 15,
             title: '情债与筑基',
             summary: '禁地之后，筑基不再只是破境，而是你第一次决定怎样背着情债继续往前。',
+            volumeId: 'volume_three_magic_invasion',
+            volumeRole: 'escalation',
+            legacyVolumeTarget: 'volume_three_chapter_2',
             location: '黄枫谷',
             requirements: { storyProgress: 15, realmScoreAtLeast: 5 },
             beats(state) {
@@ -3630,6 +4244,9 @@
             id: 16,
             title: '李化元门下',
             summary: '筑基之后，你真正要学的第一次不是术法，而是师门如何把人放进局里。',
+            volumeId: 'volume_three_magic_invasion',
+            volumeRole: 'bonding',
+            legacyVolumeTarget: 'volume_three_chapter_3',
             location: '黄枫谷',
             requirements: { storyProgress: 16, realmScoreAtLeast: 5 },
             beats(state) {
@@ -3748,6 +4365,9 @@
             id: 17,
             title: '燕家堡风云',
             summary: '一场宴席，把你推到更大的势力棋盘边上。',
+            volumeId: 'volume_three_magic_invasion',
+            volumeRole: 'reversal',
+            legacyVolumeTarget: 'volume_three_chapter_4',
             location: '燕家堡',
             requirements: { storyProgress: 17, realmScoreAtLeast: 6 },
             beats(state) {
@@ -3812,6 +4432,9 @@
             id: 18,
             title: '魔道争锋',
             summary: '从这一章开始，正道、魔道、苟道不再只是嘴上说说。',
+            volumeId: 'volume_three_magic_invasion',
+            volumeRole: 'climax',
+            legacyVolumeTarget: 'volume_three_chapter_5',
             location: '越国边境',
             requirements: { storyProgress: 18, realmScoreAtLeast: 6 },
             beats(state) {
@@ -3862,9 +4485,11 @@
         },
         {
             id: '18_nangong_return',
-            chapterLabel: '插章·并肩之后',
             title: '并肩之后',
             summary: '南宫婉这条线不是情绪奖励，而是终于有人看穿你之后，仍知道怎样和你站在一处。',
+            volumeId: 'volume_three_magic_invasion',
+            volumeRole: 'fallout',
+            legacyVolumeTarget: 'volume_three_chapter_6',
             location: '越国边境',
             requirements: { storyProgress: '18_nangong_return' },
             beats(state) {
@@ -3921,6 +4546,9 @@
             id: 19,
             title: '灵矿死局',
             summary: '被扔进矿脉的人，大多不是精锐，而是被允许牺牲的人。',
+            volumeId: 'volume_three_magic_invasion',
+            volumeRole: 'closure',
+            legacyVolumeTarget: 'volume_three_chapter_7',
             location: '灵石矿脉',
             requirements: { storyProgress: 19 },
             beats(state) {
@@ -4053,6 +4681,9 @@
             id: 20,
             title: '再别天南',
             summary: '离开并不意味着切断一切，只是把旧因果压到更远的地方。',
+            volumeId: 'volume_three_magic_invasion',
+            volumeRole: 'exit',
+            legacyVolumeTarget: 'volume_three_chapter_8',
             location: '乱星海',
             requirements: { storyProgress: 20, realmScoreAtLeast: 7 },
             beats(state) {
@@ -4819,9 +5450,36 @@
                 text = '曲魂这一章真正留下的，不只是一个随从位，而是你以后还能不能把“人”和“可用之物”分清。';
                 break;
             case 12:
+                text = flags.sentWordBackFromRoad
+                    ? '你离开旧地时没有把过去完全按死。这会让你后面很多“只谈活路”的选择，都被旧名旧债重新拽住一点。'
+                    : flags.buriedOldNameOnRoad
+                        ? '你从这一章起学会先把名字和来路藏起来。后面局势越大，这种先藏再动的习惯就越会变成你的本能。'
+                        : '第二卷真正从这里起势：你不是单纯换了一张地图，而是终于承认修仙路会逼你用新的方式活。';
+                break;
+            case '12_mortal_debt':
+                text = '凡俗旧债并没有因为你走远就自动失效。你在这里怎么认账，后面就会怎么理解“修仙之后还认不认人”。';
+                break;
+            case '12_tainan_market':
+                text = '太南山留下来的，不只是一个交易场，而是你第一次真正学会资源、消息和命都能被同时拿来作价。';
+                break;
+            case '12_token_kill':
+                text = '升仙令这一章真正留下的，不是门票本身，而是你终于知道修士的资格和杀机往往一起到场。';
+                break;
+            case '12_enter_yellow_maple':
+                text = '黄枫谷不是奖励，而是一套更大的秩序。你以后借到的每一层门墙之力，都会回到这一步来重新认账。';
+                break;
+            case '12_herb_garden':
                 text = flags.hasGreenBottle
                     ? '绿瓶的催熟能力从这里起不只是资源，而是你一路选择的放大器。'
                     : '百药园的低调与激进，会直接决定你后面缺不缺材料。';
+                break;
+            case 13:
+                text = flags.madeGardenConnections
+                    ? '禁地前夜这章真正收住的，不只是试炼气氛，还有你已经在门内站到了什么位置。'
+                    : '第二卷在这里真正开始收口：人情、队形、门内座次都会先于禁地本身，决定别人怎么认你。';
+                break;
+            case '13_volume_close':
+                text = '卷末收束真正留下的，不只是“下章可玩”，而是你为什么必须带着这一路的门墙、旧债与准备去进下一卷。';
                 break;
             case 14:
                 text = '血色禁地真正会定下的，不只是主药归谁，而是你第一次在活人、退路和机缘同时压来时，会先看哪一边。';
@@ -4994,6 +5652,9 @@
         VOLUME_ONE_CHAPTERS,
         VOLUME_ONE_LEGACY_CHAPTER_MAP,
         VOLUME_ONE_SIDE_QUEST_SEEDS,
+        VOLUME_TWO_CHAPTERS,
+        VOLUME_TWO_LEGACY_CHAPTER_MAP,
+        VOLUME_THREE_CHAPTERS,
         LEVEL_STORY_EVENTS,
         STORY_CHAPTERS,
     };

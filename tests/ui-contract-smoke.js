@@ -140,8 +140,8 @@ function testGameCoreFacade() {
     requiredFunctions.forEach((name) => {
         assert.strictEqual(typeof GameCore[name], 'function', `GameCore.${name} 应继续作为 façade 方法暴露`);
     });
-    assert.strictEqual(GameCore.SAVE_VERSION, 6, 'SAVE_VERSION 不应变化');
-    assert.strictEqual(GameCore.MIN_SUPPORTED_SAVE_VERSION, 5, 'MIN_SUPPORTED_SAVE_VERSION 不应变化');
+    assert.strictEqual(GameCore.SAVE_VERSION, 7, 'SAVE_VERSION 应更新到第二卷断档版本');
+    assert.strictEqual(GameCore.MIN_SUPPORTED_SAVE_VERSION, 7, 'MIN_SUPPORTED_SAVE_VERSION 应与当前版本同步抬高');
 
     const state = GameCore.createInitialState();
     assert.strictEqual(state.ui.activeTab, 'cultivation');

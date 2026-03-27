@@ -1564,7 +1564,7 @@ function testBlockedMainChapterHintStaysConcrete() {
     const blockedHint = GameCore.getBlockedMainStoryHint(state);
     assert(nextGoal.includes('太南小会'));
     assert(nextGoal.includes('修至筑基初期'));
-    assert(blockedHint.includes('升仙令线会在满足条件后继续'));
+    assert(blockedHint.includes('升仙令这一线，火候到了自会续上'));
     assert(state.logs.some((entry) => entry.message.includes('太南小会') && entry.message.includes('筑基初期')));
 }
 

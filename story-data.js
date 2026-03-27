@@ -99,27 +99,27 @@
         lingcao: {
             name: '灵草',
             type: 'material',
-            description: '药园常见灵植，可炼丹或换取人情。',
+            description: '药田里最常见的青叶，入炉可成丹，递出去也常是一份人情。',
             usable: false,
-            actions: [{ id: 'refine', label: '炼化', summary: '炼化：回复 12% 气血。', effect: { healRatio: 0.12 } }],
+            actions: [{ id: 'refine', label: '炼化', summary: '炼化：回转 12% 气血。', effect: { healRatio: 0.12 } }],
         },
         lingshi: {
             name: '灵石',
             type: 'material',
-            description: '修仙界硬通货，也是闭关修炼时最稳定的灵气来源。',
+            description: '修士行走世间的硬底子；无论闭关、交易还是保命，多半都绕不开它。',
             usable: false,
         },
         yaodan: {
             name: '妖丹',
             type: 'material',
-            description: '妖兽精华，常用作高阶丹药辅材。',
+            description: '妖物一身精华所凝，药性最烈，常被拿来压进高阶丹炉。',
             usable: false,
-            actions: [{ id: 'refine', label: '炼化', summary: '炼化：消耗 1 枚，获得 60 点修为。', effect: { cultivation: 60 } }],
+            actions: [{ id: 'refine', label: '炼化', summary: '炼化：折去 1 枚，得修为 60 点。', effect: { cultivation: 60 } }],
         },
         greenBottle: {
             name: '神秘绿瓶',
             type: 'treasure',
-            description: '可催熟灵药的奇物，越少张扬越安全。',
+            description: '一只不起眼的小瓶，却最会在暗处催熟灵药；越少叫人看见，越安全。',
             usable: false,
             passiveEffects: { maxHp: 10, breakthroughBonus: 0.02 },
             passiveSummary: '持有生效：气血上限 +10，突破加成 +2%。',
@@ -127,7 +127,7 @@
         moLetter: {
             name: '墨大夫遗书',
             type: 'quest',
-            description: '墨居仁死前留下的残信，藏着墨府旧因果。',
+            description: '墨居仁临死前留下的残信，纸面发脆，字里却还压着墨府旧因果。',
             usable: false,
             passiveEffects: { defense: 2 },
             passiveSummary: '持有生效：防御 +2。',
@@ -135,7 +135,7 @@
         evidence: {
             name: '药渣证据',
             type: 'quest',
-            description: '能证明神手谷暗地里炼制禁药。',
+            description: '能把神手谷禁药旧事重新见光的证物。',
             usable: false,
             passiveEffects: { attack: 2 },
             passiveSummary: '持有生效：攻击 +2。',
@@ -143,7 +143,7 @@
         shengxianling: {
             name: '升仙令',
             type: 'quest',
-            description: '进入黄枫谷的关键凭证。',
+            description: '一枚能叩开黄枫谷山门的凭证，也是一场杀机的引子。',
             usable: false,
             passiveEffects: { maxHp: 8, defense: 1 },
             passiveSummary: '持有生效：气血上限 +8，防御 +1。',
@@ -151,7 +151,7 @@
         zhujidanMaterial: {
             name: '筑基丹主药',
             type: 'material',
-            description: '血色禁地里才有的大药。',
+            description: '血色禁地才肯吐出的主药，见到它的人，多半都要拿命来换。',
             usable: false,
             passiveEffects: { breakthroughBonus: 0.04 },
             passiveCap: 3,
@@ -160,7 +160,7 @@
         xuTianTu: {
             name: '虚天残图',
             type: 'quest',
-            description: '通往虚天殿的线索之一。',
+            description: '通往虚天殿的残图之一，拿在手里像捧着一段还没炸开的风声。',
             usable: false,
             passiveEffects: { attack: 3, breakthroughBonus: 0.02 },
             passiveSummary: '持有生效：攻击 +3，突破加成 +2%。',
@@ -168,39 +168,39 @@
         juqidan: {
             name: '聚气丹',
             type: 'pill',
-            description: '服下后立得修为。',
+            description: '丹力一入腹，气机便立时高涨。',
             usable: true,
             effect: { cultivation: 220 },
-            actions: [{ id: 'use', label: '使用', summary: '使用：获得 220 点修为。', effect: { cultivation: 220 } }],
+            actions: [{ id: 'use', label: '使用', summary: '服下：得修为 220 点。', effect: { cultivation: 220 } }],
         },
         zhujidan: {
             name: '筑基丹',
             type: 'pill',
-            description: '下次突破额外提升 15% 成功率。',
+            description: '叩关前含下去，能替你多撑一口成败未定的气。',
             usable: true,
             effect: { breakthroughBonus: 0.15 },
-            actions: [{ id: 'use', label: '使用', summary: '使用：下次突破额外提升 15% 成功率。', effect: { breakthroughBonus: 0.15 } }],
+            actions: [{ id: 'use', label: '使用', summary: '服下：下次突破额外 +15% 成算。', effect: { breakthroughBonus: 0.15 } }],
         },
         jiedusan: {
             name: '解毒散',
             type: 'pill',
-            description: '调理经脉与余毒。',
+            description: '散开余毒，也替乱掉的经脉缓一缓。',
             usable: true,
             effect: { healRatio: 0.35 },
-            actions: [{ id: 'use', label: '使用', summary: '使用：回复 35% 最大气血。', effect: { healRatio: 0.35 } }],
+            actions: [{ id: 'use', label: '使用', summary: '服下：回复 35% 最大气血。', effect: { healRatio: 0.35 } }],
         },
         huashendan: {
             name: '化神丹',
             type: 'pill',
-            description: '元婴之后的破关重药，下次突破额外提升 25% 成功率。',
+            description: '元婴之后才压得住的重药，真正服下时，像把一口天火含进腹中。',
             usable: true,
             effect: { breakthroughBonus: 0.25 },
-            actions: [{ id: 'use', label: '使用', summary: '使用：下次突破额外提升 25% 成功率。', effect: { breakthroughBonus: 0.25 } }],
+            actions: [{ id: 'use', label: '使用', summary: '服下：下次突破额外 +25% 成算。', effect: { breakthroughBonus: 0.25 } }],
         },
         feijian: {
             name: '飞剑',
             type: 'weapon',
-            description: '提升游历战斗中的攻击力。',
+            description: '剑光一起，游历中的杀伐便先利三分。',
             usable: false,
             passiveEffects: { attack: 6 },
             passiveSummary: '持有生效：攻击 +6。',
@@ -208,7 +208,7 @@
         hujian: {
             name: '护身法器',
             type: 'armor',
-            description: '提升游历战斗中的防御力。',
+            description: '护身灵光一开，游历中的来势便能替你挡下一层。',
             usable: false,
             passiveEffects: { defense: 4 },
             passiveSummary: '持有生效：防御 +4。',
@@ -216,7 +216,7 @@
         quhun: {
             name: '曲魂',
             type: 'companion',
-            description: '半傀儡护卫，可在险境里护你一线。',
+            description: '半人半傀的护卫，真到险处时，往往能替你多扛半口气。',
             usable: false,
             passiveEffects: { maxHp: 12 },
             passiveSummary: '持有生效：气血上限 +12。',
@@ -228,7 +228,7 @@
             id: 'brew-jiedusan',
             name: '炼制解毒散',
             category: 'recovery',
-            summary: '以灵草和灵石调理经脉，炼成基础回血丹。',
+            summary: '取灵草与灵石缓慢养脉，炼出一炉最常用的解毒散。',
             costs: { lingcao: 2, lingshi: 5 },
             outputs: { jiedusan: 1 },
             unlock: {},
@@ -237,7 +237,7 @@
             id: 'brew-juqidan',
             name: '炼制聚气丹',
             category: 'cultivation',
-            summary: '以灵草、妖丹与灵石炼制常用修为丹。',
+            summary: '把灵草、妖丹与灵石一并压进炉里，炼成常备的聚气丹。',
             costs: { lingcao: 2, yaodan: 1, lingshi: 10 },
             outputs: { juqidan: 1 },
             unlock: {},
@@ -246,7 +246,7 @@
             id: 'brew-zhujidan',
             name: '炼制筑基丹',
             category: 'breakthrough',
-            summary: '持有主药后方可成丹，用于前中期突破准备。',
+            summary: '主药在手，才敢开这一炉，用来替前中期叩关添一口底气。',
             costs: { zhujidanMaterial: 1, lingcao: 2, lingshi: 20 },
             outputs: { zhujidan: 1 },
             unlock: {
@@ -257,7 +257,7 @@
             id: 'brew-huashendan',
             name: '炼制化神丹',
             category: 'breakthrough',
-            summary: '元婴及以上才可掌控的高阶突破丹。',
+            summary: '元婴之后才压得住的重丹，开炉时便知不是寻常火候。',
             costs: { yaodan: 3, lingcao: 4, lingshi: 60 },
             outputs: { huashendan: 1 },
             unlock: {
@@ -275,28 +275,28 @@
     ];
 
     const LOCATIONS = {
-        '青牛镇': { name: '青牛镇', description: '你的旧家还在烟火里，很多选择都从这里开始。', npcs: [] },
-        '七玄门': { name: '七玄门', description: '越国小宗门，门规不严，却是你真正踏入仙路的起点。', npcs: ['墨大夫', '厉飞雨'] },
-        '神手谷': { name: '神手谷', description: '药香与血气交杂，表面平静，暗处却藏刀。', npcs: ['墨大夫'] },
-        '嘉元城': { name: '嘉元城', description: '凡俗城池，墨府旧案与人情都在这里发芽。', npcs: ['墨彩环', '曲魂'] },
-        '太南山': { name: '太南山', description: '散修汇聚的小会，消息、法器、祸患都能买到。', npcs: ['万小山'] },
-        '黄枫谷': { name: '黄枫谷', description: '大宗门规矩森严，适合低调积累，也适合埋下名声。', npcs: ['李化元'] },
-        '血色禁地': { name: '血色禁地', description: '一脚踩下去是机缘，另一脚踩下去就是尸骨。', npcs: ['南宫婉'] },
-        '燕家堡': { name: '燕家堡', description: '宴席之上人人带笑，桌案之下处处是算计。', npcs: [] },
-        '越国边境': { name: '越国边境', description: '正魔双方的攻守被拉成一条又长又冷的线。', npcs: [] },
-        '灵石矿脉': { name: '灵石矿脉', description: '矿灯摇晃，弃子与死士往往只差一道军令。', npcs: [] },
-        '乱星海': { name: '乱星海', description: '海上势力交错，弱肉强食比天南更赤裸。', npcs: ['南宫婉'] },
-        '乱星海外海': { name: '乱星海外海', description: '残图、海妖与散修的命都一起漂在浪上。', npcs: [] },
-        '乱星海深处': { name: '乱星海深处', description: '所有人都在赶路，追同一件可能杀死所有人的宝物。', npcs: [] },
-        '天南': { name: '天南', description: '旧账、人情与道心都在等你回头。', npcs: ['南宫婉'] },
-        '大晋': { name: '大晋', description: '人界最后一段路，谁都想在这里定出自己的答案。', npcs: [] },
+        '青牛镇': { name: '青牛镇', description: '炊烟还在，旧屋也还在。很多后来绕不开的选择，都是从这里起身。', npcs: [] },
+        '七玄门': { name: '七玄门', description: '山门不大，规矩也不算森严，却是你真正踏上仙路的第一道门槛。', npcs: ['墨大夫', '厉飞雨'] },
+        '神手谷': { name: '神手谷', description: '药香压着血气，表面寂静，暗处却总像有人把刀背在身后。', npcs: ['墨大夫'] },
+        '嘉元城': { name: '嘉元城', description: '凡俗城池灯火如常，墨府旧案与人情冷暖都在这里慢慢发酵。', npcs: ['墨彩环', '曲魂'] },
+        '太南山': { name: '太南山', description: '散修云集，消息、法器、祸患与机缘都在这里一起叫价。', npcs: ['万小山'] },
+        '黄枫谷': { name: '黄枫谷', description: '门规森严的大宗山门，既适合低头积累，也适合把名声慢慢种下。', npcs: ['李化元'] },
+        '血色禁地': { name: '血色禁地', description: '脚下一步也许是机缘，再一步便可能只剩尸骨。', npcs: ['南宫婉'] },
+        '燕家堡': { name: '燕家堡', description: '杯盏之间人人带笑，可真正摆在桌下的，多半都是算计。', npcs: [] },
+        '越国边境': { name: '越国边境', description: '正魔两线相持不下，整片边境都像一根绷到发冷的弦。', npcs: [] },
+        '灵石矿脉': { name: '灵石矿脉', description: '矿灯摇晃不定，一道军令下来，弃子和死士往往只隔半步。', npcs: [] },
+        '乱星海': { name: '乱星海', description: '海上势力咬在一起，弱肉强食比天南来得更直也更冷。', npcs: ['南宫婉'] },
+        '乱星海外海': { name: '乱星海外海', description: '残图、海妖、散修和命数，都被海风卷在一处。', npcs: [] },
+        '乱星海深处': { name: '乱星海深处', description: '所有人都在朝同一件宝物赶，像赶向一场可能埋掉所有人的潮头。', npcs: [] },
+        '天南': { name: '天南', description: '旧账、人情与道心都在这里等你回身去认。', npcs: ['南宫婉'] },
+        '大晋': { name: '大晋', description: '人界最后一大段路，谁都想在这里替自己定下一个答案。', npcs: [] },
     };
 
     const SIDE_QUESTS_V1 = [
         {
             id: 'old_medicine_ledger',
             title: '旧药账',
-            detail: '墨府旧账房中留下几页被水浸过的账册。账面不清，却隐约能看出一些人名与药材流向。',
+            detail: '墨府旧账房里还压着几页泡皱的账册。墨痕已糊，纸上却还能辨出几个人名与药材去路。',
             category: '旧账',
             npc: '墨彩环',
             volumeAnchor: 'volume_one_qixuanmen',
@@ -317,7 +317,7 @@
                 items: { lingshi: 6 },
                 flags: { sideQuestOldMedicineLedgerCompleted: true },
             },
-            rewardPreview: '灵石 x6、墨府旧账完成旗标',
+            rewardPreview: '灵石 x6 · 墨府旧账有了去处',
             branchEffects: {
                 return_ledgers: { title: '账页归主', detail: '你把账页交回活人手里，让旧事先有了能被清理的起点。' },
                 keep_names_only: { title: '只留人名', detail: '你烧去大半旧页，只记住最关键的名字，准备以后再择机补这一刀。' },
@@ -325,23 +325,23 @@
             choices: [
                 {
                     id: 'return_ledgers',
-                    text: '把账页交还墨彩环，请她亲自收尾',
+                    text: '把账页交回墨彩环，让活人亲手收尾',
                     effects: {
                         relations: { '墨彩环': 3 },
                         routeScores: { orthodox: 1 },
                         flags: { returnedOldMedicineLedger: true },
                     },
-                    resultSummary: '你把账页交回墨府，让旧账重新落回活人手里。',
+                    resultSummary: '你把账页交回墨府，让这笔旧账重新落回活人手里。',
                 },
                 {
                     id: 'keep_names_only',
-                    text: '焚去账页，只留下关键名字备后手',
+                    text: '焚去旧页，只把几个关键名字藏回袖中',
                     effects: {
                         relations: { '墨彩环': 1 },
                         routeScores: { secluded: 1 },
                         flags: { keptMedicineLedgerNamesOnly: true },
                     },
-                    resultSummary: '你没有继续摊开这笔旧账，只把最有用的名字留在自己手里。',
+                    resultSummary: '你没有再把旧账翻到底，只把最要紧的名字留在自己手里。',
                 },
             ],
             priority: 90,
@@ -350,7 +350,7 @@
         {
             id: 'apothecary_boy_echo',
             title: '药童残影',
-            detail: '你偶然又听见那句断断续续的话：师父让我们闭眼。也许这不是疯话，而是还没被说清的旧案。',
+            detail: '你又听见那句断断续续的话：师父让我们闭眼。那不像疯话，更像一桩迟迟没人肯说清的旧案。',
             category: '旧案',
             npc: '曲魂',
             volumeAnchor: 'volume_one_qixuanmen',
@@ -371,7 +371,7 @@
                 items: { jiedusan: 1 },
                 flags: { sideQuestApothecaryBoyEchoCompleted: true },
             },
-            rewardPreview: '解毒散 x1、药童旧案完成旗标',
+            rewardPreview: '解毒散 x1 · 药童旧案有了结果',
             branchEffects: {
                 trace_the_voice: { title: '顺声追旧案', detail: '你顺着那句疯话再往回查了一步，等于承认这件事并没有随死人一起埋干净。' },
                 seal_the_memory: { title: '先把影子压住', detail: '你不再继续深翻，只给这段残影留下一道暂时不再扩散的封口。' },
@@ -379,16 +379,16 @@
             choices: [
                 {
                     id: 'trace_the_voice',
-                    text: '顺着药童残语再查一层',
+                    text: '顺着药童残语，再往里查一层',
                     effects: {
                         routeScores: { orthodox: 1 },
                         flags: { tracedApothecaryBoyEcho: true },
                     },
-                    resultSummary: '你顺着残影多问了一层，让这桩旧案终于多了一个继续被记住的理由。',
+                    resultSummary: '你顺着残影多问了一层，让这桩旧案终于有了继续被人记住的理由。',
                 },
                 {
                     id: 'seal_the_memory',
-                    text: '暂时压下残影，不再继续深翻',
+                    text: '先把残影压住，眼下不再深翻',
                     effects: {
                         routeScores: { secluded: 1 },
                         items: { lingcao: 1 },
@@ -403,7 +403,7 @@
         {
             id: 'li_feiyu_wine',
             title: '厉飞雨的酒',
-            detail: '有旧友仍活在凡人江湖里。他不懂你如今的境界，却大概还记得你最早是什么样子。',
+            detail: '还有旧友留在凡人江湖里。他未必懂你如今的境界，却多半还记得你最初是怎样起身的。',
             category: '旧友',
             npc: '厉飞雨',
             volumeAnchor: 'volume_two_ascending_path',
@@ -427,7 +427,7 @@
                 items: { lingshi: 10 },
                 flags: { sideQuestLiFeiyuWineCompleted: true },
             },
-            rewardPreview: '灵石 x10、厉飞雨旧友完成旗标',
+            rewardPreview: '灵石 x10 · 旧友这一段有了回声',
             branchEffects: {
                 share_plain_wine: { title: '一杯旧酒', detail: '你没有谈大道，只陪旧友把凡人江湖里还没散干净的那点热气喝完。' },
                 leave_medicine_and_go: { title: '留药即走', detail: '你没久留，只把能救急的东西留下，让旧情保持在不再相互拖累的距离。' },
@@ -435,7 +435,7 @@
             choices: [
                 {
                     id: 'share_plain_wine',
-                    text: '陪厉飞雨喝一杯，把旧事说开一些',
+                    text: '陪厉飞雨喝一杯，把旧路上的话说开些',
                     costs: { lingshi: 2 },
                     effects: {
                         relations: { '厉飞雨': 4 },
@@ -462,7 +462,7 @@
         {
             id: 'spirit_mine_survivor',
             title: '灵矿幸存者',
-            detail: '灵矿一战之后，活下来的人说法并不一样。有人念你的情，也有人记你的过。',
+            detail: '灵矿一战之后，活下来的人说法并不一样。有人念你的情，也有人把你的过记得更深。',
             category: '战后',
             npc: '李化元',
             volumeAnchor: 'volume_three_modao_conflict',
@@ -483,7 +483,7 @@
                 items: { lingshi: 12 },
                 flags: { sideQuestSpiritMineSurvivorCompleted: true },
             },
-            rewardPreview: '灵石 x12、灵矿余波完成旗标',
+            rewardPreview: '灵石 x12 · 灵矿余波已见收束',
             branchEffects: {
                 send_secret_support: { title: '暗中补给', detail: '你没有高调出面，只把能稳住局面的东西送到幸存者手里。' },
                 pay_and_cut_ties: { title: '付账断尾', detail: '你把这笔账当场了掉，不让幸存者和自己继续互相拖累。' },
@@ -491,7 +491,7 @@
             choices: [
                 {
                     id: 'send_secret_support',
-                    text: '暗中送去补给，留他们一条稳路',
+                    text: '暗中送去补给，替他们续一条稳路',
                     effects: {
                         relations: { '李化元': 2 },
                         routeScores: { orthodox: 1 },
@@ -501,7 +501,7 @@
                 },
                 {
                     id: 'pay_and_cut_ties',
-                    text: '付一笔安置钱，今后不再深牵',
+                    text: '付下一笔安置钱，今后不再深牵',
                     effects: {
                         items: { lingcao: 1 },
                         routeScores: { secluded: 1 },
@@ -516,7 +516,7 @@
         {
             id: 'void_map_aftermath',
             title: '残图余波',
-            detail: '你以为事情已经过去，其实真正危险的往往不是争图那阵子，而是图早不在手里了，仍有人不确定你到底知道多少。',
+            detail: '你以为事情已经过去。可真正危险的，往往不是争图那阵子，而是图早已不在手里，仍有人拿不准你到底知道多少。',
             category: '秘图',
             npc: '南宫婉',
             volumeAnchor: 'volume_four_star_sea',
@@ -537,7 +537,7 @@
                 items: { lingshi: 15 },
                 flags: { sideQuestVoidMapAftermathCompleted: true },
             },
-            rewardPreview: '灵石 x15、残图余波完成旗标',
+            rewardPreview: '灵石 x15 · 残图余波已有下落',
             branchEffects: {
                 warn_nangong: { title: '先递警讯', detail: '你把残图余波先递给可信之人，让追索不至于只压到自己一人身上。' },
                 sell_false_trail: { title: '放出假线', detail: '你主动放出一条假路，把后续追索往别处引开，为自己换出喘息时间。' },
@@ -545,7 +545,7 @@
             choices: [
                 {
                     id: 'warn_nangong',
-                    text: '先把风声递给南宫婉，免得误伤旧盟',
+                    text: '先把风声递给南宫婉，免得旧盟先受其害',
                     effects: {
                         relations: { '南宫婉': 3 },
                         routeScores: { orthodox: 1 },
@@ -555,7 +555,7 @@
                 },
                 {
                     id: 'sell_false_trail',
-                    text: '放出一条假线，把追索引向别处',
+                    text: '放出一条假线，把追索先引向别处',
                     effects: {
                         items: { lingcao: 2 },
                         routeScores: { demonic: 1 },

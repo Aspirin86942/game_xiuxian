@@ -15,7 +15,7 @@ test('闭关批次可切换，闭关后进入突破并在刷新后保留状态',
     await expect(page.locator(selectors.status.lingshi)).toHaveText(String(scenario.initialState.lingshi));
 
     await page.click(selectors.cultivation.batchButton('10'));
-    await expect(page.locator(selectors.cultivation.trainCost)).toContainText('将消耗 2 枚灵石');
+    await expect(page.locator(selectors.cultivation.trainCost)).toContainText('此番将化去 2 枚');
 
     await page.click(selectors.cultivation.mainButton);
     await expect(page.locator(selectors.status.cultivation)).toHaveText(scenario.afterTraining.cultivationText);
@@ -47,5 +47,5 @@ test('灵石不足时闭关按钮禁用，但仍可独立出门游历', async ({
     await expect(page.locator(selectors.cultivation.mainButton)).toBeDisabled();
     await expect(page.locator(selectors.cultivation.adventureButton)).toHaveText('出门游历');
     await expect(page.locator(selectors.cultivation.adventureButton)).not.toBeDisabled();
-    await expect(page.locator(selectors.cultivation.hint)).toContainText('灵石不足');
+    await expect(page.locator(selectors.cultivation.hint)).toContainText('灵石未足');
 });

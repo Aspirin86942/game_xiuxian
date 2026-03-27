@@ -4,7 +4,7 @@
             const intervalSeconds = Math.max(1, Math.floor(ctx.StoryData.CONFIG.naturalRecoveryIntervalMs / 1000));
             const recoveryPercent = Math.round(ctx.StoryData.CONFIG.naturalRecoveryRatio * 100);
             const capPercent = Math.round(ctx.StoryData.CONFIG.naturalRecoveryCapRatio * 100);
-            return `非战斗时每 ${intervalSeconds} 秒回复 ${recoveryPercent}% 最大气血，最多恢复到 ${capPercent}% 气血。`;
+            return `离了争斗，每 ${intervalSeconds} 秒可回转 ${recoveryPercent}% 气血，最多养回到 ${capPercent}%。`;
         }
 
         function getNaturalRecoveryCapHp(ctx) {
@@ -20,7 +20,7 @@
             });
 
             if (!latest) {
-                return '游历可能获得灵石、遭遇战斗、折损气血，或打听剧情线索。';
+                return '这一趟出去，也许带回灵石，也许撞上杀机，或听来几句风声。';
             }
             return `最近游历：${latest.message}`;
         }
@@ -58,7 +58,7 @@
                 bonusParts.push(`持有 +${Math.round(passiveBonuses.breakthroughBonus * 100)}%`);
             }
             const bonusText = bonusParts.length > 0 ? ` · ${bonusParts.join(' · ')}` : '';
-            ctx.elements.breakthroughInline.textContent = `当前突破率：${Math.round(actualRate * 100)}%${bonusText}`;
+            ctx.elements.breakthroughInline.textContent = `此刻破关把握：${Math.round(actualRate * 100)}%${bonusText}`;
         }
 
         function renderTabs(ctx) {
@@ -88,23 +88,23 @@
             if (blockedMainStoryHint) {
                 ctx.elements.hintText.textContent = blockedMainStoryHint;
             } else if (storyView && storyView.source === 'level' && storyView.mode !== 'ending') {
-                ctx.elements.hintText.textContent = `当前有小境界事件：${storyView.chapter.title}`;
+                ctx.elements.hintText.textContent = `心湖忽起一线悟境：《${storyView.chapter.title}》`;
             } else if (mode === 'breakthrough') {
-                ctx.elements.hintText.textContent = '修为已满，心神沉静后即可尝试突破。';
+                ctx.elements.hintText.textContent = '修为已至关前，只待心神一静，便可叩关。';
             } else if (mode === 'train') {
                 const remainingAfterTraining = Math.max(0, ctx.gameState.maxCultivation - (ctx.gameState.cultivation + preview.gain));
-                const suffix = remainingAfterTraining > 0 ? `，距突破还差 ${remainingAfterTraining} 点修为。` : '，足以触及突破门槛。';
-                ctx.elements.hintText.textContent = `已选 ${deps.getTrainBatchLabel(ctx.selectedTrainBatch)}，将炼化 ${preview.stonesSpent} 枚灵石，修为 +${preview.gain}${suffix}`;
+                const suffix = remainingAfterTraining > 0 ? `，离破关还差 ${remainingAfterTraining} 点修为。` : '，已足够叩到关前。';
+                ctx.elements.hintText.textContent = `已择 ${deps.getTrainBatchLabel(ctx.selectedTrainBatch)}，此番可炼化 ${preview.stonesSpent} 枚灵石，得修为 +${preview.gain}${suffix}`;
             } else {
-                ctx.elements.hintText.textContent = '当前灵石不足，闭关暂不可用，可先出门游历搜集灵石。';
+                ctx.elements.hintText.textContent = '囊中灵石未足，眼下闭关难成，不妨先出门走一遭。';
             }
 
             if (mode === 'breakthrough') {
-                ctx.elements.trainCostText.textContent = '当前修为已满，闭关暂停，请先尝试突破。';
+                ctx.elements.trainCostText.textContent = '修为已满，闭关先歇，请先叩关。';
             } else if (mode === 'train') {
-                ctx.elements.trainCostText.textContent = `每枚灵石可炼化 10 点修为。本次将消耗 ${preview.stonesSpent} 枚灵石，获得 ${preview.gain} 点修为。`;
+                ctx.elements.trainCostText.textContent = `一枚灵石，可换 10 点修为。此番将化去 ${preview.stonesSpent} 枚，得修为 ${preview.gain} 点。`;
             } else {
-                ctx.elements.trainCostText.textContent = '每枚灵石可炼化 10 点修为。当前批次灵石不足，闭关按钮已禁用。';
+                ctx.elements.trainCostText.textContent = '一枚灵石，可换 10 点修为。眼下这一批灵石不够，闭关暂且按住。';
             }
 
             ctx.elements.trainingBatchButtons.forEach((button) => {
@@ -114,7 +114,7 @@
             ctx.elements.locationTitle.textContent = location.name;
             ctx.elements.locationDesc.textContent = location.description;
             ctx.elements.combatPreview.textContent = ctx.combatState
-                ? `正在与 ${ctx.combatState.monster.name} 交战，第 ${ctx.combatState.round} 回合。`
+                ? `正与 ${ctx.combatState.monster.name} 缠斗，已过第 ${ctx.combatState.round} 回。`
                 : getLatestExpeditionSummary(ctx);
 
             const routeItems = ctx.GameCore.getRouteSummary(ctx.gameState);
@@ -128,7 +128,7 @@
             ctx.elements.logDrawerCard.classList.toggle('collapsed', !!ctx.gameState.ui.logCollapsed);
             ctx.elements.logContainer.innerHTML = ctx.gameState.logs.length > 0
                 ? ctx.gameState.logs.slice(0, 24).map((entry) => `<div class="log-entry ${entry.type}">${entry.message}</div>`).join('')
-                : '<div class="log-entry">修行未起笔，先去走第一段剧情。</div>';
+                : '<div class="log-entry">行路簿上还未落字，先去把第一段缘起走出来。</div>';
         }
 
         function getSideQuestStateMeta(state) {
@@ -151,7 +151,7 @@
                 .filter(([, amount]) => amount > 0)
                 .map(([itemId, amount]) => {
                     const itemName = ctx.ITEMS[itemId]?.name || itemId;
-                    return `需消耗 ${itemName} x${amount}`;
+                    return `需用 ${itemName} x${amount}`;
                 })
                 .join(' · ');
         }
@@ -160,7 +160,7 @@
             const stateMeta = getSideQuestStateMeta(quest.state);
             const npcMeta = quest.npc ? `<span class="side-story-badge">${quest.npc}</span>` : '';
             const categoryMeta = quest.category ? `<span class="side-story-badge">${quest.category}</span>` : '';
-            const rewardLine = quest.rewardPreview ? `<div class="side-story-note"><strong>奖励</strong><span>${quest.rewardPreview}</span></div>` : '';
+            const rewardLine = quest.rewardPreview ? `<div class="side-story-note"><strong>可得</strong><span>${quest.rewardPreview}</span></div>` : '';
 
             if (quest.state === 'available') {
                 const disabled = hasOtherActiveQuest ? 'disabled' : '';
@@ -207,7 +207,7 @@
 
             const result = quest.lastResult || {};
             const resultDetail = result.detail ? `<div class="side-story-note"><span>${result.detail}</span></div>` : '';
-            const settlementLine = quest.state === 'completed' ? '<div class="side-story-note"><strong>结果</strong><span>奖励已结算</span></div>' : '';
+            const settlementLine = quest.state === 'completed' ? '<div class="side-story-note"><strong>结果</strong><span>这一桩已结算清楚</span></div>' : '';
 
             return `
                 <article class="side-story-item side-story-item--quest" data-side-quest-id="${quest.id}" data-side-quest-state="${quest.state}">
@@ -248,7 +248,7 @@
 
             ctx.elements.sideStoryList.innerHTML = cards.length > 0
                 ? cards.join('')
-                : '<article class="side-story-item side-story-item--legacy"><strong>暂无旧事上门</strong><p>风声暂歇，先把手头主线推进一段。</p></article>';
+                : '<article class="side-story-item side-story-item--legacy"><strong>暂无旧事上门</strong><p>风声暂歇，先把脚下这段路走深一些。</p></article>';
         }
 
         function renderStoryPage(ctx) {
@@ -269,17 +269,17 @@
                     const relation = ctx.gameState.npcRelations[npcName] || 0;
                     return `<button class="npc-btn" data-npc-name="${npcName}" type="button"><strong>${dialogue.name}</strong><span>${dialogue.title} · 关系 ${relation}</span></button>`;
                 }).join('')
-                : '<div class="side-story-item">此地暂时没有可主动交谈的人物。</div>';
+                : '<div class="side-story-item">此地眼下没有可主动攀谈的人。</div>';
             renderSideStoryList(ctx);
 
             if (!view) {
                 const blockedMainStoryHint = ctx.GameCore.getBlockedMainStoryHint(ctx.gameState);
-                ctx.elements.storyTitle.textContent = '暂无新剧情';
-                ctx.elements.storyMeta.textContent = '静候机缘';
-                ctx.elements.storySummary.textContent = blockedMainStoryHint || '当前没有满足条件的新章节，先去修炼或游历。';
-                ctx.elements.storyProgress.textContent = blockedMainStoryHint ? '主线待解锁' : '暂无可翻阅章节';
+                ctx.elements.storyTitle.textContent = '前路未启';
+                ctx.elements.storyMeta.textContent = '且候风声';
+                ctx.elements.storySummary.textContent = blockedMainStoryHint || '眼下还没有新的篇章落到眼前，且先修行，或再去尘世走一遭。';
+                ctx.elements.storyProgress.textContent = blockedMainStoryHint ? '主线待启' : '还无新章';
                 ctx.elements.storySpeaker.textContent = blockedMainStoryHint ? '指引' : '旁白';
-                ctx.elements.storyLine.textContent = blockedMainStoryHint || '前路暂时沉默。';
+                ctx.elements.storyLine.textContent = blockedMainStoryHint || '前路一时无声。';
                 ctx.elements.storyChoices.innerHTML = '';
                 ctx.elements.storyContinueBtn.disabled = true;
                 ctx.elements.storySkipBtn.disabled = true;
@@ -294,7 +294,7 @@
                 ctx.elements.storySummary.textContent = view.ending.description;
                 ctx.elements.storyProgress.textContent = '终局';
                 ctx.elements.storySpeaker.textContent = '尾声';
-                ctx.elements.storyLine.textContent = '这一段路已经走完。';
+                ctx.elements.storyLine.textContent = '这一程走到这里，便算收住了。';
                 if (Array.isArray(view.ending.recapLines) && view.ending.recapLines.length > 0) {
                     ctx.elements.storyEndingChain.style.display = 'block';
                     ctx.elements.storyEndingChain.innerHTML = `<strong>${view.ending.recapTitle || '关键承诺链'}</strong><p>${view.ending.recapLines.join('；')}</p>`;
@@ -322,7 +322,7 @@
             ctx.elements.storyTitle.textContent = `${sourceLabel} · ${chapterTitle}`;
             ctx.elements.storyMeta.textContent = `${isLevelStory ? '悟境' : '主线'}${realmLabel}`;
             ctx.elements.storySummary.textContent = isLevelStory
-                ? `${view.chapter.summary} 这一层会直接影响你的道心、资源或后续人情。`
+                ? `${view.chapter.summary} 这一念会直接牵动你的道心、手头资源或后面的人情。`
                 : view.chapter.summary;
             ctx.elements.storyProgress.textContent = view.mode === 'choices'
                 ? `第 ${totalPages} / ${totalPages} 页 · 抉择`
@@ -345,7 +345,7 @@
                         <span class="choice-tag">${choice.promiseLabel || '承诺未定'}</span>
                         <span class="choice-tag risk-${choice.riskTier || 'steady'}">${choice.riskLabel || '稳妥'}</span>
                     </div>
-                    <span class="choice-cost">${choice.visibleCostLabel || (choice.costs ? `消耗：${ctx.GameCore.formatCosts(choice.costs)}` : '此举代价：会牵动后面的因果')}</span>
+                    <span class="choice-cost">${choice.visibleCostLabel || (choice.costs ? `消耗：${ctx.GameCore.formatCosts(choice.costs)}` : '此举代价：往后总有回身来认的时候')}</span>
                     ${choice.disabledReason ? `<span class="choice-disabled-reason">${choice.disabledReason}</span>` : ''}
                 </button>
             `).join('');
@@ -359,9 +359,9 @@
 
             ctx.elements.alchemySummary.innerHTML = `
                 <article class="alchemy-metric"><span>当前气血</span><strong>${ctx.gameState.playerStats.hp} / ${ctx.gameState.playerStats.maxHp}</strong></article>
-                <article class="alchemy-metric"><span>保底回血封顶</span><strong>${currentRecoveryCapHp} / ${ctx.gameState.playerStats.maxHp}</strong></article>
-                <article class="alchemy-metric"><span>当前突破率</span><strong>${Math.round(actualRate * 100)}%</strong></article>
-                <article class="alchemy-metric"><span>临时药力</span><strong>${ctx.gameState.breakthroughBonus > 0 ? `+${Math.round(ctx.gameState.breakthroughBonus * 100)}%` : '无'}</strong></article>
+                <article class="alchemy-metric"><span>调息可回至</span><strong>${currentRecoveryCapHp} / ${ctx.gameState.playerStats.maxHp}</strong></article>
+                <article class="alchemy-metric"><span>此刻突破率</span><strong>${Math.round(actualRate * 100)}%</strong></article>
+                <article class="alchemy-metric"><span>护持药力</span><strong>${ctx.gameState.breakthroughBonus > 0 ? `+${Math.round(ctx.gameState.breakthroughBonus * 100)}%` : '无'}</strong></article>
             `;
             ctx.elements.alchemyRuleText.textContent = ctx.combatState
                 ? '战斗中丹炉封闭，需先脱战后再开炉。'
@@ -374,7 +374,7 @@
                         <div class="alchemy-line"><span>丹材</span><strong>${recipe.costText}</strong></div>
                         <div class="alchemy-line"><span>成丹</span><strong>${recipe.outputText}</strong></div>
                     </div>
-                    <div class="alchemy-reason ${recipe.canCraft ? 'ready' : 'blocked'}">${recipe.canCraft ? '材料已齐，可立即开炉。' : recipe.disabledReason}</div>
+                    <div class="alchemy-reason ${recipe.canCraft ? 'ready' : 'blocked'}">${recipe.canCraft ? '丹材已齐，此刻便可开炉。' : recipe.disabledReason}</div>
                     <button class="inventory-use-btn alchemy-craft-btn" data-craft-recipe-id="${recipe.id}" type="button" ${recipe.canCraft ? '' : 'disabled'}>开炉炼制</button>
                 </article>
             `).join('');
@@ -383,12 +383,12 @@
         function renderInventory(ctx) {
             const itemIds = Object.keys(ctx.gameState.inventory);
             if (itemIds.length === 0) {
-                ctx.elements.inventoryList.innerHTML = '<div class="inventory-item"><strong>储物袋空空如也</strong><p>去剧情或游历里拿点东西回来。</p></div>';
+                ctx.elements.inventoryList.innerHTML = '<div class="inventory-item"><strong>储物袋里还空着</strong><p>去外头走一遭，把该带回来的东西带回来。</p></div>';
                 return;
             }
 
             ctx.elements.inventoryList.innerHTML = itemIds.map((itemId) => {
-                const item = ctx.ITEMS[itemId] || { name: itemId, description: '来历不明，暂时无法辨认。' };
+                const item = ctx.ITEMS[itemId] || { name: itemId, description: '来路不明，眼下还辨不出底细。' };
                 const quantity = ctx.gameState.inventory[itemId];
                 const actions = ctx.GameCore.getItemActions(itemId);
                 const actionButtons = actions.map((action) => `

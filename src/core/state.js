@@ -397,7 +397,7 @@
             return {
                 id: 'zouhuo_rumo',
                 title: '走火入魔',
-                description: `你一路累积的失败压力终于越过${consequences.pressureTier}边界。先前那些涉险而行、强撑不退的选择没有再被稳住，识海里的裂声也在此刻一起反噬回来。`,
+                description: `你一路压在心头的失败压力终于越过了${consequences.pressureTier}的那道线。先前那些涉险而行、强撑不退的选择，终究没再被你按稳，识海里的裂声也在这一刻一并反噬回来。`,
             };
         }
 
@@ -605,7 +605,7 @@
 
         function getPressureStatusText(state) {
             const consequences = normalizeStoryConsequences(state?.storyConsequences);
-            return `失败压力：${consequences.pressureTier}（${consequences.pressureTrend}）`;
+            return `失败压力已至${consequences.pressureTier}（${consequences.pressureTrend}）`;
         }
 
         return {

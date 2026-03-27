@@ -368,7 +368,7 @@
 
             deps.pushLog(
                 state,
-                `抉择余波：${choice.promiseLabel || '承诺'}已落定，失败压力转为${consequences.pressureTier}（${consequences.pressureTrend}）。`,
+                `这一念已落定，${choice.promiseLabel || '承诺'}从此压在路上；失败压力也转作${consequences.pressureTier}（${consequences.pressureTrend}）。`,
                 tribulationGain > battleWillGain ? 'bad' : 'normal',
             );
 
@@ -659,7 +659,7 @@
         function chooseStoryOption(state, choiceId) {
             const story = ensureStoryCursor(state);
             if (!story || state.storyCursor.mode !== 'choices') {
-                return { ok: false, error: '当前没有可选择的剧情选项。' };
+                return { ok: false, error: '当前没有可落子的剧情抉择。' };
             }
 
             const choice = story.choices.find((item) => item.id === choiceId);
@@ -719,7 +719,7 @@
                     mode: 'idle',
                 };
                 state.storyProgress = -1;
-                deps.pushLog(state, '失败压力进入失控，本局在走火入魔中终结。', 'fail');
+                deps.pushLog(state, '失败压力终于失了缰绳，这一局也在走火入魔中收了尾。', 'fail');
                 return { ok: true, ending: true, death: true };
             }
 
@@ -733,7 +733,7 @@
                     mode: 'idle',
                 };
                 state.storyProgress = -1;
-                deps.pushLog(state, `达成结局：${choice.ending.title}`, 'breakthrough');
+                deps.pushLog(state, `终局落定：${choice.ending.title}`, 'breakthrough');
                 return { ok: true, ending: true };
             }
 
@@ -761,11 +761,11 @@
 
         function getNextGoalText(state) {
             if (state.ending) {
-                return '结局已定，可重开体验另一条路。';
+                return '路已走定，若还想看另一条去处，便重开再行。';
             }
             const chapter = getChapterById(state.storyProgress);
             if (!chapter) {
-                return '暂无待触发剧情。';
+                return '眼下还没有新的篇章等你翻开。';
             }
             const blockedHint = getBlockedMainStoryHint(state);
             if (blockedHint) {
@@ -774,10 +774,10 @@
 
             const levelEvent = getAvailableLevelEvent(state);
             if (levelEvent) {
-                return `下一条等级事件：${levelEvent.title}（${REALMS[Math.floor(levelEvent.realmScore / 3)].name}·${REALMS[Math.floor(levelEvent.realmScore / 3)].stages[levelEvent.realmScore % 3]}）`;
+                return `眼下先有一段悟境：《${levelEvent.title}》（${REALMS[Math.floor(levelEvent.realmScore / 3)].name}·${REALMS[Math.floor(levelEvent.realmScore / 3)].stages[levelEvent.realmScore % 3]}）`;
             }
 
-            return '下一章条件已满足，请前往剧情页。';
+            return '下一章已到门前，去剧情页翻开便是。';
         }
 
         function getChapterRequirementHints(state, chapter) {
@@ -824,16 +824,16 @@
                 return '';
             }
 
-            const baseHint = `主线《${chapter.title}》待解锁：需先${hints.join('，')}。`;
+            const baseHint = `主线《${chapter.title}》尚未开卷：需先${hints.join('，')}。`;
             const extraHint = chapter.id === 10
-                ? '升仙令线会在满足条件后继续。'
-                : '当前主线并未中断，只是还没到火候。';
+                ? '升仙令这一线，火候到了自会续上。'
+                : '这条主线并未断，只是火候还没到。';
             const levelEvent = getAvailableLevelEvent(state);
             if (!levelEvent) {
                 return `${baseHint}${extraHint}`;
             }
 
-            return `${baseHint}${extraHint}当前可先处理小境界事件《${levelEvent.title}》。`;
+            return `${baseHint}${extraHint}眼下可先去应这一段悟境：《${levelEvent.title}》。`;
         }
 
         function getRouteSummary(state) {
@@ -865,8 +865,8 @@
             return [
                 { title: summary.title, detail: summary.detail },
                 { title: '道途映照', detail: `正道 ${scoreMap.orthodox} / 魔路 ${scoreMap.demonic} / 藏锋 ${scoreMap.secluded}` },
-                { title: '战意', detail: `当前战斗加成：攻击 +${battleWillBonuses.attack} / 防御 +${battleWillBonuses.defense} / 气血 +${battleWillBonuses.hp}` },
-                { title: '失败压力', detail: `当前处于${consequences.pressureTier}，趋势${consequences.pressureTrend}。进入失控后将触发走火入魔终局。` },
+                { title: '战意', detail: `此刻刀意在身：攻击 +${battleWillBonuses.attack} / 防御 +${battleWillBonuses.defense} / 气血 +${battleWillBonuses.hp}` },
+                { title: '失败压力', detail: `心头的暗潮已至${consequences.pressureTier}，来势${consequences.pressureTrend}。再往前失手，便会坠入走火入魔。` },
             ];
         }
 
@@ -981,7 +981,7 @@
                 }
             }
 
-            return [{ title: '余波未显', detail: '眼下还看不出太多波澜。继续往前走，因果自会慢慢显形。', meta: '' }];
+            return [{ title: '余波未显', detail: '眼下水面还静。再往前走，因果自会一点点浮出来。', meta: '' }];
         }
 
         return {

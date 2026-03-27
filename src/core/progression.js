@@ -78,7 +78,7 @@
             }
 
             state.cultivation = Math.min(state.maxCultivation, state.cultivation + preview.gain);
-            deps.pushLog(state, `闭关炼化灵石 ${preview.stonesSpent} 枚，修为 +${preview.gain}`, 'normal');
+            deps.pushLog(state, `闭关一轮，炼去灵石 ${preview.stonesSpent} 枚，修为 +${preview.gain}`, 'normal');
             return {
                 ok: true,
                 batchKey,
@@ -117,7 +117,7 @@
                 state.cultivation = 0;
                 state.breakthroughBonus = 0;
                 deps.recalculateState(state, true);
-                deps.pushLog(state, `突破成功，当前境界：${deps.getRealmLabel(state)}`, 'breakthrough');
+                deps.pushLog(state, `一举破关，境界抵达${deps.getRealmLabel(state)}`, 'breakthrough');
                 deps.queueLevelEventForRealm(state, deps.getRealmScore(state));
                 deps.ensureStoryCursor(state);
                 return { ok: true, success: true };
@@ -126,7 +126,7 @@
             const penalty = Math.floor(state.maxCultivation * CONFIG.failPenaltyRate);
             state.cultivation = Math.max(0, state.cultivation - penalty);
             state.breakthroughBonus = 0;
-            deps.pushLog(state, `突破失败，修为受损 ${penalty}`, 'fail');
+            deps.pushLog(state, `叩关未成，修为回落 ${penalty}`, 'fail');
             return { ok: true, success: false, penalty };
         }
 

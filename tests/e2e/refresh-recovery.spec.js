@@ -134,7 +134,7 @@ test('剧情页空窗态在同次 render 内清掉未读后，徽标不会吃到
     });
 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
-    await expect(page.locator(selectors.story.title)).toHaveText('暂无新剧情');
+    await expect(page.locator(selectors.story.title)).toHaveText('前路未启');
     await expect(page.locator(selectors.nav.storyBadge)).toBeHidden();
 
     await page.evaluate(() => {

@@ -46,7 +46,7 @@ function satisfyChapterRequirements(state, chapterId) {
 function formatRenderedStoryTitle(state) {
     const view = GameCore.getStoryView(state);
     if (!view) {
-        return '暂无新剧情';
+        return '前路未启';
     }
     if (view.mode === 'ending') {
         return view.ending.title;
@@ -62,7 +62,7 @@ function formatRenderedStoryTitle(state) {
 function formatRenderedStoryProgress(state) {
     const view = GameCore.getStoryView(state);
     if (!view) {
-        return '暂无可翻阅章节';
+        return '还无新章';
     }
     if (view.mode === 'ending') {
         return '终局';
@@ -157,7 +157,7 @@ function createAlchemyScenario() {
     return {
         serialized,
         recipeId: 'brew-jiedusan',
-        expectedRuleTextFragment: '非战斗时每',
+        expectedRuleTextFragment: '离了争斗，每',
         expectedState: {
             inventory: previewState.inventory,
             outputText: craftResult.outputText,
@@ -271,8 +271,8 @@ function createBlockedMainChapterScenario() {
 
     return {
         serialized: GameCore.serializeState(state),
-        expectedHint: '主线《太南小会》待解锁：需先修至筑基初期。升仙令线会在满足条件后继续。',
-        expectedGoal: '主线《太南小会》待解锁：需先修至筑基初期。升仙令线会在满足条件后继续。',
+        expectedHint: '主线《太南小会》尚未开卷：需先修至筑基初期。升仙令这一线，火候到了自会续上。',
+        expectedGoal: '主线《太南小会》尚未开卷：需先修至筑基初期。升仙令这一线，火候到了自会续上。',
     };
 }
 

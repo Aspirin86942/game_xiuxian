@@ -54,3 +54,17 @@ pm run test:smoke 通过；
 pm run test:e2e 通过（50/50）；
 pm test 通过。
 - 说明：本轮仅调整玩家可见文本与测试断言，未改动存档结构、章节推进与 DOM 锚点。
+
+## 全游戏文案重写（本轮进度）
+- 已先改静态 UI 与动态 UI：index.html、src/ui/renderers.js、src/ui/actions.js
+- 已改状态/引导/回响周边：src/core/story.js、src/core/world.js、src/core/state.js、src/core/progression.js
+- 已改 story-data.js 顶部玩家正文：物品描述、丹方摘要、地点描述、旧事详情与选项
+- 已同步首批 e2e 文案锚点：默认主线标题、设置页说明
+- 下一步：跑 
+pm run test:smoke，根据失败项补剩余不顺口或测试精确锚定的文本
+- 验证结果：
+pm run test:smoke 通过；
+pm run test:e2e 通过（50/50）；
+pm test 通过。
+- 本轮文案面：静态 UI、动态 UI、状态提示、默认空态、物品/地点/丹方/旧事说明已做艺术化收口；功能性错误/阻断提示保持直白。
+- 备注：已尝试运行 develop-web-game 技能自带 web_game_playwright_client.js，但该脚本从技能目录加载时无法解析本仓库本地 playwright 包；仓库自带 Playwright e2e 已完整通过，可作为本轮浏览器回归依据。

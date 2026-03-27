@@ -30,10 +30,10 @@
                     deps.showFloatingText(ctx, '修为未满', 'loss');
                     deps.playSound(ctx, 'fail');
                 } else if (result.capped) {
-                    deps.showFloatingText(ctx, '绝巅已至', 'breakthrough');
+                    deps.showFloatingText(ctx, '此界已尽', 'breakthrough');
                     deps.playSound(ctx, 'breakthrough');
                 } else if (result.success) {
-                    deps.showFloatingText(ctx, '突破成功', 'breakthrough');
+                    deps.showFloatingText(ctx, '道关已破', 'breakthrough');
                     deps.playSound(ctx, 'breakthrough');
                 } else {
                     deps.showFloatingText(ctx, `突破失败 -${result.penalty}`, 'loss');
@@ -91,7 +91,7 @@
                 deps.showFloatingText(ctx, text, 'loss');
                 deps.playSound(ctx, 'fail');
             } else {
-                deps.showFloatingText(ctx, '探得线索', 'breakthrough');
+                deps.showFloatingText(ctx, '探得风声', 'breakthrough');
                 deps.playSound(ctx, 'story');
             }
 
@@ -220,12 +220,12 @@
                 if (actionButton.dataset.sideQuestAction === 'accept') {
                     const result = ctx.GameCore.acceptSideQuest(ctx.gameState, questId);
                     if (!result.ok) {
-                        window.alert(result.error || '当前无法接取该支线。');
+                        window.alert(result.error || '当前无法应下这桩旧事。');
                         deps.playSound(ctx, 'fail');
                         return;
                     }
 
-                    deps.showFloatingText(ctx, '接下支线', 'breakthrough');
+                    deps.showFloatingText(ctx, '应下旧事', 'breakthrough');
                     deps.playSound(ctx, 'story');
                     deps.render(ctx);
                     deps.saveGame(ctx);
@@ -239,12 +239,12 @@
 
                 const result = ctx.GameCore.chooseSideQuestOption(ctx.gameState, questId, choiceId);
                 if (!result.ok) {
-                    window.alert(result.error || '当前无法了结该支线。');
+                    window.alert(result.error || '当前无法了结这桩旧事。');
                     deps.playSound(ctx, 'fail');
                     return;
                 }
 
-                deps.showFloatingText(ctx, '支线已了结', 'gain');
+                deps.showFloatingText(ctx, '旧事已了', 'gain');
                 deps.playSound(ctx, 'click');
                 deps.render(ctx);
                 deps.saveGame(ctx);

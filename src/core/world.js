@@ -132,7 +132,7 @@
                         record.resolvedAtProgress = storyProgress;
                         record.lastResult = createSideQuestResult('failed', definition, {
                             summary: `${definition.title}已失手。`,
-                            detail: explicitFail ? '任务命中了显式失败条件。' : '主线进度越过了任务窗口，你没能及时了结这笔事。',
+                            detail: explicitFail ? '这一桩在中途失了手，局面已不再容你从容收尾。' : '主线脚步已经迈过这道门槛，你终究没能及时把这笔事收住。',
                         });
                     }
                     return;
@@ -145,7 +145,7 @@
                         record.resolvedAtProgress = storyProgress;
                         record.lastResult = createSideQuestResult('missed', definition, {
                             summary: `${definition.title}已错过。`,
-                            detail: '你没有在主线窗口内应下这桩旧事，这笔旧账也就自己滑过去了。',
+                            detail: '你没有在这段时机里把它接住，于是这笔旧账便自己从手边滑了过去。',
                         });
                     }
                     return;
@@ -310,7 +310,7 @@
                 pushQuestStory('spirit_mine_survivor');
             }
             if (storyProgress >= 21) {
-                pushStory('海上契约', '星海不认旧名，只认账。你若想在这里真正站住脚，总要有一两次让人觉得和你合作不亏。', '万小山');
+                pushStory('海上契约', '星海不认旧名，只认谁说过的话算不算数。你若想在这里站稳，总得让人信你这趟同行不亏。', '万小山');
             }
             if (storyProgress >= 22 && hasAnyStateFlag(state, ['enteredVoidHeavenMapGame', 'soldFragmentMapForResources', 'avoidedVoidHeavenCoreConflict', 'hasXuTianTu', 'soldXuTianTu', 'avoidedXuTian'])) {
                 pushQuestStory('void_map_aftermath');
@@ -323,10 +323,10 @@
             }
 
             if (state.flags.hasSecretInfo) {
-                pushStory('黑市暗桩', '太南山那条暗线仍然有用，后面可以继续借它探路或换资源。', '万小山');
+                pushStory('黑市暗桩', '太南山那条暗线还没死透。往后若要探路、试人，或换些急用之物，也许还能借它一把。', '万小山');
             }
             if (stories.length === 0) {
-                stories.push({ title: '暂无旧事上门', detail: '继续修炼或推进主线后，自会有新的旧事找上门来。' });
+                stories.push({ title: '暂无旧事上门', detail: '先继续修炼，或把主线再往前走一段，自会有新的旧事叩门。' });
             }
             return stories;
         }
@@ -334,7 +334,7 @@
         function getLocationMeta(state) {
             return LOCATIONS[state.currentLocation] || {
                 name: state.currentLocation,
-                description: '此地暂无详细记载。',
+                description: '此地像还没被人真正写进图上。',
                 npcs: [],
             };
         }

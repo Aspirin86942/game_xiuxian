@@ -154,7 +154,7 @@ test('主线待解锁时会明确提示太南小会与筑基门槛', async ({ pa
     await openGame(page, { serializedSave: scenario.serialized });
 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
-    await expect(page.locator(selectors.story.title)).toHaveText('暂无新剧情');
+    await expect(page.locator(selectors.story.title)).toHaveText('前路未启');
     await expect(page.locator(selectors.story.line)).toContainText(scenario.expectedHint);
     await expect(page.locator(selectors.story.goal)).toContainText(scenario.expectedGoal);
 });
@@ -345,7 +345,7 @@ test('正式支线可在同行回响区接取并卡内结算', async ({ page }) 
 
     await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('已了结');
     await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.completedSummary);
-    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText('奖励已结算');
+    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText('这一桩已结算清楚');
 
     const save = await readSave(page);
     expect(save.sideQuests.old_medicine_ledger.state).toBe('completed');

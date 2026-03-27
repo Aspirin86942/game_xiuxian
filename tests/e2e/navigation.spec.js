@@ -23,7 +23,7 @@ test('新档支持修行/丹炉/剧情切换、模态开关，且不再存在独
 
     await page.click(selectors.tabs.story);
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
-    await expect(page.locator(selectors.story.title)).not.toHaveText('暂无新剧情');
+    await expect(page.locator(selectors.story.title)).not.toHaveText('前路未启');
     await expect(page.locator(selectors.journey.npcs)).toBeVisible();
     await expect(page.locator(selectors.journey.clues)).toBeVisible();
 
@@ -34,7 +34,7 @@ test('新档支持修行/丹炉/剧情切换、模态开关，且不再存在独
 
     await page.click(selectors.tabs.settings);
     await waitForModalShown(page, selectors.settings.modal);
-    await expect(page.locator(selectors.settings.saveModeNote)).toContainText('纯单机自由模式');
+    await expect(page.locator(selectors.settings.saveModeNote)).toContainText('此地只留本机存档');
     await page.click(selectors.settings.closeButton);
     await waitForModalHidden(page, selectors.settings.modal);
 });

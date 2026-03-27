@@ -43,6 +43,7 @@
 - `volumePromise` 用于回答“这一卷从什么问题开始”。
 - `volumeExit` 用于回答“这一卷为什么必须继续往前走”。
 - `maxForwardHooks` 用于限制跨卷未收束尾巴数量。
+- 标准卷默认按 8 章结构实现；被附录明确登记为“终局卷”的例外卷，允许压缩为 5 章，但仍必须显式写清 `volumePromise / volumeExit / maxForwardHooks`。
 
 ### 3.2 主线章节契约
 
@@ -57,7 +58,7 @@
 
 字段含义：
 
-- `volumeRole`：本章在卷内承担的角色，当前成熟卷统一使用 `opening / escalation / bonding / reversal / climax / fallout / closure / exit`。
+- `volumeRole`：本章在卷内承担的角色；标准卷统一使用 `opening / escalation / bonding / reversal / climax / fallout / closure / exit`，终局卷固定使用 `opening / escalation / bonding / closure / ending`。
 - `chapterGoal`：本章希望推进什么，不是摘要复述。
 - `chapterConflict`：本章最核心的矛盾点。
 - `closureWrites`：本章会写入哪些卷内收束痕迹。
@@ -83,6 +84,22 @@
 
 两者不能互相替代。
 
+### 3.5 终局契约
+
+未来实现必须继续稳定表达：
+
+- `ending.id`
+- `ending.title`
+- `ending.description`
+- 主终局候选列表
+- 异常失败终局抢占规则
+
+其中：
+
+- 主终局候选只允许展示符合条件的正常终局。
+- 异常失败终局必须独立判定，不得与主终局共用同一组 choice。
+- 终局页必须能回指最近关键分支影响链，不能只靠最后一章改口。
+
 ### 3.4 跨卷读取点契约
 
 跨卷允许保留的只应是：
@@ -95,9 +112,9 @@
 
 ## 4. 稳定流程契约
 
-### 4.1 卷级流程顺序
+### 4.1 标准卷级流程顺序
 
-未来实现必须遵守的最低顺序：
+除被附录明确登记为终局卷的例外卷外，未来实现必须遵守的最低顺序：
 
 1. 先通过 `opening` 章立题。
 2. 通过 `escalation` 章加压并扩张局势。
@@ -164,14 +181,28 @@
 - 新增 `21_star_sea_foothold / 22_xutian_rumor / 23_star_sea_aftermath / 23_volume_close` 四段运行时章节，用于把海外立足、风声扩散、虚天殿余波与卷末出口拆成可审计链路。
 - `23_mocaihuan_return` 必须被视为第四卷核心第 7 章 `closure`，而不是卷外插章。
 - 第四卷卷末只保留 `tiannan_return_pressure / nangong_bond_stage_two / star_sea_reputation_fixed / old_world_cost_acknowledged` 四类读取点。
-- 当前运行时中的 `24 / 25` 只作为下一卷入口资产保留，不得在本轮被平铺回第四卷正文。
+- 第四卷卷末只负责把主线送往第五卷，不得继续承担第五卷的旧账清算、旧情分流或终局菜单职责。
 
-### 4.7 当前旧约束中被明确放弃的部分
+### 4.7 第五卷目标映射
+
+第五卷《归乡飞升》的目标结构固定为 5 章终局卷，详见 `appendix-g-volume-five-structure.md`。
+
+第五卷本轮必须满足：
+
+- 第五卷起点固定为 `24 重返天南`；它不再只是卷外入口资产，而是第五卷第 1 章 `opening`。
+- 新增 `24_old_debt_and_name / 24_bond_destination / 25_final_branch` 三段运行时章节，用于把“旧账旧名 / 旧情去处 / 终局分流”拆成可审计链路。
+- 当前 `25 化神飞升` 必须降位为第五卷第 4 章 `closure`，只负责飞升前夜的总回看与终局候选汇流，不再直接承担终局菜单。
+- 第五卷第 5 章只允许落入以下 6 个终局 ID：`youxi_hongchen / dadao_tongguang / zhiying_xiangdao / xianfan_shutu / chidu_qingtian / zouhuo_rumo`。
+- `zouhuo_rumo` 必须作为异常失败终局独立判定，不得混入五条主终局候选列表。
+- 第五卷为终局卷，`maxForwardHooks` 固定为 `0`；不允许再把新的并列主冲突或第六卷入口问题拖出本卷。
+
+### 4.8 当前旧约束中被明确放弃的部分
 
 - 不再接受“后面还有很多事要写”作为卷末没收住的理由。
 - 不再接受“拿到关键道具/令牌”就算卷末完成。
 - 不再接受把 `fallout` 和 `exit` 写成四五章平铺事件。
 - 不再接受支线在卷末继续以未解释的可见状态悬挂。
+- 不再接受把第五卷终局继续写成“最后一章固定三选一”的旧菜单。
 
 ## 5. 稳定 UI 契约
 
@@ -216,15 +247,17 @@
 - 第二卷每章吸收当前运行时旧素材的具体方式，只要 `closureWrites / nextReads` 仍完整可审计
 - 第三卷各章具体标题，只要不改变 8 章角色顺序、`16_feiyu_return` 插章边界与卷末出口定义
 - 第三卷每章吸收当前运行时旧素材的具体方式，只要 `18_nangong_return` 的 `fallout` 职责与 `20` 的 `exit` 职责仍完整可审计
-- 第四卷各章具体标题，只要不改变 8 章角色顺序、`23_mocaihuan_return` 核心章节定位与 `24` 的后续卷入口定义
+- 第四卷各章具体标题，只要不改变 8 章角色顺序、`23_mocaihuan_return` 核心章节定位与 `24` 的第五卷入口定义
 - 第四卷每章吸收当前运行时旧素材的具体方式，只要新增四段中间章节仍完整承担“海外立足 / 风声扩散 / 虚天殿余波 / 卷末出口”职责
+- 第五卷各章具体标题，只要不改变 5 章角色顺序、`24` 的开章定位、`25` 的飞升前夜定位与 `25_final_branch` 的终局职责
+- 第五卷每章吸收当前运行时旧素材的具体方式，只要 `旧账旧名 / 旧情去处 / 飞升前夜 / 终局分流` 的职责仍完整可审计
 
 但以下项目已锁定，不应在本轮自由漂移：
 
 - 第一卷固定为 8 章
 - 第一卷卷末最多保留 3 个跨卷读取种子
 - 旧 `8/9` 不再作为并列主线尾章
-- 当前成熟卷的 `volumeRole` 枚举固定为 8 项
+- 标准卷的 `volumeRole` 枚举固定为 8 项；第五卷终局卷例外固定为 5 项压缩角色
 - 第二卷固定为 8 章
 - 第二卷卷末固定止于禁地前夜后的卷末收束
 - 第二卷旧档剧情进度本轮不做兼容保留，使用显式版本断点阻断
@@ -237,6 +270,11 @@
 - `23_mocaihuan_return` 必须进入第四卷核心 8 章
 - 第四卷卷末固定由 `23_volume_close` 送往 `24 重返天南`
 - `24 / 25` 不进入第四卷核心 8 章
+- 第五卷固定为 5 章终局卷
+- 第五卷起点固定为 `24 重返天南`
+- 当前 `25 化神飞升` 固定为第五卷第 4 章 `closure`
+- 第五卷终局固定为 5 条主终局 + 1 条异常失败终局
+- `zouhuo_rumo` 固定为异常失败终局，不进入主终局候选菜单
 
 ## 8. 最低测试契约
 
@@ -264,6 +302,10 @@
 - `21 / 21_star_sea_foothold / 22 / 22_xutian_rumor / 23 / 23_star_sea_aftermath / 23_mocaihuan_return / 23_volume_close` 会稳定显示第四卷章标签。
 - `23_mocaihuan_return` 不再显示插章标签，而会稳定显示第四卷第 7 章标签。
 - 第四卷卷末 `23_volume_close` 会把主线送往 `24`，且不会继续停留在第四卷标签上。
+- 第五卷 5 章结构在静态数据中存在唯一映射。
+- `24 / 24_old_debt_and_name / 24_bond_destination / 25 / 25_final_branch` 会稳定显示第五卷章标签。
+- 第五卷第 5 章只暴露符合条件的主终局，不会把异常失败终局与主终局混在同一组 choice 里。
+- `youxi_hongchen / dadao_tongguang / zhiying_xiangdao / xianfan_shutu / chidu_qingtian / zouhuo_rumo` 会稳定写入 `ending.id`。
 
 ### 8.3 自动化命令
 

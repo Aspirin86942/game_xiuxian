@@ -55,7 +55,8 @@
 - `immediateResult / longTermHint / delayedEchoes` 仍然存在于内容输入层，尚未彻底从作者心智模型中退役。
 - 当前运行时已经把 `14 / 15 / 16 / 17 / 18 / 18_nangong_return / 19 / 20` 接为第三卷主链标签；其中 `18_nangong_return` 进入第三卷核心 8 章，`16_feiyu_return` 继续保留为卷内插章。
 - 当前运行时已经把 `21 / 21_star_sea_foothold / 22 / 22_xutian_rumor / 23 / 23_star_sea_aftermath / 23_mocaihuan_return / 23_volume_close` 接为第四卷核心 8 章。
-- 当前运行时保留 `24 / 25` 作为下一卷入口资产；它们不再被第四卷卷标签吞并，只承担卷外后续主链。
+- 当前运行时已经把 `24 / 24_old_debt_and_name / 24_bond_destination / 25 / 25_final_branch` 接为第五卷 5 章主链，不再把 `24 / 25` 视为卷外散装入口资产。
+- 当前运行时第五卷终局固定收敛为 `youxi_hongchen / dadao_tongguang / zhiying_xiangdao / xianfan_shutu / chidu_qingtian` 五条主终局，异常失败终局固定为 `zouhuo_rumo`。
 
 ## 4. 状态字段
 
@@ -73,7 +74,7 @@
 | `storyConsequences` | 长期后果状态 | `battleWill / tribulation / pressureTier / pressureTrend` |
 | `recentChoiceEcho / recentChoiceOutcome` | 最后兜底兼容层 | 仅在历史缺失时协助输出，不再代表主显示契约 |
 | `branchImpact` | 单次 choice 的可见文案契约 | 供 `decisionHistory`、剧情页侧栏与终局回顾复用 |
-| `ending` | 终局状态 | 普通终局与走火入魔终局统一落在该字段 |
+| `ending` | 终局状态 | 主终局与异常失败终局统一落在该字段，其中 `zouhuo_rumo` 作为独立失败态优先判定 |
 
 ## 5. 结算顺序
 
@@ -84,8 +85,8 @@
 3. 更新 `storyConsequences`、`pressureTier`、`pressureTrend`。
 4. 写入 `chapterChoices / recentChoiceEcho / recentChoiceOutcome`。
 5. 写入 `decisionHistory / pendingEchoes / endingSeeds`，并把分支影响正文留给可见历史使用。
-6. 判定失败终局（仅在压力进入 `失控` 时触发）。
-7. 判定普通终局。
+6. 判定异常失败终局（仅在压力进入 `失控` 时触发，当前失败 ID 为 `zouhuo_rumo`）。
+7. 判定第五卷主终局。
 8. 若未终局，则推进 `storyProgress` 并重建 `storyCursor`。
 
 当前压力分层语义为：
@@ -151,7 +152,8 @@
 - 兼容兜底生成器能避免空白卡，但它不是成熟内容来源；若长期依赖，会让分支影响重新模板化。
 - 第一卷附录当前把 `10 太南小会 / 11 升仙令` 记为第一卷出口，而 issue #9 要求第二卷正式承担“散修交易场、升仙令、进入黄枫谷、百药园立足、禁地前夜”这一整段成长闭环；当前运行时已经按第二卷新章节链接管这段顺序，但第一卷规则书与第二卷规则书之间的素材边界仍需显式维护。
 - 第三卷卷标签当前只覆盖 `14~20` 与 `18_nangong_return`；`16_feiyu_return` 明确保留为插章。
-- 第四卷卷标签当前覆盖 `21 / 21_star_sea_foothold / 22 / 22_xutian_rumor / 23 / 23_star_sea_aftermath / 23_mocaihuan_return / 23_volume_close`；`24 / 25` 继续是卷外后续入口资产。
+- 第四卷卷标签当前覆盖 `21 / 21_star_sea_foothold / 22 / 22_xutian_rumor / 23 / 23_star_sea_aftermath / 23_mocaihuan_return / 23_volume_close`，并在卷末直接交给第五卷入口。
+- 第五卷卷标签当前覆盖 `24 / 24_old_debt_and_name / 24_bond_destination / 25 / 25_final_branch` 五章；旧终局 ID `lingjie_xianzun / renjie_zhizun / xiaoyao_sanxian / taishang_wangqing / yinguo_chanshen / fanxin_weisi` 已退出当前运行时结果集。
 
 当前异常处理底线：
 

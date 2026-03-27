@@ -20,6 +20,7 @@
         VOLUME_TWO_CHAPTERS,
         VOLUME_THREE_CHAPTERS,
         VOLUME_FOUR_CHAPTERS,
+        VOLUME_FIVE_CHAPTERS,
     } = dataSource;
 
     function loadSharedHelpers() {
@@ -94,6 +95,7 @@
             VOLUME_TWO_CHAPTERS,
             VOLUME_THREE_CHAPTERS,
             VOLUME_FOUR_CHAPTERS,
+            VOLUME_FIVE_CHAPTERS,
             constants: {
                 MAX_LOGS,
                 SAVE_VERSION,

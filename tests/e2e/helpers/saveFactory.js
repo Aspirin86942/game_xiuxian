@@ -890,6 +890,29 @@ function createVolumeFourExitScenario() {
     };
 }
 
+function createVolumeFiveEntryScenario() {
+    const state = createChoiceState(24, (draft) => {
+        draft.ui.activeTab = 'story';
+        setRealmScore(draft, 10);
+        draft.flags.savedNangong = true;
+        draft.npcRelations['南宫婉'] = 72;
+        draft.npcRelations['墨彩环'] = 48;
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'returned_tiannan_for_bonds');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        choiceText: selectedChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedNextTitle: formatRenderedStoryTitle(previewState),
+        expectedStoryProgress: previewState.storyProgress,
+    };
+}
+
 function createLongChoiceScenario() {
     const state = createChoiceState(0, (draft) => {
         fillInventoryWithSamples(draft, 30);
@@ -924,6 +947,7 @@ module.exports = {
     createVolumeThreeExitScenario,
     createVolumeFourEntryScenario,
     createVolumeFourExitScenario,
+    createVolumeFiveEntryScenario,
     createVolumeOneLedgerClosureScenario,
     createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,

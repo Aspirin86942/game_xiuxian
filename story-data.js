@@ -861,7 +861,7 @@
         },
     ]);
 
-    // 第四卷按现有 21~23 与新增过桥章节接入，23_mocaihuan_return 升为核心章节，24/25 保持后续卷入口资产。
+    // 第四卷按现有 21~23 与新增过桥章节接入，23_mocaihuan_return 升为核心章节，并把主线送往第五卷入口。
     const VOLUME_FOUR_CHAPTERS = Object.freeze([
         {
             id: 'volume_four_chapter_1',
@@ -953,6 +953,305 @@
         24: Object.freeze({ targetChapterId: 'volume_four_chapter_8', action: 'forward_volume_boundary' }),
         25: Object.freeze({ targetChapterId: 'volume_four_chapter_8', action: 'forward_volume_boundary' }),
     });
+
+    // 第五卷按现有 24/25 与新增过桥章节接入，25 改为飞升前夜，终局分流单独成章。
+    const VOLUME_FIVE_CHAPTERS = Object.freeze([
+        {
+            id: 'volume_five_chapter_1',
+            title: '重返天南',
+            legacyChapterIds: Object.freeze([24]),
+            volumeRole: 'opening',
+            chapterGoal: '把第五卷从“回头认账、认人、认自己”这一卷级承诺正式立起来。',
+            chapterConflict: '韩立回到旧地后必须面对那些一直没有真正处理完的人、账与名字；真正的问题不是怀旧，而是认账。',
+            closureWrites: Object.freeze(['tiannan_return_locked', 'volume_five_promise_written']),
+            nextReads: Object.freeze(['old_debt_choice_window', 'bond_destination_window']),
+        },
+        {
+            id: 'volume_five_chapter_2',
+            title: '旧账与旧名',
+            legacyChapterIds: Object.freeze(['24_old_debt_and_name']),
+            volumeRole: 'escalation',
+            chapterGoal: '把墨府旧债、黄枫谷门墙、旧敌与旧承诺真正收成可审计状态。',
+            chapterConflict: '韩立要回答自己这些年到底补没补、认没认、躲没躲；旧账不能再继续被压成背景底色。',
+            closureWrites: Object.freeze(['old_debts_accounted', 'old_name_disposition_written']),
+            nextReads: Object.freeze(['mocaihuan_final_read', 'ascension_eve_route_review']),
+        },
+        {
+            id: 'volume_five_chapter_3',
+            title: '旧情去处',
+            legacyChapterIds: Object.freeze(['24_bond_destination']),
+            volumeRole: 'bonding',
+            chapterGoal: '让南宫婉线、墨彩环线与旧人物回流在终局前完成最后一轮承接。',
+            chapterConflict: '有些情已认下，有些仍被韩立拖成沉默，有些已经迟了；这一章必须把“谁被留下、谁被错过”写清。',
+            closureWrites: Object.freeze(['bond_destination_locked', 'nangong_final_relation_written']),
+            nextReads: Object.freeze(['ascension_eve_bond_review', 'terminal_ending_candidates']),
+        },
+        {
+            id: 'volume_five_chapter_4',
+            title: '飞升前夜',
+            legacyChapterIds: Object.freeze([25]),
+            volumeRole: 'closure',
+            chapterGoal: '让韩立回看一路留下的人与物，并把路线、关系、旧账与关键旗标收成终局候选。',
+            chapterConflict: '飞升不该再只是数值达标后的固定菜单，而应是对一生选择的最后回答。',
+            closureWrites: Object.freeze(['ascension_attitude_locked', 'terminal_review_written']),
+            nextReads: Object.freeze(['terminal_ending_candidates', 'abnormal_failure_check']),
+        },
+        {
+            id: 'volume_five_chapter_5',
+            title: '终局分流',
+            legacyChapterIds: Object.freeze(['25_final_branch']),
+            volumeRole: 'ending',
+            chapterGoal: '在这里正式进入五条主终局，并清楚划出异常失败终局边界。',
+            chapterConflict: '韩立不可能同时拥有所有答案；系统必须根据长期路线、关系、旧账与失败压力，给出真正属于他的终局。',
+            closureWrites: Object.freeze(['volume_five_finished', 'ending_committed']),
+            nextReads: Object.freeze([]),
+        },
+    ]);
+
+    const VOLUME_FIVE_LEGACY_CHAPTER_MAP = Object.freeze({
+        24: Object.freeze({ targetChapterId: 'volume_five_chapter_1', action: 'keep_main' }),
+        '24_old_debt_and_name': Object.freeze({ targetChapterId: 'volume_five_chapter_2', action: 'expand_main' }),
+        '24_bond_destination': Object.freeze({ targetChapterId: 'volume_five_chapter_3', action: 'expand_main' }),
+        25: Object.freeze({ targetChapterId: 'volume_five_chapter_4', action: 'reframe_runtime_material' }),
+        '25_final_branch': Object.freeze({ targetChapterId: 'volume_five_chapter_5', action: 'expand_main' }),
+    });
+
+    function hasVolumeFiveNangongBond(state) {
+        const flags = state?.flags || {};
+        const relationNangong = state?.npcRelations?.['南宫婉'] || 0;
+        return relationNangong >= 60
+            || flags.savedNangong
+            || flags.acceptedNangongHelp
+            || flags.acceptedNangongDebt
+            || flags.acceptedNangongPath
+            || flags.openlyAcknowledgedNangongImportance
+            || flags.volumeFiveBondTarget === 'nangong';
+    }
+
+    function hasVolumeFiveMocaihuanBond(state) {
+        const flags = state?.flags || {};
+        const relationMo = state?.npcRelations?.['墨彩环'] || 0;
+        return relationMo >= 45
+            || flags.daoLvPromise
+            || flags.mendedMoHouseDebt
+            || flags.returnedToMoHouse
+            || flags.madeAmendsToMocaihuan
+            || flags.admittedOldWrongToMocaihuan
+            || flags.volumeFiveBondTarget === 'mocaihuan';
+    }
+
+    function createVolumeFiveEndingChoice(id, text, ending, effects) {
+        return {
+            id,
+            text,
+            effects,
+            ending,
+            nextChapterId: -1,
+        };
+    }
+
+    // 第五卷终局必须把“认账 / 认人 / 认自己”拆开结算，避免又退回旧的临时结局菜单。
+    function buildVolumeFiveFinalChoices(state) {
+        const flags = state?.flags || {};
+        const routes = state?.routeScores || {};
+        const relationNangong = state?.npcRelations?.['南宫婉'] || 0;
+        const relationMo = state?.npcRelations?.['墨彩环'] || 0;
+        const nangongBond = hasVolumeFiveNangongBond(state);
+        const mocaihuanBond = hasVolumeFiveMocaihuanBond(state);
+        const oldDebtSettled = Boolean(flags.oldDebtsCleared || flags.volumeFiveOldDebtMode === 'settled');
+        const sharedDaoReady = flags.volumeFiveBondTarget === 'nangong'
+            && flags.volumeFiveAscensionAttitude === 'shared'
+            && relationNangong >= 95
+            && !flags.cutEmotion;
+        const delayedAscensionReady = flags.volumeFiveBondTarget === 'nangong'
+            && flags.volumeFiveAscensionAttitude === 'delay'
+            && relationNangong >= 80;
+        const redDustReady = flags.volumeFiveBondTarget === 'nangong'
+            && flags.volumeFiveAscensionAttitude === 'stay'
+            && relationNangong >= 80;
+        const lonelyDaoReady = nangongBond
+            && (flags.volumeFiveAscensionAttitude === 'alone'
+                || flags.volumeFiveBondTarget === 'distance'
+                || flags.continuedToOweNangongSilently
+                || flags.suppressedNangongFeelings
+                || flags.cutEmotion);
+        const mortalFarewellReady = flags.volumeFiveBondTarget === 'mocaihuan'
+            && mocaihuanBond
+            && oldDebtSettled;
+        const choices = [];
+
+        if (redDustReady) {
+            choices.push(createVolumeFiveEndingChoice(
+                'youxi_hongchen',
+                '背对天门，先陪她把人间走完',
+                {
+                    id: 'youxi_hongchen',
+                    title: '游戏红尘',
+                    description: '当飞升天门洞开，你最终没有与南宫婉一同迈入更高处，而是背对天门，留在人间。你第一次不再害怕停下，也第一次觉得守住一个人，比继续独自往上更有意义。',
+                },
+                {
+                    cultivation: 3600,
+                    routeScores: { orthodox: 1 },
+                    flags: { stayedInMortalWorld: true, choseGameOfRedDust: true, postponedAscension: true },
+                },
+            ));
+        }
+
+        if (sharedDaoReady) {
+            choices.push(createVolumeFiveEndingChoice(
+                'dadao_tongguang',
+                '与南宫婉并肩渡劫，把大道走成两个人的路',
+                {
+                    id: 'dadao_tongguang',
+                    title: '大道同光',
+                    description: '面对飞升雷劫，你与南宫婉真正把后背交给了彼此，共破天劫，携手飞升。大道在这一刻不再只是独行者的高路，而成了两个人并肩走到更高处的回答。',
+                },
+                {
+                    cultivation: 5200,
+                    routeScores: { orthodox: 1 },
+                    flags: { ascendedToSpiritWorld: true, ascendedWithNangong: true, choseSharedDaoWithNangong: true },
+                },
+            ));
+        }
+
+        if (delayedAscensionReady) {
+            choices.push(createVolumeFiveEndingChoice(
+                'chidu_qingtian',
+                '先把她送上去，赌她终会回身渡我',
+                {
+                    id: 'chidu_qingtian',
+                    title: '迟渡情天',
+                    description: '飞升通道开启时，你先把南宫婉送上灵界，自己却被留在人间。你原以为从此天人永隔，后来她却在上界回身劈开天门，把你重新渡了上去。这一场豪赌，终于得到了回答。',
+                },
+                {
+                    cultivation: 5000,
+                    routeScores: { orthodox: 1, secluded: 1 },
+                    flags: { ascendedToSpiritWorld: true, delayedAscensionFulfilled: true, sentNangongAhead: true },
+                },
+            ));
+        }
+
+        if (mortalFarewellReady) {
+            choices.push(createVolumeFiveEndingChoice(
+                'xianfan_shutu',
+                '认下那份来得太晚的凡心，再独自上路',
+                {
+                    id: 'xianfan_shutu',
+                    title: '仙凡殊途',
+                    description: '你终于回到嘉元城，也终于面对墨彩环与自己拖欠太久的凡俗旧债。可等真正相见时，你已经明白有些岁月补得回旧账，补不回旧人；有些情认得太晚，便注定不能同路。',
+                },
+                {
+                    cultivation: 4700,
+                    routeScores: { orthodox: 1 },
+                    flags: { ascendedToSpiritWorld: true, acceptedMortalFarewell: true, mortalOldDebtSettledAtLast: true },
+                },
+            ));
+        }
+
+        if (lonelyDaoReady) {
+            choices.push(createVolumeFiveEndingChoice(
+                'zhiying_xiangdao',
+                '独自推门，让那句“以后再说”真的迟到尽头',
+                {
+                    id: 'zhiying_xiangdao',
+                    title: '只影向道',
+                    description: '你心里始终有南宫婉，却一次次把话压后，把感情拖到“以后再说”。等你终于想回头时，她已经走入自己的道途，不再等你。最后只剩你独自一人迎来长生，这也是最成功却最苍白的一场飞升。',
+                },
+                {
+                    cultivation: 4900,
+                    routeScores: { secluded: 1 },
+                    flags: { ascendedToSpiritWorld: true, walkedDaoAlone: true, missedNangongByDelay: true },
+                },
+            ));
+        }
+
+        if (choices.length > 0) {
+            return choices;
+        }
+
+        if (mortalFarewellReady || (mocaihuanBond && oldDebtSettled && relationMo >= 35)) {
+            return [createVolumeFiveEndingChoice(
+                'xianfan_shutu',
+                '认下那份来得太晚的凡心，再独自上路',
+                {
+                    id: 'xianfan_shutu',
+                    title: '仙凡殊途',
+                    description: '你终于看清有些情认得太晚，便注定不能同路。飞升仍在前方，可那点最迟醒来的凡心，会一直留在你心上。',
+                },
+                {
+                    cultivation: 4700,
+                    routeScores: { orthodox: 1 },
+                    flags: { ascendedToSpiritWorld: true, acceptedMortalFarewell: true, mortalOldDebtSettledAtLast: true },
+                },
+            )];
+        }
+
+        if (sharedDaoReady || (nangongBond && flags.volumeFiveAscensionAttitude === 'shared' && relationNangong >= 75)) {
+            return [createVolumeFiveEndingChoice(
+                'dadao_tongguang',
+                '与南宫婉并肩渡劫，把大道走成两个人的路',
+                {
+                    id: 'dadao_tongguang',
+                    title: '大道同光',
+                    description: '你最终承认大道未必要独行，南宫婉也不是牵绊，而是唯一值得你放下戒备的人。',
+                },
+                {
+                    cultivation: 5200,
+                    routeScores: { orthodox: 1 },
+                    flags: { ascendedToSpiritWorld: true, ascendedWithNangong: true, choseSharedDaoWithNangong: true },
+                },
+            )];
+        }
+
+        if (delayedAscensionReady || (nangongBond && flags.volumeFiveAscensionAttitude === 'delay')) {
+            return [createVolumeFiveEndingChoice(
+                'chidu_qingtian',
+                '先把她送上去，赌她终会回身渡我',
+                {
+                    id: 'chidu_qingtian',
+                    title: '迟渡情天',
+                    description: '你第一次连算都没算，先把生路让给了她，而她后来也用回身相渡证明这场豪赌值得。',
+                },
+                {
+                    cultivation: 5000,
+                    routeScores: { orthodox: 1, secluded: 1 },
+                    flags: { ascendedToSpiritWorld: true, delayedAscensionFulfilled: true, sentNangongAhead: true },
+                },
+            )];
+        }
+
+        if (redDustReady || (nangongBond && flags.volumeFiveAscensionAttitude === 'stay' && relationNangong >= 60)) {
+            return [createVolumeFiveEndingChoice(
+                'youxi_hongchen',
+                '背对天门，先陪她把人间走完',
+                {
+                    id: 'youxi_hongchen',
+                    title: '游戏红尘',
+                    description: '你第一次不再害怕停下，也第一次觉得守住一个人，比继续独自往上更有意义。',
+                },
+                {
+                    cultivation: 3600,
+                    routeScores: { orthodox: 1 },
+                    flags: { stayedInMortalWorld: true, choseGameOfRedDust: true, postponedAscension: true },
+                },
+            )];
+        }
+
+        return [createVolumeFiveEndingChoice(
+            'zhiying_xiangdao',
+            '独自推门，让那句“以后再说”真的迟到尽头',
+            {
+                id: 'zhiying_xiangdao',
+                title: '只影向道',
+                description: '你一路都太会把重要的话拖到以后。最后门开了，你也还是一个人走了过去。',
+            },
+            {
+                cultivation: 4900,
+                routeScores: { secluded: 1 },
+                flags: { ascendedToSpiritWorld: true, walkedDaoAlone: true, missedNangongByDelay: true },
+            },
+        )];
+    }
 
     const CHAPTER_ECHO_PACKS = {
         8: {
@@ -1255,13 +1554,68 @@
                 npcComment: { '墨彩环': { neutral: '你回来过，却还是像一道影子。来得快，去得也快。' }, '南宫婉': { neutral: '你回来不是为了重新住进去，这点我看得出来。' } },
             },
         },
+        '24_old_debt_and_name': {
+            settle_old_debts_openly: {
+                immediate: { title: '把账翻明', detail: '你没有再替自己留模糊地带，而是把该认的账、该补的错和该背的名一起翻到了明面上。' },
+                delayed: { title: '旧债终见天光', detail: '后来再想起嘉元城与黄枫谷时，你先记住的不是谁曾亏待过你，而是你终于把自己那份也认了。', npc: '墨彩环' },
+                npcComment: { '墨彩环': { high: '账能不能补回去是一回事，肯不肯认，是另一回事。你这次至少没再躲。', neutral: '你总算没有再把“以后”挂在嘴上。' }, '李化元': { neutral: '肯把旧账翻明，总比把心性也一起藏掉强。' } },
+            },
+            pay_accounts_but_leave_name_behind: {
+                immediate: { title: '付账不住回去', detail: '你认了该认的那部分代价，却没有再把旧名重新背回肩上。' },
+                delayed: { title: '只补该补的那半步', detail: '你替旧地留了交代，却也替自己留了退路。此后别人再认你时，会先说你肯认账，但不肯再把自己住回去。', npc: '李化元' },
+                npcComment: { '李化元': { neutral: '你这一步不算逃，只是把分寸留得很死。' }, '墨彩环': { neutral: '你肯认一半，我看见了；剩下那一半，你还是收得很紧。' } },
+            },
+            cut_old_name_after_minimum_duty: {
+                immediate: { title: '认完便断', detail: '你连旧名也一起压下，只把必须做的那部分做完，然后转身离场。' },
+                delayed: { title: '名字留在旧地', detail: '后来别人提起你时，会先说你回来过，也会说你没打算再把自己交回去。', npc: '厉飞雨' },
+                npcComment: { '厉飞雨': { neutral: '你回来得像风，走得也像风。可真认了什么，旧人还是看得出来。' } },
+            },
+        },
+        '24_bond_destination': {
+            choose_nangong_openly: {
+                immediate: { title: '终于认她', detail: '你不再把南宫婉那条线继续拖成沉默，而是第一次正面承认：她不是路上的插曲。' },
+                delayed: { title: '旧情不再往后拖', detail: '你终于不再把最重要的人推给“以后再说”。这会一路写进飞升前夜。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { high: '你既然终于肯认，就别再把最重要的话丢给以后。', neutral: '你总算没再把我也一并塞回沉默里。' } },
+            },
+            face_mocaihuan_at_last: {
+                immediate: { title: '把迟来的话说完', detail: '你回到嘉元城时，终于把那些本该更早说出口的话说给了墨彩环。' },
+                delayed: { title: '凡心迟到', detail: '很多年后你才认下这份凡心。真正难受的，不是没认，而是认得太晚。', npc: '墨彩环' },
+                npcComment: { '墨彩环': { high: '你若早一点认，也许会是另一回事。可人总归还是要往前活。', neutral: '迟来的话不是没分量，只是再重，也改不了已经过去的那些年。' } },
+            },
+            keep_everyone_at_distance: {
+                immediate: { title: '还是把话压住', detail: '你看见了该认的人，却还是先把最重的话吞回去，只留下分寸与距离。' },
+                delayed: { title: '又一次留给以后', detail: '你还是更习惯把重要的话拖到以后。可这一次，你已经知道以后未必真的会来。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你又把最重的话压回去了。只是这次你自己也知道，它不会凭空变轻。' }, '墨彩环': { neutral: '你还是那样，肯回来，却不肯真的把话说到底。' } },
+            },
+        },
         25: {
-            lingjie_xianzun: { immediate: { title: '灵界仙尊', detail: '你并不比谁更干净。只是到了最后，你还愿意背着这一身并不全然体面的来路，继续往更高处走。' } },
-            renjie_zhizun: { immediate: { title: '人界至尊', detail: '你明明可以走，最后却先选择留下。这不是贪恋权势，而是你终于有资格决定这个人界值不值得亲手整一整。' } },
-            xiaoyao_sanxian: { immediate: { title: '逍遥散仙', detail: '你不是输了，也不是倦了。你只是第一次真正替自己选了一种不用总向谁证明什么的活法。' } },
-            taishang_wangqing: { immediate: { title: '太上忘情', detail: '你断得太干净，干净到几乎无懈可击。可真正让人不安的，是连你自己都快想不起当年差点舍不得的究竟是什么。' } },
-            yinguo_chanshen: { immediate: { title: '因果缠身', detail: '你以为很多事只要拖得够久就会淡。直到走到门前才发现，淡掉的是表面，不是账。' } },
-            fanxin_weisi: { immediate: { title: '凡心未死', detail: '门已经开了，你却没有立刻过去。那不是退缩，而是你终于肯承认这一次想先为自己决定留下。' } },
+            stay_in_world_for_one_person: {
+                immediate: { title: '先把人留住', detail: '天门近在眼前时，你第一次不是先想自己能走多远，而是先想这一回能不能把人留下。' },
+                delayed: { title: '先向人间回身', detail: '你明知门已打开，却还是先把脚收了回来。飞升前夜因此第一次有了真正的人间分量。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { high: '你这次若真肯停，不必说给我听，我会看见。', neutral: '门都开了，你却先问人还在不在。' } },
+            },
+            walk_together_if_fate_allows: {
+                immediate: { title: '把大道并肩写', detail: '你终于不再把飞升只看成独行之路，而是第一次认真把“并肩”也算进答案里。' },
+                delayed: { title: '门前终于不再独行', detail: '你不是放弃大道，而是终于承认大道未必要独自去走。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { high: '若真能并肩，那这一次你就别先把自己藏起来。', neutral: '你若真想两个人一起走，就别只在门前才想起这件事。' } },
+            },
+            send_her_ahead_and_wait_for_return: {
+                immediate: { title: '先送她上去', detail: '这一次你没有先算自己，而是先把生路让给了她。' },
+                delayed: { title: '迟来的豪赌', detail: '你第一次愿意不算得失地把自己押后。这会把“值不值得”一直拖到终局最后一刻。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { high: '你若真敢把自己押后一次，我不会当看不见。', neutral: '你总算也会不算得那么清。' } },
+            },
+            say_nothing_and_walk_alone: {
+                immediate: { title: '还是一个人上路', detail: '门已经开了，你最后还是选了最熟悉的那条路：不说透，不停留，也不回头。' },
+                delayed: { title: '独走成习', detail: '你以为这是稳妥，其实也是一路以来最熟悉的那种迟疑。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你若还是只会一个人走，那许多话也确实不用再说。' } },
+            },
+        },
+        '25_final_branch': {
+            youxi_hongchen: { immediate: { title: '游戏红尘', detail: '你背对天门，终于把“留下”当成了一次主动的选择。' } },
+            dadao_tongguang: { immediate: { title: '大道同光', detail: '这一次你没有独行，而是与南宫婉并肩推开了更高处的门。' } },
+            zhiying_xiangdao: { immediate: { title: '只影向道', detail: '门最终还是开了，只是走过去时，你已经只剩自己一个人。' } },
+            xianfan_shutu: { immediate: { title: '仙凡殊途', detail: '你终于认下那份迟来的凡心，也终于明白它已经来得太晚。' } },
+            chidu_qingtian: { immediate: { title: '迟渡情天', detail: '你第一次把自己押后，后来终于等到了那道回身相渡的光。' } },
         },
     };
 
@@ -1814,30 +2168,72 @@
                 detail: '你回来过，也处理了该处理的，却没有再把自己重新扔进旧名旧局里。你不是不认过去，只是不再让过去重新决定你现在是谁。',
             },
         },
+        '24_old_debt_and_name': {
+            settle_old_debts_openly: {
+                title: '把账翻明',
+                detail: '你这次没有再给自己留模糊地带，而是把该认的账、该补的错和该背的名一起翻到了明面上。旧地因此不再只是来过，而是被你真正认过一次。',
+            },
+            pay_accounts_but_leave_name_behind: {
+                title: '只补不住回去',
+                detail: '你认了该认的那部分代价，却没有再把旧名重新背回肩上。这一步留下的是分寸，也是一条更冷的退路。',
+            },
+            cut_old_name_after_minimum_duty: {
+                title: '认完便断',
+                detail: '你把必须处理的部分做完，随即连旧名也一起压下。后来再有人提起你，都会先说你回来过，却没打算再把自己交回去。',
+            },
+        },
+        '24_bond_destination': {
+            choose_nangong_openly: {
+                title: '终于认她',
+                detail: '你不再把南宫婉那条线继续拖成沉默，而是第一次正面承认：她不是路上的插曲。此后飞升再近，这个人也不能被你算在外面。',
+            },
+            face_mocaihuan_at_last: {
+                title: '迟来的凡心',
+                detail: '你回到嘉元城时，终于把本该更早说出口的话说给了墨彩环。真正刺人的，不是没认，而是你知道自己认得太晚。',
+            },
+            keep_everyone_at_distance: {
+                title: '还是把话压住',
+                detail: '你看见了该认的人，却还是先把最重的话吞回去。这一步看似稳妥，实际上只是把“以后再说”又往后拖了一次。',
+            },
+        },
         25: {
-            lingjie_xianzun: {
-                title: '灵界仙尊',
-                detail: '你并不比谁更干净。只是到了最后，你还愿意背着这一身并不全然体面的来路，继续往更高处走。',
+            stay_in_world_for_one_person: {
+                title: '先把人留住',
+                detail: '天门近在眼前时，你第一次不是先想自己能走多远，而是先想这一回能不能把人留下。飞升因此第一次真的输给了人间。',
             },
-            renjie_zhizun: {
-                title: '人界至尊',
-                detail: '你明明可以走，最后却先选择留下。这不是贪恋权势，而是你终于有资格决定这个人界值不值得亲手整一整。',
+            walk_together_if_fate_allows: {
+                title: '把大道并肩写',
+                detail: '你终于不再把飞升只看成独行之路，而是第一次认真把“并肩”也算进答案里。大道的意思，也因此被你重新写了一遍。',
             },
-            xiaoyao_sanxian: {
-                title: '逍遥散仙',
-                detail: '你不是输了，也不是倦了。你只是第一次真正替自己选了一种不用总向谁证明什么的活法。',
+            send_her_ahead_and_wait_for_return: {
+                title: '先把自己押后',
+                detail: '你第一次愿意不先算自己，而是把生路让给了她。这不是退让，而是你终于肯把最重要的人放在自己的前面。',
             },
-            taishang_wangqing: {
-                title: '太上忘情',
-                detail: '你断得太干净，干净到几乎无懈可击。可真正让人不安的，是连你自己都快想不起当年差点舍不得的究竟是什么。',
+            say_nothing_and_walk_alone: {
+                title: '独走成习',
+                detail: '门已经开了，你最后还是选了最熟悉的那条路：不说透，不停留，也不回头。这一步稳得像习惯，也冷得像习惯。',
             },
-            yinguo_chanshen: {
-                title: '因果缠身',
-                detail: '你以为很多事只要拖得够久就会淡。直到走到门前才发现，淡掉的是表面，不是账。',
+        },
+        '25_final_branch': {
+            youxi_hongchen: {
+                title: '游戏红尘',
+                detail: '你背对天门，终于把“留下”当成了一次主动的选择。到最后，你仍愿意为了一个人把人间再走一遍。',
             },
-            fanxin_weisi: {
-                title: '凡心未死',
-                detail: '门已经开了，你却没有立刻过去。那不是退缩，而是你终于肯承认这一次想先为自己决定留下。',
+            dadao_tongguang: {
+                title: '大道同光',
+                detail: '你终于没有独行，而是与南宫婉并肩推开了更高处的门。大道在这里第一次像两个人共有的一束光。',
+            },
+            zhiying_xiangdao: {
+                title: '只影向道',
+                detail: '门最终还是开了，只是走过去时，你已经只剩自己一个人。这是最成功，也最苍白的一场飞升。',
+            },
+            xianfan_shutu: {
+                title: '仙凡殊途',
+                detail: '你终于认下那份迟来的凡心，也终于明白它已经来得太晚。飞升仍在前方，可这份遗憾会一直跟着你。',
+            },
+            chidu_qingtian: {
+                title: '迟渡情天',
+                detail: '你第一次把自己押后，后来终于等到了那道回身相渡的光。那场豪赌没有白押。',
             },
         },
         qi_0: {
@@ -2508,7 +2904,7 @@
                         '现在你该懂，为何我从不信所谓留一线。',
                     ], seed + 2);
                 }
-                if (state.flags.postponedAscension || state.ending?.id === 'fanxin_weisi') {
+                if (state.flags.postponedAscension || ['youxi_hongchen', 'xianfan_shutu'].includes(state.ending?.id)) {
                     return pickSeededLine([
                         '你走到这里，竟还没把那点凡心磨光。',
                         '也罢。也许正因如此，你才没彻底像我。',
@@ -5547,6 +5943,9 @@
             id: 24,
             title: '重返天南',
             summary: '你回到天南时才发现，真正涌上来的不是怀旧，而是那些还没认完的人、账与名字。',
+            volumeId: 'volume_five_homecoming',
+            volumeRole: 'opening',
+            legacyVolumeTarget: 'volume_five_chapter_1',
             location: '天南',
             requirements: { storyProgress: 24, realmScoreAtLeast: 10 },
             beats(state) {
@@ -5615,27 +6014,22 @@
                     || state.flags.respectedLihuayuanButStayedIndependent
                     || state.flags.usedLihuayuanInfluencePragmatically
                     || (state.npcRelations['李化元'] || 0) >= 30;
-                const settlementFlags = { returnedTiannanForSettlement: true, oldDebtsCleared: true, settledScores: true };
+                const settlementFlags = { returnedTiannanForSettlement: true, settledScores: true, tiannanReturnMode: 'settlement' };
                 const settlementRelations = {};
-                const bondsFlags = { returnedTiannanForBonds: true };
+                const bondsFlags = { returnedTiannanForBonds: true, tiannanReturnMode: 'bonds' };
                 const bondsRelations = {};
 
                 if (moBond) {
-                    settlementFlags.returnedToMoHouse = true;
                     settlementRelations['墨彩环'] = 10;
-                    bondsFlags.returnedToMoHouse = true;
                     bondsRelations['墨彩环'] = 12;
                 }
 
                 if (liBond) {
-                    settlementFlags.answeredLiSummons = true;
                     settlementRelations['李化元'] = 10;
-                    bondsFlags.answeredLiSummons = true;
                     bondsRelations['李化元'] = 12;
                 }
 
                 if (nangongBond) {
-                    bondsFlags.acceptedNangongPath = true;
                     bondsRelations['南宫婉'] = 18;
                 }
 
@@ -5662,7 +6056,7 @@
                             routeScores: { orthodox: 1, demonic: 1 },
                             flags: settlementFlags,
                         },
-                        nextChapterId: 25,
+                        nextChapterId: '24_old_debt_and_name',
                     },
                     {
                         id: 'returned_tiannan_for_bonds',
@@ -5673,7 +6067,7 @@
                             routeScores: { orthodox: 2 },
                             flags: bondsFlags,
                         },
-                        nextChapterId: 25,
+                        nextChapterId: '24_old_debt_and_name',
                     },
                     {
                         id: 'returned_tiannan_but_remained_hidden',
@@ -5681,7 +6075,185 @@
                         effects: {
                             cultivation: 1750,
                             routeScores: { secluded: 2 },
-                            flags: { returnedTiannanButRemainedHidden: true, returnedToSeclusion: true },
+                            flags: {
+                                returnedTiannanButRemainedHidden: true,
+                                returnedToSeclusion: true,
+                                tiannanReturnMode: 'hidden',
+                            },
+                        },
+                        nextChapterId: '24_old_debt_and_name',
+                    },
+                ];
+            },
+        },
+        {
+            id: '24_old_debt_and_name',
+            title: '旧账与旧名',
+            summary: '真正难的不是回去，而是回去之后承认哪些账必须由你自己来结，哪些名字还要继续背。',
+            volumeId: 'volume_five_homecoming',
+            volumeRole: 'escalation',
+            legacyVolumeTarget: 'volume_five_chapter_2',
+            location: '嘉元城',
+            requirements: { storyProgress: '24_old_debt_and_name', realmScoreAtLeast: 10 },
+            beats(state) {
+                const flags = state.flags || {};
+                const relationMo = state.npcRelations['墨彩环'] || 0;
+                const relationLi = state.npcRelations['李化元'] || 0;
+                const returnLine = flags.tiannanReturnMode === 'settlement'
+                    ? '你既已决定回来清账，旧地就不会再允许你只做一个过路人。'
+                    : flags.tiannanReturnMode === 'bonds'
+                        ? '你先承认了人，所以旧账也跟着站到了眼前。很多债并不会因为你先认了情就自行变轻。'
+                        : '你本想只处理最低限度的部分，可真走到旧屋旧门前时，才知道最难压下去的从来不是旁人的目光，而是自己心里那句“其实我知道该认”。';
+                const moLine = relationMo >= 45 || flags.daoLvPromise || flags.mendedMoHouseDebt
+                    ? '墨府那一笔已经不能再被你说成“以后再补”。不管是补偿、认错还是断开，你都得给它一个像样的落点。'
+                    : '嘉元城没有追着你算账，可也正因为如此，你更知道这笔账若还要拖，只会越来越像你自己的心病。';
+                const liLine = relationLi >= 30 || flags.liDisciple || flags.enteredLihuayuanLineage
+                    ? '黄枫谷旧门墙也在等你回话。真正要认的不是名分，而是你这些年借过、背过、又想甩开的那些东西。'
+                    : '就算你没有正式把名字落在门墙里，旧宗门与旧战局也不会真把你当成无关人。';
+                return [
+                    beat('旁白', '回乡之后最先逼过来的，不是谁来找你算旧账，而是你忽然发现很多事若你自己不认，就再也不会有人替你认了。'),
+                    beat('旁白', returnLine),
+                    beat('旁白', moLine),
+                    beat('旁白', liLine),
+                    beat('旁白', '第五卷走到这里，真正的问题已经不再是“你回没回来”，而是“你到底准备把自己哪一部分也一起留在这里”。'),
+                ];
+            },
+            choices(state) {
+                const moBond = hasVolumeFiveMocaihuanBond(state);
+                const liBond = (state.npcRelations['李化元'] || 0) >= 30
+                    || state.flags.liDisciple
+                    || state.flags.enteredLihuayuanLineage
+                    || state.flags.respectedLihuayuanButStayedIndependent;
+                const settleRelations = {};
+                const partialRelations = {};
+                if (moBond) {
+                    settleRelations['墨彩环'] = 10;
+                    partialRelations['墨彩环'] = 4;
+                }
+                if (liBond) {
+                    settleRelations['李化元'] = 8;
+                    partialRelations['李化元'] = 4;
+                }
+                return [
+                    {
+                        id: 'settle_old_debts_openly',
+                        text: '把旧账翻明：该认的账、该补的错和该背的名，都由自己来结',
+                        effects: {
+                            cultivation: 1850,
+                            relations: settleRelations,
+                            routeScores: { orthodox: 1 },
+                            flags: {
+                                volumeFiveOldDebtMode: 'settled',
+                                oldDebtsCleared: true,
+                                returnedToMoHouse: moBond,
+                                madeAmendsToMocaihuan: moBond,
+                                answeredLiSummons: liBond,
+                            },
+                        },
+                        nextChapterId: '24_bond_destination',
+                    },
+                    {
+                        id: 'pay_accounts_but_leave_name_behind',
+                        text: '付账但不住回去：把该补的补上，旧名却不再重新背回肩上',
+                        effects: {
+                            cultivation: 1780,
+                            relations: partialRelations,
+                            routeScores: { orthodox: 1, secluded: 1 },
+                            flags: {
+                                volumeFiveOldDebtMode: 'compensated',
+                                oldDebtCompensationLeft: true,
+                                checkedOnMocaihuanThenLeft: moBond,
+                                answeredLiSummons: liBond,
+                            },
+                        },
+                        nextChapterId: '24_bond_destination',
+                    },
+                    {
+                        id: 'cut_old_name_after_minimum_duty',
+                        text: '认完便断：只做最低限度的那部分，然后把旧名一起压下',
+                        effects: {
+                            cultivation: 1810,
+                            routeScores: { demonic: 1, secluded: 1 },
+                            flags: {
+                                volumeFiveOldDebtMode: 'buried',
+                                oldNameBuriedAtEnd: true,
+                                keptDistanceFromOldFriend: true,
+                                returnedToSeclusion: true,
+                            },
+                        },
+                        nextChapterId: '24_bond_destination',
+                    },
+                ];
+            },
+        },
+        {
+            id: '24_bond_destination',
+            title: '旧情去处',
+            summary: '旧账总还能算，旧情却不是。真走到最后，人和路不可能永远都被你一起往后拖。',
+            volumeId: 'volume_five_homecoming',
+            volumeRole: 'bonding',
+            legacyVolumeTarget: 'volume_five_chapter_3',
+            location: '嘉元城',
+            requirements: { storyProgress: '24_bond_destination', realmScoreAtLeast: 11 },
+            beats(state) {
+                const relationNangong = state.npcRelations['南宫婉'] || 0;
+                const relationMo = state.npcRelations['墨彩环'] || 0;
+                const nangongLine = relationNangong >= 70 || state.flags.savedNangong || state.flags.acceptedNangongDebt
+                    ? '南宫婉这条线到了这里，已经不能再靠沉默维持。她不必追着你要答案，你也知道自己迟早得给。'
+                    : '你并不是不记得南宫婉，只是这些年太习惯先把最重的话压到最后。可现在已经没有更合适的“最后”了。';
+                const moLine = relationMo >= 45 || state.flags.madeAmendsToMocaihuan || state.flags.daoLvPromise
+                    ? '墨彩环那一笔更像凡心回头：你越想补，越知道有些东西不是肯补就能补回来的。'
+                    : '嘉元城的灯火仍是凡人的灯火，它不会替你等太久，也不会替你解释太多。';
+                return [
+                    beat('旁白', '你终于意识到，真正会跟着你走到飞升前夜的，不只是仇与债，还有你究竟肯不肯承认谁算“重要”。'),
+                    beat('旁白', nangongLine),
+                    beat('旁白', moLine),
+                    beat('旁白', '很多修士活到很高也只是更会算账。你走到这里，真正要回答的是：你会不会把人也算进去。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'choose_nangong_openly',
+                        text: '正面认下南宫婉：不再把这条线继续拖成沉默',
+                        effects: {
+                            cultivation: 1950,
+                            relations: { '南宫婉': 18 },
+                            routeScores: { orthodox: 1 },
+                            flags: {
+                                volumeFiveBondTarget: 'nangong',
+                                openlyAcknowledgedNangongImportance: true,
+                                acceptedNangongPath: true,
+                            },
+                        },
+                        nextChapterId: 25,
+                    },
+                    {
+                        id: 'face_mocaihuan_at_last',
+                        text: '回嘉元城把迟来的话说完：凡心既已醒，就别再装作没醒',
+                        effects: {
+                            cultivation: 1880,
+                            relations: { '墨彩环': 16 },
+                            routeScores: { orthodox: 1 },
+                            flags: {
+                                volumeFiveBondTarget: 'mocaihuan',
+                                admittedOldWrongToMocaihuan: true,
+                                volumeFiveMortalHeartAwakened: true,
+                            },
+                        },
+                        nextChapterId: 25,
+                    },
+                    {
+                        id: 'keep_everyone_at_distance',
+                        text: '还是把最重的话压住：认得出重要，却先不让任何人靠得太近',
+                        effects: {
+                            cultivation: 1900,
+                            routeScores: { secluded: 1 },
+                            flags: {
+                                volumeFiveBondTarget: 'distance',
+                                continuedToOweNangongSilently: true,
+                                cutEmotion: true,
+                            },
                         },
                         nextChapterId: 25,
                     },
@@ -5690,210 +6262,138 @@
         },
         {
             id: 25,
-            title: '化神飞升',
+            title: '飞升前夜',
             summary: '飞升前最后要认的，不是自己够不够强，而是这一生的关系、旧账与路数你究竟肯不肯承认。',
+            volumeId: 'volume_five_homecoming',
+            volumeRole: 'closure',
+            legacyVolumeTarget: 'volume_five_chapter_4',
             location: '大晋',
             requirements: { storyProgress: 25, realmScoreAtLeast: 12 },
-            beats() {
+            beats(state) {
+                const flags = state.flags || {};
+                const relationNangong = state.npcRelations['南宫婉'] || 0;
+                const relationMo = state.npcRelations['墨彩环'] || 0;
+                const debtLine = flags.volumeFiveOldDebtMode === 'settled'
+                    ? '旧账如今已被你真正翻明，所以摆在案上的不再只有刺，还有一种终于认过的松。'
+                    : flags.volumeFiveOldDebtMode === 'compensated'
+                        ? '你补了该补的那部分，却仍把自己留在门外。案上的旧物因此不只是账，也是分寸。'
+                        : '你把最难堪的那部分压成了沉默。案上的旧物越整齐，就越像在提醒你什么还没真正说清。';
+                const bondLine = flags.volumeFiveBondTarget === 'nangong'
+                    ? relationNangong >= 85
+                        ? '南宫婉这一笔已不能再被你说成路过。你走到门前时，首先想到的已经不是自己一个人够不够快。'
+                        : '你终于承认她重要，却也知道很多话若现在还说不透，以后大概只会更难。'
+                    : flags.volumeFiveBondTarget === 'mocaihuan'
+                        ? relationMo >= 55
+                            ? '墨彩环这一笔让你第一次正面看见：有些凡心不是没有，而是醒得太迟。'
+                            : '你已把那份凡心看见，却也知道它再亮，也照不回已经过去的那些年。'
+                        : '你还是更习惯把最重的话压在心里。飞升前夜最难承认的，也正是这种习惯本身。';
                 return [
                     beat('旁白', '化神后期的天地，与当年你初上修行路时所见已完全不同。山河在神识中不再只是地貌，而像无数条运转的脉络。许多人一生追逐的机缘、法宝、名望，如今大半都已落到你身后。'),
                     beat('旁白', '飞升前夜，你没有立刻闭关，而是把一路留下来的旧物一一摊在案上：旧账页、凡俗旧物、墨府名单、旧符、残信。它们都不值钱，却比任何重宝都更像真正陪你走到这里的东西。'),
                     beat('旁白', '你终于不能再把很多事归结成“当时别无选择”。因为如今你有得选了。也正因如此，过去那些选过的，才变得格外重。'),
-                    beat('旁白', '终局不该再是固定三选一，而应是根据路线、关系、旧账与关键旗标，让真正属于你的答案自己浮出来。'),
+                    beat('旁白', debtLine),
+                    beat('旁白', bondLine),
+                    beat('旁白', '终局不该再是固定菜单，而应是根据路线、关系、旧账与关键旗标，让真正属于你的答案自己浮出来。'),
                     beat('旁白', '你最早不是为了大道修仙，只是太早见过无能为力。'),
                     beat('旁白', '一路遇见的人，不只是支线；他们是见过你、逼过你、成全过你、也让你没法再轻易骗过自己的人。'),
                     beat('旁白', '正道、魔道、苟修，从来都不是别人给你的牌子，而是你一次次面对“我能不能为了更稳更快而舍别人”时交出的答案。'),
                 ];
             },
-            choices(state) {
-                const routes = state.routeScores || {};
-                const flags = state.flags || {};
-                const orthodox = routes.orthodox || 0;
-                const demonic = routes.demonic || 0;
-                const secluded = routes.secluded || 0;
-                const orthodoxPlusSecluded = orthodox + secluded;
-                const relationNangong = state.npcRelations['南宫婉'] || 0;
-                const relationMo = state.npcRelations['墨彩环'] || 0;
-                const relationLi = state.npcRelations['李化元'] || 0;
-                const dominantRoute = orthodox >= demonic && orthodox >= secluded
-                    ? 'orthodox'
-                    : demonic >= secluded
-                        ? 'demonic'
-                        : 'secluded';
-                const karmicCollapse = demonic >= 10
-                    && (flags.lootedMoHouse || flags.executedDisabledEnemy || flags.escapedMineWithCoreAssets)
-                    && !flags.oldDebtsCleared;
-                const choices = [];
-
-                if (orthodoxPlusSecluded >= 10
-                    && !karmicCollapse
-                    && (flags.oldDebtsCleared || relationNangong >= 35 || relationLi >= 18)) {
-                    choices.push({
-                        id: 'lingjie_xianzun',
-                        text: '推开更高的门，把这一生完整带去更高处',
+            choices() {
+                return [
+                    {
+                        id: 'stay_in_world_for_one_person',
+                        text: '门已打开，也先别走：这一回先把人留下，再谈飞升',
                         effects: {
-                            cultivation: 5200,
+                            cultivation: 2100,
                             routeScores: { orthodox: 1 },
                             flags: {
-                                ascendedToSpiritWorld: true,
-                                ascendedWithNangong: relationNangong >= 110 && (flags.acceptedNangongDebt || flags.acceptedNangongPath),
+                                volumeFiveAscensionAttitude: 'stay',
+                                stayedForOnePerson: true,
+                                postponedAscension: true,
                             },
                         },
-                        ending: {
-                            id: 'lingjie_xianzun',
-                            title: '灵界仙尊',
-                            description: '你最终还是走向了那扇更高的门。并非因为你比谁更干净，而是因为你在漫长岁月里逐渐明白，大道不是把自己洗成白纸再送上去，而是明知纸上已有擦不掉的字，仍敢把它完整带去更高处。',
-                        },
-                        nextChapterId: -1,
-                    });
-                }
-
-                if (flags.stoodTheLine || flags.heldSpiritMineLine || flags.ledMineBreakout || flags.returnedTiannanForSettlement) {
-                    choices.push({
-                        id: 'renjie_zhizun',
-                        text: '先留下，把这片旧天地真正压稳',
-                        effects: {
-                            cultivation: 3800,
-                            routeScores: { orthodox: 1, demonic: 1 },
-                            flags: { stayedInMortalWorld: true },
-                        },
-                        ending: {
-                            id: 'renjie_zhizun',
-                            title: '人界至尊',
-                            description: '你最终没有立刻飞升。不是不能，而是不愿。你早已站到足够高的位置，高到只要愿意，便能以自己的名字压住一地风波。所谓至尊，不是坐在最高处等人来拜，而是明明已经可以离开，却仍决定留下。',
-                        },
-                        nextChapterId: -1,
-                    });
-                }
-
-                if (secluded >= 10 && !flags.enteredLihuayuanLineage) {
-                    choices.push({
-                        id: 'xiaoyao_sanxian',
-                        text: '离开名号与门墙，只给自己留下一条路',
-                        effects: {
-                            cultivation: 3600,
-                            routeScores: { secluded: 1 },
-                            flags: { becameLooseImmortal: true },
-                        },
-                        ending: {
-                            id: 'xiaoyao_sanxian',
-                            title: '逍遥散仙',
-                            description: '你最终选了离开，却不是飞升。这不是逃，也不是倦，而是你终于有资格替自己选一种活法，不为宗门，不为名头，只为自己还愿意把日子过下去。',
-                        },
-                        nextChapterId: -1,
-                    });
-                }
-
-                if ((flags.suppressedNangongFeelings || flags.cutNangongTies || flags.cutEmotion)
-                    && (flags.executedDisabledEnemy || flags.firstSilencingKill)) {
-                    choices.push({
-                        id: 'taishang_wangqing',
-                        text: '带着最冷的那一段道心，继续往上走',
-                        effects: {
-                            cultivation: 5000,
-                            routeScores: { demonic: 1, secluded: 1 },
-                            flags: { ascendedToSpiritWorld: true, severedMortalBonds: true },
-                        },
-                        ending: {
-                            id: 'taishang_wangqing',
-                            title: '太上忘情',
-                            description: '你也飞升了，而且比很多人都更干净利落。可真正让人不安的，正是连你自己都快想不起，当年差点舍不得的究竟是什么。',
-                        },
-                        nextChapterId: -1,
-                    });
-                }
-
-                if (demonic >= 10 && (flags.lootedMoHouse || flags.executedDisabledEnemy || flags.escapedMineWithCoreAssets)) {
-                    choices.push({
-                        id: 'yinguo_chanshen',
-                        text: '硬闯门前，看看旧因旧果会不会一起回来',
-                        effects: {
-                            cultivation: 3300,
-                            routeScores: { demonic: 1 },
-                            flags: { ascensionBlockedByKarma: true },
-                        },
-                        ending: {
-                            id: 'yinguo_chanshen',
-                            title: '因果缠身',
-                            description: '你最终还是走到了门前，可门没有真正为你打开。不是天道审你，而是那些你以为已经被时间埋掉的旧因旧果，在这一刻忽然全都浮了上来。',
-                        },
-                        nextChapterId: -1,
-                    });
-                }
-
-                if (flags.returnedTiannanForBonds || relationNangong >= 35 || relationMo >= 25) {
-                    choices.push({
-                        id: 'fanxin_weisi',
-                        text: '门已打开，但先承认自己还有想留下的人与事',
-                        effects: {
-                            cultivation: 3400,
-                            routeScores: { orthodox: 1 },
-                            flags: { postponedAscension: true, stayedInMortalWorld: true },
-                        },
-                        ending: {
-                            id: 'fanxin_weisi',
-                            title: '凡心未死',
-                            description: '门开了，你看见了更高处，也知道只要再往前一步，许多牵扯都会在身后缩小、淡去。可你最终没有立刻踏出去。不是因为软弱，而是因为这一次，你选留下。',
-                        },
-                        nextChapterId: -1,
-                    });
-                }
-
-                if (choices.length > 0) {
-                    return choices;
-                }
-
-                if (dominantRoute === 'orthodox') {
-                    return [{
-                        id: 'lingjie_xianzun',
-                        text: '继续往上，把这一生完整带过去',
-                        effects: {
-                            cultivation: 5200,
-                            routeScores: { orthodox: 1 },
-                            flags: { ascendedToSpiritWorld: true },
-                        },
-                        ending: {
-                            id: 'lingjie_xianzun',
-                            title: '灵界仙尊',
-                            description: '你最终还是走向了那扇更高的门。并非因为你比谁更干净，而是因为你终于敢完整认下这一生，再继续往前。',
-                        },
-                        nextChapterId: -1,
-                    }];
-                }
-
-                if (dominantRoute === 'secluded') {
-                    return [{
-                        id: 'xiaoyao_sanxian',
-                        text: '散去名号，把路留给自己',
-                        effects: {
-                            cultivation: 3600,
-                            routeScores: { secluded: 1 },
-                            flags: { becameLooseImmortal: true },
-                        },
-                        ending: {
-                            id: 'xiaoyao_sanxian',
-                            title: '逍遥散仙',
-                            description: '你最终选了离开，却不是飞升。你只是终于替自己选了一种还愿意继续过下去的活法。',
-                        },
-                        nextChapterId: -1,
-                    }];
-                }
-
-                return [{
-                    id: 'renjie_zhizun',
-                    text: '先留下，再决定这扇门何时再开',
-                    effects: {
-                        cultivation: 3800,
-                        routeScores: { demonic: 1 },
-                        flags: { stayedInMortalWorld: true },
+                        nextChapterId: '25_final_branch',
                     },
-                    ending: {
-                        id: 'renjie_zhizun',
-                        title: '人界至尊',
-                        description: '你最终没有立刻飞升。不是不能，而是不愿。既然这一界还压着旧账与后来者，那便先由你留下发话。',
+                    {
+                        id: 'walk_together_if_fate_allows',
+                        text: '若真有飞升，就试一次并肩而上',
+                        effects: {
+                            cultivation: 2200,
+                            routeScores: { orthodox: 1 },
+                            flags: {
+                                volumeFiveAscensionAttitude: 'shared',
+                                preparedSharedAscension: true,
+                            },
+                        },
+                        nextChapterId: '25_final_branch',
                     },
-                    nextChapterId: -1,
-                }];
+                    {
+                        id: 'send_her_ahead_and_wait_for_return',
+                        text: '先把她送上去：这一回把自己押后一次',
+                        effects: {
+                            cultivation: 2180,
+                            routeScores: { orthodox: 1, secluded: 1 },
+                            flags: {
+                                volumeFiveAscensionAttitude: 'delay',
+                                sentNangongAheadAtGate: true,
+                            },
+                        },
+                        nextChapterId: '25_final_branch',
+                    },
+                    {
+                        id: 'say_nothing_and_walk_alone',
+                        text: '还是什么都不说：门若要开，就先一个人过去',
+                        effects: {
+                            cultivation: 2250,
+                            routeScores: { secluded: 1 },
+                            flags: {
+                                volumeFiveAscensionAttitude: 'alone',
+                                walkedTowardAscensionAlone: true,
+                                suppressedNangongFeelings: true,
+                            },
+                        },
+                        nextChapterId: '25_final_branch',
+                    },
+                ];
+            },
+        },
+        {
+            id: '25_final_branch',
+            title: '终局分流',
+            summary: '到了这里，系统只该把你一路留下的账、人和路数收成真正的答案。',
+            volumeId: 'volume_five_homecoming',
+            volumeRole: 'ending',
+            legacyVolumeTarget: 'volume_five_chapter_5',
+            location: '大晋',
+            requirements: { storyProgress: '25_final_branch', realmScoreAtLeast: 12 },
+            beats(state) {
+                const flags = state.flags || {};
+                const relationNangong = state.npcRelations['南宫婉'] || 0;
+                const relationMo = state.npcRelations['墨彩环'] || 0;
+                const routeLine = (state.routeScores.orthodox || 0) >= Math.max(state.routeScores.demonic || 0, state.routeScores.secluded || 0)
+                    ? '你一路更像那个仍愿意给别人留位置的人，所以终局时很多问题都会先被问成“你肯不肯认人”。'
+                    : (state.routeScores.secluded || 0) >= (state.routeScores.demonic || 0)
+                        ? '你一路更像那个总会先给自己留退路的人，所以终局时很多答案都会先带着“你究竟愿不愿意停下来”的味道。'
+                        : '你一路更像那个先算收益与代价的人，所以终局时很多旧账都会比情面更早追上来。';
+                const bondLine = flags.volumeFiveBondTarget === 'mocaihuan'
+                    ? relationMo >= 55
+                        ? '墨彩环这一笔已经不能再被你说成凡俗尾巴。它会直接决定你最后怎么看待“仙凡殊途”这四个字。'
+                        : '你看见了那份凡心，却还没能真正补到旧人心里去。'
+                    : flags.volumeFiveBondTarget === 'nangong'
+                        ? relationNangong >= 90
+                            ? '南宫婉这一笔已走到不能再回避的地步。你最后是独行、并肩还是押后自己，她都会在答案里。'
+                            : '你终于承认了她重要，可你也知道，承认得太晚，本身就会改写答案。'
+                        : '你还是把最重的话压到了门前。所以最后真正追上来的，不是别人，而是你自己一路以来的迟疑。';
+                return [
+                    beat('旁白', '走到这里，天门、旧地、旧人和一路留下来的痕迹终于同时站到了你面前。'),
+                    beat('旁白', routeLine),
+                    beat('旁白', bondLine),
+                    beat('旁白', '现在留下来的不再是“还能不能选”，而是“这些年真正把你带到这里的，到底是哪一种活法”。'),
+                ];
+            },
+            choices(state) {
+                return buildVolumeFiveFinalChoices(state);
             },
         },
     ];
@@ -6127,8 +6627,41 @@
                             ? '你回过天南，却没有把自己重新交给天南。旧人只来得及看见一道影子，更多话仍被你留在背后。'
                             : '回到天南之后，嘉元城的旧屋、黄枫谷的门墙和禁地里的名字，都会轮番来认你。';
                 break;
+            case '24_old_debt_and_name':
+                text = flags.volumeFiveOldDebtMode === 'settled'
+                    ? '你把旧账翻到了明面上，所以后面再谈飞升时，这些账已经不是空白，而是你真正认过一次的东西。'
+                    : flags.volumeFiveOldDebtMode === 'compensated'
+                        ? '你补了该补的那部分，却没把自己重新住回旧名旧局里。后面很多终局都会先读这一层分寸。'
+                        : flags.volumeFiveOldDebtMode === 'buried'
+                            ? '你还是把最难堪的那部分压成了沉默。往后若再说自己已把旧账处理干净，这一步会先跳出来拦你。'
+                            : '旧账与旧名真正留下的，不是回没回去，而是你到底肯不肯把它们认成自己的一部分。';
+                break;
+            case '24_bond_destination':
+                text = flags.volumeFiveBondTarget === 'nangong'
+                    ? '你终于不再把南宫婉那条线继续拖成沉默。后面无论是留下、并肩还是错过，这一步都会被重新读出来。'
+                    : flags.volumeFiveBondTarget === 'mocaihuan'
+                        ? '墨彩环这一笔已不再只是凡俗旧事。你越到后面，越会知道“认得太晚”本身也是结局的一部分。'
+                        : flags.volumeFiveBondTarget === 'distance'
+                            ? '你还是把最重的话压住了。这一步看似稳妥，其实会一路把你推向更孤单的答案。'
+                            : '旧情去处真正会留下来的，不是见没见到谁，而是你究竟肯不肯把人也算进自己的路里。';
+                break;
             case 25:
-                text = '门前最后认三样东西: 你和谁还没断干净，你把多少旧账清到了明面上，以及你这一生到底更像正道、魔道，还是苟修。';
+                text = flags.volumeFiveAscensionAttitude === 'stay'
+                    ? '门已打开，你却先把脚收了回来。后面真正要被问的，不是你能不能走，而是你为什么愿意先为一个人停下。'
+                    : flags.volumeFiveAscensionAttitude === 'shared'
+                        ? '你第一次认真把“并肩”也算进了飞升这件事里。后面很多终局，都会先从这一念读起。'
+                        : flags.volumeFiveAscensionAttitude === 'delay'
+                            ? '你第一次愿意把自己押后。终局最后到底值不值得，就看这一念后面有没有人真的回头。'
+                            : flags.volumeFiveAscensionAttitude === 'alone'
+                                ? '你还是最习惯一个人走。后面真正追上来的，也会是这一点。'
+                                : '门前最后要认三样东西：你和谁还没断干净，你把多少旧账清到了明面上，以及你这一生到底更像正道、魔道，还是苟修。';
+                break;
+            case '25_final_branch':
+                text = flags.volumeFiveBondTarget === 'nangong'
+                    ? '到了最后，南宫婉这一笔已经不能再被你装成路过。你会得到哪一种答案，全看你这些年究竟把她放在了哪里。'
+                    : flags.volumeFiveBondTarget === 'mocaihuan'
+                        ? '到了最后，真正被你带到门前的，不只是修为和旧账，还有那份来得太晚的凡心。'
+                        : '到了最后，最会追上来的不是别人，而是你一路以来最熟悉的迟疑：总想以后再说。';
                 break;
             default:
                 text = routeName === '正道'
@@ -6185,6 +6718,8 @@
         VOLUME_THREE_CHAPTERS,
         VOLUME_FOUR_CHAPTERS,
         VOLUME_FOUR_LEGACY_CHAPTER_MAP,
+        VOLUME_FIVE_CHAPTERS,
+        VOLUME_FIVE_LEGACY_CHAPTER_MAP,
         LEVEL_STORY_EVENTS,
         STORY_CHAPTERS,
     };

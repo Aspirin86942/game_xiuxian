@@ -446,20 +446,20 @@
             const branchImpact = choice?.branchImpact || null;
             if (branchImpact?.title || branchImpact?.detail) {
                 return {
-                    title: branchImpact.title || entry.promiseLabel || '分支影响',
+                    title: branchImpact.title || entry.promiseLabel || '回响',
                     detail: branchImpact.detail || entry.longTermHint || entry.immediateSummary || '这一步已经留在你的路上，之后还会被重新认出。',
                 };
             }
 
             if (detail || title) {
                 return {
-                    title: title || entry.promiseLabel || '分支影响',
+                    title: title || entry.promiseLabel || '回响',
                     detail: detail || entry.longTermHint || entry.immediateSummary || '这一步已经留在你的路上，之后还会被重新认出。',
                 };
             }
 
             return {
-                title: entry.promiseLabel || '分支影响',
+                title: entry.promiseLabel || '回响',
                 detail: entry.longTermHint || entry.immediateSummary || '这一步已经留在你的路上，之后还会被重新认出。',
             };
         }
@@ -471,7 +471,7 @@
             });
             if (choice) {
                 const finalTitle = choice.branchImpact?.title || choice.ending?.title || choice.text;
-                chain.push(`收束于「${finalTitle}」：此前留下的每一道分支影响，都在这里一起合了拢。`);
+                chain.push(`收束于「${finalTitle}」：此前留下的每一道回响，都在这里一并合拢。`);
             }
             return chain.slice(-4);
         }
@@ -848,23 +848,23 @@
 
             const descriptions = {
                 orthodox: {
-                    title: '正道倾向',
-                    detail: '你仍愿意替人、替宗门或替某种秩序留出位置。很多后续剧情会因此更偏向“护住什么”。',
+                    title: '正道行迹',
+                    detail: '你仍肯替人、替宗门或替某种规矩留一线余地。往后很多局里，旁人会先把可托之事想到你身上。',
                 },
                 demonic: {
-                    title: '魔路倾向',
-                    detail: '你越来越习惯先抓住收益，再决定要不要给别人留活口。很多章节会因此更锋利。',
+                    title: '魔路行迹',
+                    detail: '你越来越习惯先把利害抓稳，再决定别人还能不能留在局里。日后很多相见，都难再把这一层锋芒藏住。',
                 },
                 secluded: {
-                    title: '苟修倾向',
-                    detail: '你更擅长藏锋、留退路、绕开最正面的冲撞。很多回响会偏向规避因果与延后出手。',
+                    title: '藏锋行迹',
+                    detail: '你更习惯先留后手、藏起锋芒、避开正面硬撞。往后很多因果，都会被你拖到更晚才见分晓。',
                 },
             };
 
             const summary = descriptions[dominant];
             return [
                 { title: summary.title, detail: summary.detail },
-                { title: '分值对照', detail: `正道 ${scoreMap.orthodox} / 魔路 ${scoreMap.demonic} / 苟修 ${scoreMap.secluded}` },
+                { title: '道途映照', detail: `正道 ${scoreMap.orthodox} / 魔路 ${scoreMap.demonic} / 藏锋 ${scoreMap.secluded}` },
                 { title: '战意', detail: `当前战斗加成：攻击 +${battleWillBonuses.attack} / 防御 +${battleWillBonuses.defense} / 气血 +${battleWillBonuses.hp}` },
                 { title: '失败压力', detail: `当前处于${consequences.pressureTier}，趋势${consequences.pressureTrend}。进入失控后将触发走火入魔终局。` },
             ];
@@ -911,14 +911,14 @@
             }
             if (Array.isArray(choice?.delayedEchoes) && choice.delayedEchoes.length > 0) {
                 return {
-                    title: choice.delayedEchoes[0].title || choice.branchImpact?.title || '分支影响',
+                    title: choice.delayedEchoes[0].title || choice.branchImpact?.title || '回响',
                     detail: choice.delayedEchoes[0].detail || choice.branchImpact?.detail || choice.longTermHint || choice.text,
                 };
             }
 
             if (choice?.branchImpact) {
                 return {
-                    title: choice.branchImpact.title || '分支影响',
+                    title: choice.branchImpact.title || '回响',
                     detail: choice.branchImpact.detail || choice.longTermHint || choice.text,
                 };
             }
@@ -981,7 +981,7 @@
                 }
             }
 
-            return [{ title: '尚在起势', detail: '关键选择还不够多，继续推进剧情会看到更明显的分支影响。', meta: '' }];
+            return [{ title: '余波未显', detail: '眼下还看不出太多波澜。继续往前走，因果自会慢慢显形。', meta: '' }];
         }
 
         return {

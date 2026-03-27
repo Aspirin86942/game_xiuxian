@@ -1054,6 +1054,7 @@ function testEndingChoiceVisibilityTracksStoryState() {
 }
 
 function testChapterEchoesStayConcrete() {
+    const forbiddenMetaWords = ['固定菜单', '支线', '关键旗标', '文字标签', '资源兑换', '情绪奖励', '关系后果', '分支影响'];
     const chapter8Texts = getChapterChoiceView(8).view.story.beats.map((item) => item.text);
     assert(chapter8Texts.some((text) => text.includes('试药') || text.includes('活人站在原地')));
 
@@ -1064,7 +1065,7 @@ function testChapterEchoesStayConcrete() {
     assert(chapter12Texts.some((text) => text.includes('离开第一卷之后') || text.includes('凡俗少年')));
 
     const chapter13CloseTexts = getChapterChoiceView('13_volume_close').view.story.beats.map((item) => item.text);
-    assert(chapter13CloseTexts.some((text) => text.includes('第二卷走到这里') || text.includes('血色禁地的门就在前方')));
+    assert(chapter13CloseTexts.some((text) => text.includes('此卷尽处真正留下的') || text.includes('门墙、旧债与准备')));
 
     const chapter14Texts = getChapterChoiceView(14).view.story.beats.map((item) => item.text);
     assert(chapter14Texts.some((text) => text.includes('最先开始猎杀的，从来不是妖兽')));
@@ -1089,7 +1090,7 @@ function testChapterEchoesStayConcrete() {
         state.flags.honoredAllianceAfterXuTian = true;
         state.flags.madeAmendsToMocaihuan = true;
     }).view.story.beats.map((item) => item.text);
-    assert(chapter23CloseTexts.some((text) => text.includes('很多卷末真正要收的') || text.includes('第四卷走到这里')));
+    assert(chapter23CloseTexts.some((text) => text.includes('到了离海之时') || text.includes('处世习气')));
 
     const chapter24Texts = getChapterChoiceView(24).view.story.beats.map((item) => item.text);
     assert(chapter24Texts.some((text) => text.includes('真正的返乡')));
@@ -1110,6 +1111,22 @@ function testChapterEchoesStayConcrete() {
         state.npcRelations['南宫婉'] = 108;
     }).view.story.beats.map((item) => item.text);
     assert(chapter25FinalTexts.some((text) => text.includes('走到这里') || text.includes('真正追上来的')));
+
+    const chapter15Text = getChapterChoiceView(15).view.story.beats.map((item) => item.text).join('\n');
+    const chapter18Text = getChapterChoiceView(18, (state) => {
+        state.flags.warChoice = 'demonic';
+    }).view.story.beats.map((item) => item.text).join('\n');
+    const chapter18ReturnText = getChapterChoiceView('18_nangong_return', (state) => {
+        state.flags.openlyAcknowledgedNangongImportance = true;
+    }).view.story.beats.map((item) => item.text).join('\n');
+    const chapter25Text = chapter25Texts.join('\n');
+    const chapter25FinalText = chapter25FinalTexts.join('\n');
+
+    assertTextContainsNone(chapter15Text, forbiddenMetaWords, '第 15 章不应再出现资源兑换等黑话');
+    assertTextContainsNone(chapter18Text, forbiddenMetaWords, '第 18 章不应再出现文字标签等黑话');
+    assertTextContainsNone(chapter18ReturnText, forbiddenMetaWords, '18_nangong_return 不应再出现这条线等黑话');
+    assertTextContainsNone(chapter25Text, forbiddenMetaWords, '第 25 章不应再出现固定菜单/支线/关键旗标等黑话');
+    assertTextContainsNone(chapter25FinalText, forbiddenMetaWords, '门前问心段落不应再出现分支影响等黑话');
 }
 
 function testChapter17BeatsAndFlags() {
@@ -2007,7 +2024,7 @@ function testVolumeTwoChapterLabelsUseRemappedVolumeStructure() {
 
     const chapterCloseView = getChapterChoiceView('13_volume_close').view;
     assert.strictEqual(chapterCloseView.chapter.chapterLabel, '第二卷·第 8 章');
-    assert.strictEqual(chapterCloseView.chapter.volumeChapterTitle, '卷末收束');
+    assert.strictEqual(chapterCloseView.chapter.volumeChapterTitle, '此卷尽处');
 }
 
 function testVolumeTwoExitStopsBeforeForbiddenGroundBody() {
@@ -2034,7 +2051,7 @@ function testVolumeTwoExitStopsBeforeForbiddenGroundBody() {
     }), '13_volume_close');
 
     assert.strictEqual(view.chapter.chapterLabel, '第二卷·第 8 章');
-    assert.strictEqual(view.chapter.volumeChapterTitle, '卷末收束');
+    assert.strictEqual(view.chapter.volumeChapterTitle, '此卷尽处');
     const selectedChoice = view.choices.find((choice) => choice.id === 'enter_forbidden_ground_ready');
     const result = GameCore.chooseStoryOption(state, selectedChoice.id);
     assert.strictEqual(result.ok, true);
@@ -2233,7 +2250,7 @@ function testVolumeFiveChapterLabelsUseRemappedVolumeStructure() {
 
     const finalView = getChapterChoiceView('25_final_branch').view;
     assert.strictEqual(finalView.chapter.chapterLabel, '第五卷·第 5 章');
-    assert.strictEqual(finalView.chapter.volumeChapterTitle, '终局分流');
+    assert.strictEqual(finalView.chapter.volumeChapterTitle, '门前问心');
 }
 
 function testVolumeFourEntryAndExitUseRemappedStructure() {
@@ -2350,6 +2367,10 @@ function getVolumeOneExitArcTexts(configure) {
 
 function assertTextContainsOneOf(text, fragments, message) {
     assert(fragments.some((fragment) => text.includes(fragment)), message);
+}
+
+function assertTextContainsNone(text, fragments, message) {
+    assert(fragments.every((fragment) => !text.includes(fragment)), message);
 }
 
 function testVolumeOneLateArcLegacyProgressStaysReadable() {

@@ -206,7 +206,7 @@ test('第二卷卷末收束后会立刻交给血色禁地入口', async ({ page 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
     await expect(page.locator(selectors.story.title)).toContainText('第二卷·第 8 章');
-    await expect(page.locator(selectors.story.title)).toContainText('卷末收束');
+    await expect(page.locator(selectors.story.title)).toContainText('此卷尽处');
 
     const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
     await expect(choiceLocator).toContainText(scenario.choiceText);
@@ -332,8 +332,8 @@ test('正式支线可在同行回响区接取并卡内结算', async ({ page }) 
 
     await page.click(selectors.tabs.story);
     await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.title);
-    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('可接支线');
-    await expect(page.locator(selectors.journey.sideQuestAccept(scenario.questId))).toHaveText('接下这桩事');
+    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('可应旧事');
+    await expect(page.locator(selectors.journey.sideQuestAccept(scenario.questId))).toHaveText('应下这桩旧事');
 
     await page.click(selectors.journey.sideQuestAccept(scenario.questId));
     await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('进行中');

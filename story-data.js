@@ -48,7 +48,7 @@
 
         if (flags.tookQuhunByForce) {
             return phase === 'market'
-                ? '你把曲魂连同墨府最后一点体面一起带离了嘉元城。从那一刻起，这条线真正留下来的已经不是“拿没拿到手”，而是你往后还肯不肯承认自己拿走了什么。'
+                ? '你把曲魂连同墨府最后一点体面一起带离了嘉元城。从那一刻起，真正留下来的已经不是“拿没拿到手”，而是你往后还肯不肯承认自己究竟拿走了什么。'
                 : '到了离卷时，你已经知道自己带走的从来不只是曲魂本身。神手谷旧案在你这里被写成了一条更锋利的分界: 以后你若再说“只是工具”，也得先过自己这一关。';
         }
 
@@ -757,7 +757,7 @@
         },
         {
             id: 'volume_two_chapter_8',
-            title: '卷末收束',
+            title: '此卷尽处',
             legacyChapterIds: Object.freeze(['13_volume_close']),
             volumeRole: 'exit',
             chapterGoal: '明确第二卷为什么在这里结束，以及为什么下一卷必须进入血色禁地。',
@@ -998,7 +998,7 @@
         },
         {
             id: 'volume_five_chapter_5',
-            title: '终局分流',
+            title: '门前问心',
             legacyChapterIds: Object.freeze(['25_final_branch']),
             volumeRole: 'ending',
             chapterGoal: '在这里正式进入五条主终局，并清楚划出异常失败终局边界。',
@@ -1373,7 +1373,7 @@
                 npcComment: { '李化元': { neutral: '你终于不像只会替自己活。' } },
             },
             defect_demonic: {
-                immediate: { title: '斩敌夺势', detail: '你做得很快，快到几乎没有多余情绪。那一刻你便知道，自己正在变成一种以后连自己都得提防的效率。' },
+                immediate: { title: '斩敌夺势', detail: '你下手太快，快到连自己都来不及多想。那一刻你便知道，往后若再举刀，自己也得先提防心里那股越来越利的冷意。' },
                 delayed: { title: '底线后移', detail: '只要再遇见失去反抗能力的敌人，你都会清楚记得: 第一次跨过去以后，后面会越来越容易。', npc: '南宫婉' },
                 npcComment: { '南宫婉': { low: '你不是比以前更会活了，你只是更早决定谁该被留在后面。', neutral: '你那时快得太干净，连借口都没给自己留。' }, '李化元': { low: '你走得更快了，也把“门里的人”和“能拿来换位子的人”算得越来越像。' } },
             },
@@ -1526,7 +1526,7 @@
         '23_volume_close': {
             follow_old_alliances_home: {
                 immediate: { title: '顺着旧盟回头', detail: '你这次回天南不是因为想家，而是因为终于承认有些旧盟、旧人和旧账必须由你自己回去认。' },
-                delayed: { title: '归乡是来认人', detail: '真正逼你回去的，不是地图，而是那些你已经不能再装作与己无关的人。', npc: '南宫婉' },
+                delayed: { title: '归乡是来认人', detail: '真正逼你回去的，不是海路远近，而是那些你已经不能再装作与己无关的人。', npc: '南宫婉' },
             },
             return_with_reputation_pressure: {
                 immediate: { title: '风声逼你回返', detail: '你很清楚再让星海风声自己发酵下去，别人就会替你把旧名和新名一起写死。' },
@@ -1573,7 +1573,7 @@
         },
         '24_bond_destination': {
             choose_nangong_openly: {
-                immediate: { title: '终于认她', detail: '你不再把南宫婉那条线继续拖成沉默，而是第一次正面承认：她不是路上的插曲。' },
+                immediate: { title: '终于认她', detail: '你不再把与南宫婉的这一笔继续压在沉默里，而是第一次正面承认：她不是路上的插曲。' },
                 delayed: { title: '旧情不再往后拖', detail: '你终于不再把最重要的人推给“以后再说”。这会一路写进飞升前夜。', npc: '南宫婉' },
                 npcComment: { '南宫婉': { high: '你既然终于肯认，就别再把最重要的话丢给以后。', neutral: '你总算没再把我也一并塞回沉默里。' } },
             },
@@ -1729,7 +1729,7 @@
         9: {
             take_quhun: {
                 title: '曲魂停顿',
-                detail: '你把一件可怕的东西留在了身边，也把“人”和“可用之物”那条线一起带上了路。后来每逢曲魂忽然像旧人那样停半息，你都会知道自己并非全然无感。',
+                detail: '你把一件可怕的东西留在了身边，也把“人”和“可用之物”之间那道界限一起带上了路。后来每逢曲魂忽然像旧人那样停半息，你都会知道自己并非全然无感。',
             },
             repair_quhun: {
                 title: '残身留念',
@@ -1933,7 +1933,7 @@
         '16_feiyu_return': {
             help_feiyu_again: {
                 title: '旧义回手',
-                detail: '你还是替旧友伸了手，像把很多年前那口没喝完的气重新接住。后来每逢想把凡俗旧日彻底丢干净时，厉飞雨这条线都会先把你拉回来。',
+                detail: '你还是替旧友伸了手，像把很多年前那口没喝完的气重新接住。后来每逢想把凡俗旧日彻底丢干净时，厉飞雨这一笔都会先把你拉回来。',
             },
             share_drink_and_part: {
                 title: '杯底留温',
@@ -2185,7 +2185,7 @@
         '24_bond_destination': {
             choose_nangong_openly: {
                 title: '终于认她',
-                detail: '你不再把南宫婉那条线继续拖成沉默，而是第一次正面承认：她不是路上的插曲。此后飞升再近，这个人也不能被你算在外面。',
+                detail: '你不再把与南宫婉的这一笔继续压在沉默里，而是第一次正面承认：她不是路上的插曲。此后飞升再近，这个人也不能被你算在外面。',
             },
             face_mocaihuan_at_last: {
                 title: '迟来的凡心',
@@ -2576,15 +2576,15 @@
             return `消耗：${formatChoiceCosts(choice.costs)}`;
         }
         if (riskLabel === '涉险') {
-            return '机会成本：会显著抬高后续失败压力';
+            return '此举代价：会让心劫更易反扑';
         }
         if (promiseLabel === '藏锋') {
-            return '机会成本：会放慢眼前推进速度';
+            return '此举代价：眼前脚步会慢半分';
         }
         if (promiseLabel === '试探') {
-            return '机会成本：会延后兑现关键结果';
+            return '此举代价：眼前果报会来得更迟';
         }
-        return '机会成本：会改写后续路线、关系或终局解释';
+        return '此举代价：会牵动后面的因果与去处';
     }
 
     function normalizeImmediateResult(rawResult, fallbackTitle, fallbackDetail) {
@@ -2732,15 +2732,15 @@
             return echoPack.delayed.detail;
         }
         if (choice?.ending) {
-            return '这一抉择会直接进入终局解释，并决定你最后如何回看这一路的承诺。';
+            return '这一念会落到门前问心之处，决定你最后如何回看这一生的承诺。';
         }
         if (riskLabel === '涉险') {
-            return `这一步会让你的${promiseLabel}路线更锋利，也更容易在后续章节里把压力推向失控边缘。`;
+            return `这一步会让你的${promiseLabel}之心更见锋芒，也更容易在往后的局里逼出心劫反噬。`;
         }
         if (riskLabel === '有压') {
-            return `这一步会在后续 2~5 个章节单元内留下可被识别的${promiseLabel}回响。`;
+            return `这一步不会立刻发作，却会在后面的几段路上留下能被认出的${promiseLabel}余波。`;
         }
-        return `这一步会把“${promiseLabel}”写进你的长期路径，之后的关系、章节与终局都会继续读取它。`;
+        return `这一步会把“${promiseLabel}”留在你的命数里，往后的相逢、旧账与门前抉择都会重新照见它。`;
     }
 
     function normalizeDelayedEchoes(choice, chapterId, choiceId, sourceType, echoPack, longTermHint, promiseLabel) {
@@ -3250,7 +3250,7 @@
         const riskLabel = RISK_LABELS[riskTier];
         const immediateFallbackTitle = echoPack?.immediate?.title || `${promiseLabel}已定`;
         const immediateFallbackDetail = echoPack?.immediate?.detail
-            || `你选择了“${preparedChoice.text}”。这一步已经把“${promiseLabel}”写进当前章节，并会继续影响后续关系、路线或终局。`;
+            || `你选了“${preparedChoice.text}”。这一念已落下印记，往后的相逢、旧账与去处都会再被它牵动。`;
         const immediateResult = normalizeImmediateResult(preparedChoice.immediateResult || echoPack?.immediate, immediateFallbackTitle, immediateFallbackDetail);
         const branchImpact = normalizeBranchImpact(preparedChoice, {
             chapterId,
@@ -4633,7 +4633,7 @@
         },
         {
             id: '13_volume_close',
-            title: '卷末收束',
+            title: '此卷尽处',
             summary: '第二卷真正要收住的，不是你有没有进宗门，而是你已经决定要以什么姿态进下一卷。',
             volumeId: 'volume_two_ascending_path',
             volumeRole: 'exit',
@@ -4775,7 +4775,7 @@
             beats(state) {
                 const savedLine = state.flags.savedNangong
                     ? '南宫婉的传音只留下一句硬话: “主药既已入手，便别死在筑基上。你欠我的，还没还清。”'
-                    : '你没有救下她，可禁地里那一眼仍像钩子一样留在识海，让你没法把这次筑基只当成一次资源兑换。';
+                    : '你没有救下她，可禁地里那一眼仍像钩子一样留在识海，让你没法骗自己：这次筑基不过是一场银货两讫的冷生意。';
                 return [
                     beat('旁白', '筑基并不是往前迈一步，更像把旧的自己活活拆开，再把骨、血、执念和未了因果一起塞进更硬的壳里。'),
                     beat('旁白', '禁地归来后，玉盒里的主药明明香气馥郁，你先想起的却不是机缘，而是那几张死前仍不肯闭眼的脸。'),
@@ -5044,8 +5044,8 @@
                 return [
                     beat('旁白', '大战前夜，营地里安静得出奇。所有人都在整备法器、丹药、阵位，表面有条不紊，实则没人真正相信自己明天还能完整回来。大战未起，人的心先散了一半。'),
                     beat('旁白', '半路上，你遇见一名重伤敌修。对方丹田已毁，几乎没有反抗之力。只要一抬手，你便能干净利落地解决一个后患；可你也清楚，这不只是杀不杀一个敌人的问题，而是自己会不会开始习惯这种事。'),
-                    beat('旁白', '赶到断后战场时，局势已近崩溃。几名同门死守阵位，灵力枯竭，另一边却有更稳妥的退路可走。你忽然发现，所有前面累积下来的路线与判断，在这一刻都必须真的落到动作上。'),
-                    beat('旁白', '正道、魔道、苟修，不再只是文字标签，而是你准备以怎样的方式承认自己。'),
+                    beat('旁白', '赶到断后战场时，局势已近崩溃。几名同门死守阵位，灵力枯竭，另一边却有更稳妥的退路可走。你忽然发现，此前一路攒下的心思与取舍，在这一刻都必须真的落到动作上。'),
+                    beat('旁白', '正道、魔道、还是独善其身，不再只是说书人口中的虚词，而是你准备拿命去践行的定数。'),
                 ];
             },
             choices() {
@@ -5089,7 +5089,7 @@
         {
             id: '18_nangong_return',
             title: '并肩之后',
-            summary: '南宫婉这条线不是情绪奖励，而是终于有人看穿你之后，仍知道怎样和你站在一处。',
+            summary: '南宫婉这一笔不是一时心动，而是终于有人看穿你之后，仍知道该怎样与你并肩。',
             volumeId: 'volume_three_magic_invasion',
             volumeRole: 'fallout',
             legacyVolumeTarget: 'volume_three_chapter_6',
@@ -5105,7 +5105,7 @@
                     beat('南宫婉', '你比以前更会把话吞回去了。'),
                     beat('旁白', '你回她一句“你比以前更不需要别人替你收场”。南宫婉却只淡淡看着你，像早已把这层推托看穿。'),
                     beat('南宫婉', '你以前就不是为了替别人收场才出手。你只是那时还没学会承认。'),
-                    beat('旁白', '风里一时安静下来。你忽然意识到，这条线最难处理的地方从来不是说不出口，而是一旦说出口，往后很多路就不能再只按一个人的活法去走。'),
+                    beat('旁白', '风里一时安静下来。你忽然意识到，这段因果最难的地方从来不是说不出口，而是一旦说出口，往后漫长大道便再不能只按你一个人的活法去走。'),
                 ];
             },
             choices() {
@@ -5365,7 +5365,7 @@
                     beat('旁白', arrivalLine),
                     beat('旁白', '有人猎妖、有人成交、有人闭关，但他们更在意你今天交得出多少账。'),
                     beat('旁白', '猎妖是赌命的快活，跑商是抓住流动的钱，闭关则是把自己藏进孤立里。'),
-                    beat('旁白', '你第一次意识到，换地图不只是换风景，而是换了活法。'),
+                    beat('旁白', '你第一次意识到，出海不只是换个落脚处，而是连活法都得跟着改。'),
                     beat('旁白', '别人不会再帮你记“你从哪来”，他们只问两件事：你守约不守约，你翻脸快不快。'),
                 ];
             },
@@ -5547,7 +5547,7 @@
                     beat('旁白', rumorLine),
                     beat('旁白', '海上的风声比残图跑得更快。有人想结盟，有人想试价，有人只是想先确认你该不该死。'),
                     beat('旁白', '你慢慢意识到，虚天残图最狠的一点，不是它会给你什么，而是它会让每个人都开始提前解释你。'),
-                    beat('旁白', '这意味着就算你还没真正进虚天殿，名声、风险和关系后果也已经先一步开始累积。'),
+                    beat('旁白', '这意味着就算你还没真正进虚天殿，名声、凶险与人情余波也已经先一步压了过来。'),
                     beat('旁白', '从这里开始，很多选择都不再只是“拿不拿”，而是“准备被别人当成哪种人”。'),
                 ];
             },
@@ -5886,7 +5886,7 @@
                         ? '你承认了旧错，也知道有些东西已经回不到原样。可承认本身，至少让这笔旧账不再是假装没发生。'
                         : '你没有把旧账全都接回手里，只是终于看清那些年里替你过日子的人，从来不是你自己。';
                 return [
-                    beat('旁白', '很多卷末真正要收的，不是地图，而是你带走的活法。乱星海给你的不是一个答案，而是一套以后会一直跟着你的处事方式。'),
+                    beat('旁白', '到了离海之时，真正要收的从来不是海图远近，而是你在这片海上养成了怎样的活法。乱星海给你的，不是一句现成答案，而是一身此后都甩不掉的处世习气。'),
                     beat('旁白', allianceLine),
                     beat('旁白', mocaihuanLine),
                     beat('旁白', '现在逼你回头的，不是怀旧，而是你已经知道：有些人情、旧名与海上余波，若不自己认，就只会先一步替你开口。'),
@@ -5981,7 +5981,7 @@
                             : '苟修在海上意味着你越来越多人看你是否还守得住那份退路。'
                     : '你在星海的身份还没完全固定，但每一步都在让人重新定义你。';
                 const xuLine = state.flags.hasXuTianTu || state.flags.soldXuTianTu || state.flags.avoidedXuTian
-                    ? '虚天这条线已经在你脚下形成了影子，无论你接不接，别人都会根据它来判断你。'
+                    ? '虚天这一笔已经在你脚下投了影子。无论你接不接，旁人都会先拿它来量你。'
                     : '你还没把虚天的残图真正放下，但它的存在已经在你身边发酵。';
                 return [
                     beat('旁白', '真正的返乡，从来不是回到原地，而是你站在旧城旧路前，忽然发现所有人都继续往前走了，只有记忆还停在原处。'),
@@ -6039,7 +6039,7 @@
                         ? '清算旧账: 先把门墙旧案和一路压着的刀都抽出来'
                         : '清算旧账: 不再拖延，把旧仇、旧案与欠债一次理清';
                 const bondsText = nangongBond
-                    ? '接住旧情: 不再把南宫婉那条线继续拖成沉默'
+                    ? '接住旧情：不再让与南宫婉的这一笔继续沉在无言里'
                     : moBond
                         ? '接住旧情: 先回嘉元城，把还能补的那笔旧情接回手里'
                         : liBond
@@ -6199,7 +6199,7 @@
                 const relationNangong = state.npcRelations['南宫婉'] || 0;
                 const relationMo = state.npcRelations['墨彩环'] || 0;
                 const nangongLine = relationNangong >= 70 || state.flags.savedNangong || state.flags.acceptedNangongDebt
-                    ? '南宫婉这条线到了这里，已经不能再靠沉默维持。她不必追着你要答案，你也知道自己迟早得给。'
+                    ? '与南宫婉的这一笔走到这里，已经不能再靠沉默维持。她不必追着你要答案，你自己也知道迟早得给。'
                     : '你并不是不记得南宫婉，只是这些年太习惯先把最重的话压到最后。可现在已经没有更合适的“最后”了。';
                 const moLine = relationMo >= 45 || state.flags.madeAmendsToMocaihuan || state.flags.daoLvPromise
                     ? '墨彩环那一笔更像凡心回头：你越想补，越知道有些东西不是肯补就能补回来的。'
@@ -6215,7 +6215,7 @@
                 return [
                     {
                         id: 'choose_nangong_openly',
-                        text: '正面认下南宫婉：不再把这条线继续拖成沉默',
+                        text: '正面认下南宫婉：别再让这笔旧情继续沉在无言里',
                         effects: {
                             cultivation: 1950,
                             relations: { '南宫婉': 18 },
@@ -6293,9 +6293,9 @@
                     beat('旁白', '你终于不能再把很多事归结成“当时别无选择”。因为如今你有得选了。也正因如此，过去那些选过的，才变得格外重。'),
                     beat('旁白', debtLine),
                     beat('旁白', bondLine),
-                    beat('旁白', '终局不该再是固定菜单，而应是根据路线、关系、旧账与关键旗标，让真正属于你的答案自己浮出来。'),
+                    beat('旁白', '大道尽头，从来没有早已摆好的几扇门任人挑选。你这一生结下的因果、欠下的旧账与斩不断的尘缘，终会自己拼出那个属于你的答案。'),
                     beat('旁白', '你最早不是为了大道修仙，只是太早见过无能为力。'),
-                    beat('旁白', '一路遇见的人，不只是支线；他们是见过你、逼过你、成全过你、也让你没法再轻易骗过自己的人。'),
+                    beat('旁白', '一路遇见的人，并非全是道上的过客；他们是见过你、逼过你、成全过你，也让你再难轻易骗过自己的人。'),
                     beat('旁白', '正道、魔道、苟修，从来都不是别人给你的牌子，而是你一次次面对“我能不能为了更稳更快而舍别人”时交出的答案。'),
                 ];
             },
@@ -6360,8 +6360,8 @@
         },
         {
             id: '25_final_branch',
-            title: '终局分流',
-            summary: '到了这里，系统只该把你一路留下的账、人和路数收成真正的答案。',
+            title: '门前问心',
+            summary: '到了这里，真正要收拢的，是你一路留下的人、账与活法，而后它们自会合成你的答案。',
             volumeId: 'volume_five_homecoming',
             volumeRole: 'ending',
             legacyVolumeTarget: 'volume_five_chapter_5',
@@ -6422,8 +6422,8 @@
         switch (chapter.id) {
             case 2:
                 text = flags.startPath === 'disciple'
-                    ? '墨大夫这条线从这里开始不再只是师徒，而是逐步变成会反噬你的旧因果。'
-                    : '你对墨大夫的态度会一直影响神手谷后面的文本和关系走向。';
+                    ? '与墨大夫的这一笔从这里起不再只是师徒，而会渐渐变成反咬回来的旧因果。'
+                    : '你如今待墨大夫是敬是疑，神手谷往后给你的回声便不会一样。';
                 break;
             case 3:
                 text = relations['厉飞雨'] >= 30
@@ -6432,27 +6432,27 @@
                 break;
             case 6:
                 text = flags.defeatedMo
-                    ? '墨居仁一死，墨府线和药渣线会开始分叉并持续回流。'
-                    : '这场摊牌的后果不会立刻结束，后续章节会反复提起它。';
+                    ? '墨居仁一死，墨府与药渣留下的旧事也就分成了两头，各自等着你回头去认。'
+                    : '这场摊牌不会因今晚止息，往后许多相逢都还会被它牵出暗声。';
                 break;
             case 8:
                 text = '墨府这件事不会停在一宅白灯里。你如今说过的话、带走的东西和没说尽的真相，后面都会有人记着。';
                 break;
             case 9:
-                text = '曲魂这一章真正留下的，不只是一个随从位，而是你以后还能不能把“人”和“可用之物”分清。';
+                text = '曲魂这一章真正留下的，不只是它会不会跟在你身边，而是你往后还能不能把“人”和“可用之物”分清。';
                 break;
             case 12:
                 text = flags.sentWordBackFromRoad
                     ? '你离开旧地时没有把过去完全按死。这会让你后面很多“只谈活路”的选择，都被旧名旧债重新拽住一点。'
                     : flags.buriedOldNameOnRoad
                         ? '你从这一章起学会先把名字和来路藏起来。后面局势越大，这种先藏再动的习惯就越会变成你的本能。'
-                        : '第二卷真正从这里起势：你不是单纯换了一张地图，而是终于承认修仙路会逼你用新的方式活。';
+                        : '从这里起，你才算真正离开旧地。不是换了个落脚处，而是往后连活法都得跟着改。';
                 break;
             case '12_mortal_debt':
                 text = '凡俗旧债并没有因为你走远就自动失效。你在这里怎么认账，后面就会怎么理解“修仙之后还认不认人”。';
                 break;
             case '12_tainan_market':
-                text = '太南山留下来的，不只是一个交易场，而是你第一次真正学会资源、消息和命都能被同时拿来作价。';
+                text = '太南山留下来的，不只是一个交易场，而是你第一次真正明白：灵石、消息与性命，有时都能被同时摆上秤盘。';
                 break;
             case '12_token_kill':
                 text = '升仙令这一章真正留下的，不是门票本身，而是你终于知道修士的资格和杀机往往一起到场。';
@@ -6462,23 +6462,23 @@
                 break;
             case '12_herb_garden':
                 text = flags.hasGreenBottle
-                    ? '绿瓶的催熟能力从这里起不只是资源，而是你一路选择的放大器。'
-                    : '百药园的低调与激进，会直接决定你后面缺不缺材料。';
+                    ? '绿瓶的催熟之能从这里起不只是帮你省时省力，它也会把你往后的每一步照得更险更亮。'
+                    : '你在百药园藏得多深、拿得多急，往后缺不缺药材与风声都要从这里算起。';
                 break;
             case 13:
                 text = flags.madeGardenConnections
                     ? '禁地前夜这章真正收住的，不只是试炼气氛，还有你已经在门内站到了什么位置。'
-                    : '第二卷在这里真正开始收口：人情、队形、门内座次都会先于禁地本身，决定别人怎么认你。';
+                    : '走到这里，门内的人情、队形与座次已先一步替禁地落了底色，别人往后也会先按这层底色来认你。';
                 break;
             case '13_volume_close':
-                text = '卷末收束真正留下的，不只是“下章可玩”，而是你为什么必须带着这一路的门墙、旧债与准备去进下一卷。';
+                text = '此卷尽处真正留下的，不是下一段路能不能走，而是你为何非得带着这些门墙、旧债与准备踏进去。';
                 break;
             case 14:
                 text = '血色禁地真正会定下的，不只是主药归谁，而是你第一次在活人、退路和机缘同时压来时，会先看哪一边。';
                 break;
             case 15:
                 text = flags.acceptedNangongDebt
-                    ? '你已经把南宫婉那条线认成了情债，后面再见她时，很多话都不会再只是试探。'
+                    ? '你已经把与南宫婉的这一笔认成了情债，往后再见，她前后一句话都会更重。'
                     : flags.suppressedNangongFeelings
                         ? '你把心绪压进了更深处，可每次再见南宫婉，都得多用一分力气装作什么都没发生。'
                         : flags.cutNangongTies || flags.cutEmotion
@@ -6512,14 +6512,14 @@
                 break;
             case 18:
                 text = flags.warChoice === 'demonic'
-                    ? '魔路从这里真正开始有连续后果，后面几章会不断回看这次站位。'
+                    ? '魔道初成，刀光上的血意不会就此散尽。往后的局势只会一次次逼你记起今日怎样下手。'
                     : flags.warChoice === 'secluded'
-                        ? '苟修线在大战里立住了，后面会更强调退路和生存。'
-                        : '正道线在大战里站住了，后面会继续考验你愿不愿意替别人扛事。';
+                        ? '这一回你先给自己留足了活路。此后再逢死局，你多半还是会先看哪一步还能抽身。'
+                        : '这一回你先替旁人站稳了一线。往后若再有人把命交到你手里，你便很难再只顾自己退身。';
                 break;
             case '18_nangong_return':
                 text = flags.openlyAcknowledgedNangongImportance
-                    ? '你终于不再把南宫婉那条线只往外推。后面再谈旧情与终局时，这会被算成你肯认人的一次。'
+                    ? '你终于不再把与南宫婉的这一笔往外推。往后旧情若再翻上心头，你也再不能只装作不曾看见。'
                     : flags.continuedToOweNangongSilently
                         ? '你承认亏欠，却还是把话压回心里。往后每次再见她，这层沉默都会比旁人更重。'
                         : flags.avoidedNangongAgain
@@ -6586,7 +6586,7 @@
                 text = flags.grabbedTreasure || flags.starSeaSeizedTreasureFirst
                     ? '虚天殿前你先伸手去夺宝，这个动作会让很多后来者直接把你归进“关键时刻会先拿”的那类人。'
                     : flags.cooperatedAtXuTian || flags.rescuedFromXuTianEdge || flags.starSeaHeldAllianceTogether
-                        ? '你在最窄的退路上先稳住了人，这会让虚天旧盟和南宫婉那条线在后面都更有分量。'
+                    ? '你在最窄的退路上先稳住了人。往后无论是虚天旧盟还是南宫婉，与这一步都再难分开。'
                         : flags.watchedXuTianFight || flags.secondHandBroker || flags.slippedPastXuTian || flags.starSeaWaitedForBestMoment
                             ? '你在虚天局里没有先把自己摆到明面，可活下来的人也因此更难彻底信你。因为他们都记得，你最会等别人先露底。'
                             : '虚天殿真正留下的，不是宝物本身，而是最窄那一步里你到底更像哪一类人。';
@@ -6638,7 +6638,7 @@
                 break;
             case '24_bond_destination':
                 text = flags.volumeFiveBondTarget === 'nangong'
-                    ? '你终于不再把南宫婉那条线继续拖成沉默。后面无论是留下、并肩还是错过，这一步都会被重新读出来。'
+                    ? '你终于不再把与南宫婉的这一笔继续压在沉默里。往后无论是留下、并肩还是错过，这一步都绕不过去。'
                     : flags.volumeFiveBondTarget === 'mocaihuan'
                         ? '墨彩环这一笔已不再只是凡俗旧事。你越到后面，越会知道“认得太晚”本身也是结局的一部分。'
                         : flags.volumeFiveBondTarget === 'distance'

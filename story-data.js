@@ -861,6 +861,99 @@
         },
     ]);
 
+    // 第四卷按现有 21~23 与新增过桥章节接入，23_mocaihuan_return 升为核心章节，24/25 保持后续卷入口资产。
+    const VOLUME_FOUR_CHAPTERS = Object.freeze([
+        {
+            id: 'volume_four_chapter_1',
+            title: '初入星海',
+            legacyChapterIds: Object.freeze([21]),
+            volumeRole: 'opening',
+            chapterGoal: '把第四卷从“离开天南后要靠什么在乱星海活下去”这一卷级承诺正式立起来。',
+            chapterConflict: '韩立已经离开旧战场，却还没有在新的规则、资源和契约秩序里站稳脚跟。',
+            closureWrites: Object.freeze(['star_sea_entry_locked', 'tiannan_left_behind']),
+            nextReads: Object.freeze(['star_sea_style_seed', 'overseas_foothold_need']),
+        },
+        {
+            id: 'volume_four_chapter_2',
+            title: '海外立足',
+            legacyChapterIds: Object.freeze(['21_star_sea_foothold']),
+            volumeRole: 'escalation',
+            chapterGoal: '把“换地图”真正落实为“换活法”，并写明星海立足的第一套方法论。',
+            chapterConflict: '在更自由也更赤裸的海上，韩立要决定自己靠哪种姿态换来第一批稳固根基。',
+            closureWrites: Object.freeze(['star_sea_style_locked', 'overseas_foothold_built']),
+            nextReads: Object.freeze(['resource_network_entry', 'fragment_map_rumor']),
+        },
+        {
+            id: 'volume_four_chapter_3',
+            title: '虚天残图',
+            legacyChapterIds: Object.freeze([22]),
+            volumeRole: 'bonding',
+            chapterGoal: '把新资源、新规则与新势力真正绑进第四卷主冲突。',
+            chapterConflict: '残图不只是机缘，而是会让所有知道它存在的人同时变得危险的门票。',
+            closureWrites: Object.freeze(['fragment_map_claimed', 'void_heaven_pressure_started']),
+            nextReads: Object.freeze(['xutian_risk_spread', 'star_sea_reputation_test']),
+        },
+        {
+            id: 'volume_four_chapter_4',
+            title: '风声四起',
+            legacyChapterIds: Object.freeze(['22_xutian_rumor']),
+            volumeRole: 'reversal',
+            chapterGoal: '让玩家意识到虚天残图真正改变的不是收益上限，而是别人如何提前定义你。',
+            chapterConflict: '你还没进虚天殿，名声与风险已经先在海上扩散，连旁人的结盟都开始带着试探。',
+            closureWrites: Object.freeze(['xutian_position_exposed', 'star_sea_reputation_written']),
+            nextReads: Object.freeze(['void_heaven_entry', 'alliance_pressure']),
+        },
+        {
+            id: 'volume_four_chapter_5',
+            title: '虚天殿前后',
+            legacyChapterIds: Object.freeze([23]),
+            volumeRole: 'climax',
+            chapterGoal: '用虚天殿的结盟、夺宝、退路与翻脸，把第四卷核心矛盾真正推到台前。',
+            chapterConflict: '真正的考验不是谁修为更高，而是宝物、退路和同盟只能保一部分时，你会不会先把人当代价。',
+            closureWrites: Object.freeze(['void_heaven_route_locked', 'alliance_choice_written']),
+            nextReads: Object.freeze(['nangong_stage_two_settlement', 'old_debt_return_window']),
+        },
+        {
+            id: 'volume_four_chapter_6',
+            title: '并肩余波',
+            legacyChapterIds: Object.freeze(['23_star_sea_aftermath']),
+            volumeRole: 'fallout',
+            chapterGoal: '清算虚天殿之后的人情、旧盟、声名与南宫婉线第二阶段落点。',
+            chapterConflict: '南宫婉不再只是大战后的第一阶段回响，而是要在更高层级里重新确认你们是否还会站到一起。',
+            closureWrites: Object.freeze(['nangong_bond_stage_two', 'star_sea_aftershock_written']),
+            nextReads: Object.freeze(['mocaihuan_return_window', 'tiannan_return_pressure']),
+        },
+        {
+            id: 'volume_four_chapter_7',
+            title: '来信与重访',
+            legacyChapterIds: Object.freeze(['23_mocaihuan_return']),
+            volumeRole: 'closure',
+            chapterGoal: '把凡俗旧账、墨彩环、旧盟关系与“你不在时别人如何过完这些年”收成可解释状态。',
+            chapterConflict: '韩立要回答自己究竟是重新把旧账接回手里，还是只确认旧人安好后继续离开。',
+            closureWrites: Object.freeze(['mocaihuan_debt_reframed', 'old_world_cost_acknowledged']),
+            nextReads: Object.freeze(['star_sea_exit_review', 'return_home_trigger']),
+        },
+        {
+            id: 'volume_four_chapter_8',
+            title: '星海余波',
+            legacyChapterIds: Object.freeze(['23_volume_close']),
+            volumeRole: 'exit',
+            chapterGoal: '完成第四卷出口，并把声名、旧盟、归乡压力和第五卷入口写清楚。',
+            chapterConflict: '走到这里，真正逼你回头的已不是怀旧，而是星海留下的名声、债与必须回应的旧关系。',
+            closureWrites: Object.freeze(['volume_four_exit_locked', 'tiannan_return_pressure_written']),
+            nextReads: Object.freeze(['tiannan_return_pressure', 'nangong_bond_stage_two', 'star_sea_reputation_fixed', 'old_world_cost_acknowledged']),
+        },
+    ]);
+
+    const VOLUME_FOUR_LEGACY_CHAPTER_MAP = Object.freeze({
+        21: Object.freeze({ targetChapterId: 'volume_four_chapter_1', action: 'keep_main' }),
+        22: Object.freeze({ targetChapterId: 'volume_four_chapter_3', action: 'keep_main' }),
+        23: Object.freeze({ targetChapterId: 'volume_four_chapter_5', action: 'keep_main' }),
+        '23_mocaihuan_return': Object.freeze({ targetChapterId: 'volume_four_chapter_7', action: 'promote_to_main' }),
+        24: Object.freeze({ targetChapterId: 'volume_four_chapter_8', action: 'forward_volume_boundary' }),
+        25: Object.freeze({ targetChapterId: 'volume_four_chapter_8', action: 'forward_volume_boundary' }),
+    });
+
     const CHAPTER_ECHO_PACKS = {
         8: {
             protect_mo_house: {
@@ -1042,6 +1135,20 @@
                 delayed: { title: '先把自己站稳', detail: '别人都说你太稳。只有你自己知道，那时不是稳，是不想刚到新地便被人牵着走。', npc: '万小山' },
             },
         },
+        '21_star_sea_foothold': {
+            claim_hunter_route: {
+                immediate: { title: '猎路成型', detail: '你先把最危险也最直接的路走熟了。星海会记住你不是靠旧名头立足，而是靠敢不敢先拿命去换站位。' },
+                delayed: { title: '先拿命换根基', detail: '你后来越来越明白，猎路最贵的不是妖丹，而是别人会不会相信你到了最险的时候还能顶住。', npc: '万小山' },
+            },
+            build_trade_route: {
+                immediate: { title: '货路成型', detail: '你没有急着闯最凶的风口，而是先把货路、价码和谁会临时翻脸摸清。' },
+                delayed: { title: '先把账站稳', detail: '此后你再接大机缘前，往往都会先算消息、契约和谁最可能临时改口。', npc: '万小山' },
+            },
+            secure_hidden_cave: {
+                immediate: { title: '洞府立住', detail: '你先把能退、能藏、能补给的地方握在手里。海上很多看似从容的局，都是靠这种先站稳换来的。' },
+                delayed: { title: '先留退路', detail: '后来你再进更大的局，总会下意识先找能不能退、退去哪里、退完还剩什么。', npc: '万小山' },
+            },
+        },
         22: {
             collect_map: {
                 immediate: { title: '亲自争图', detail: '你不是拿到了一张图，而是亲手把自己放进了一个知道太多就很难善终的局。' },
@@ -1054,6 +1161,20 @@
             avoid_map: {
                 immediate: { title: '主动避局', detail: '你亲手放过了一扇很可能一生只开一次的门。能做到这一步的人不多。' },
                 delayed: { title: '收手知重', detail: '你会更清楚自己到底是哪类修士: 不是看见机缘就扑上去的人，而是能忍住不让“可能更高”把自己拖进必死局的人。', npc: '万小山' },
+            },
+        },
+        '22_xutian_rumor': {
+            hide_map_trace: {
+                immediate: { title: '把风声压住', detail: '你没有急着抢下一口机缘，而是先让自己的名字不要在海上亮得太快。' },
+                delayed: { title: '先让名字不亮', detail: '后来你越进危险局，越知道很多人不是死在不知道，而是死在太早被所有人知道。', npc: '万小山' },
+            },
+            trade_on_rumors: {
+                immediate: { title: '拿风声换筹码', detail: '你把风声也算进了买卖。海上的消息并不会因为你卖得漂亮就变得干净，它只会换一种方式回来认你。' },
+                delayed: { title: '消息也会反咬', detail: '往后只要你试着把局势折成筹码，心里都会先响起这一句: 风声出去之后，也会回来找人。', npc: '万小山' },
+            },
+            bind_allies_before_entering: {
+                immediate: { title: '先把盟友绑住', detail: '你知道真正危险的不是图，而是图一露面后每个人都可能瞬间改口，所以你先试着把能同行的人绑住。' },
+                delayed: { title: '有人得先认', detail: '你后来越来越清楚，有些大局不是靠谁最狠，而是靠谁肯在翻脸前先认下“我们到底算不算同一边”。', npc: '南宫婉' },
             },
         },
         23: {
@@ -1085,6 +1206,36 @@
                 immediate: { title: '悄然退场', detail: '你绕开了最亮也最窄的那一口气。多数人不是死在争，而是死在舍不得不争。' },
                 delayed: { title: '避开传说', detail: '活下来的人未必看得懂你，但会先记住一件事: 你在最容易把命补进传说的时候，先把自己抽了出来。', npc: '南宫婉' },
                 npcComment: { '南宫婉': { neutral: '你绕殿而走那一步很稳，也让人更难看清你心里究竟还留没留别人。' } },
+            },
+        },
+        '23_star_sea_aftermath': {
+            honor_alliance_after_palace: {
+                immediate: { title: '殿后认人', detail: '你没有把虚天殿只当成一次夺宝，而是把一起活出来的人也真正认进了后果里。' },
+                delayed: { title: '并肩不只一次', detail: '很多关系真正重，不是因为并肩过一次，而是那次过后你还肯继续认。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { high: '你若真认这层并肩，就别只在最险的时候回头。', neutral: '虚天之后你没再装作什么都没发生，这比许多漂亮话更值钱。' } },
+            },
+            settle_reputation_with_profit: {
+                immediate: { title: '把名声折现', detail: '你知道名声最怕空着，于是先把它换成了看得见的筹码。聪明是真的，代价也是真的。' },
+                delayed: { title: '声名也是筹码', detail: '后来每当别人先拿你的名声来谈条件，你都会明白，这里面也有你自己提前做过的账。', npc: '万小山' },
+            },
+            cut_tracks_and_leave: {
+                immediate: { title: '先把尾巴剪断', detail: '你没有留在众人视线里等风声发酵，而是先把自己和局之间最显眼的那根线剪掉。' },
+                delayed: { title: '并肩之后仍后退', detail: '你不是不记得谁和你一起闯过，只是更怕那层关系一旦被人看清，就会反过来变成你的破绽。', npc: '南宫婉' },
+                npcComment: { '南宫婉': { neutral: '你总会先把最显眼的那根线剪掉，只是有些并肩，不会因此就算没发生。' } },
+            },
+        },
+        '23_volume_close': {
+            follow_old_alliances_home: {
+                immediate: { title: '顺着旧盟回头', detail: '你这次回天南不是因为想家，而是因为终于承认有些旧盟、旧人和旧账必须由你自己回去认。' },
+                delayed: { title: '归乡是来认人', detail: '真正逼你回去的，不是地图，而是那些你已经不能再装作与己无关的人。', npc: '南宫婉' },
+            },
+            return_with_reputation_pressure: {
+                immediate: { title: '风声逼你回返', detail: '你很清楚再让星海风声自己发酵下去，别人就会替你把旧名和新名一起写死。' },
+                delayed: { title: '名声也会追人', detail: '你后来越来越明白，名声不是披在身上的壳，它也会在你想转身时从背后追上来。', npc: '万小山' },
+            },
+            return_after_hiding_tracks: {
+                immediate: { title: '压住尾巴再返', detail: '你没有带着海上的所有风声正面回头，而是先把最显眼的尾巴压住，再去认该认的人。' },
+                delayed: { title: '回去也不再住回去', detail: '你回得去旧地，却再也不会完全住回旧日。真正留下来的，是“我认这笔账，但我不再把自己交回去”。', npc: '墨彩环' },
             },
         },
         24: {
@@ -1539,6 +1690,20 @@
                 detail: '你拒绝了海上的喧哗，也保住了在新地方最容易乱掉的心。别人都说你太稳，只有你自己知道，那时不是稳，是不想刚到新地便被人牵着走。',
             },
         },
+        '21_star_sea_foothold': {
+            claim_hunter_route: {
+                title: '先拿命换根基',
+                detail: '你先把最危险也最直接的路走熟了。星海会记住你不是靠旧名头立足，而是靠敢不敢先拿命去换站位。',
+            },
+            build_trade_route: {
+                title: '先把账站稳',
+                detail: '你没有急着闯最凶的风口，而是先把货路、价码和谁会临时翻脸摸清。以后你再进大局，总会先算清这几笔账。',
+            },
+            secure_hidden_cave: {
+                title: '先留退路',
+                detail: '你先把能退、能藏、能补给的地方握在手里。后面很多看似从容的进退，其实都从这里起手。',
+            },
+        },
         22: {
             collect_map: {
                 title: '知道也是代价',
@@ -1551,6 +1716,20 @@
             avoid_map: {
                 title: '收手知重',
                 detail: '你亲手放过了一扇很可能一生只开一次的门。往后你会更清楚自己是哪类修士：不是看见机缘就扑上去的人，而是能忍住不让更高把自己拖进必死局的人。',
+            },
+        },
+        '22_xutian_rumor': {
+            hide_map_trace: {
+                title: '先让名字不亮',
+                detail: '你没有急着抢下一口机缘，而是先让自己的名字别在海上亮得太快。很多人不是死在不知道，而是死在太早被所有人知道。',
+            },
+            trade_on_rumors: {
+                title: '消息也会反咬',
+                detail: '你把风声也算进了买卖。海上的消息不会因为你卖得漂亮就变干净，它只会换一种方式回来认你。',
+            },
+            bind_allies_before_entering: {
+                title: '有人得先认',
+                detail: '你知道真正危险的不是图，而是图一露面后每个人都可能瞬间改口，所以先试着把能同行的人认下来。',
             },
         },
         23: {
@@ -1577,6 +1756,34 @@
             slip_past_palace: {
                 title: '避开传说',
                 detail: '你绕开了最亮也最窄的那一口气，多数人不是死在争，而是死在舍不得不争。活下来的人未必看得懂你，却会记得你在最像传说的地方先把自己抽了出来。',
+            },
+        },
+        '23_star_sea_aftermath': {
+            honor_alliance_after_palace: {
+                title: '并肩不只一次',
+                detail: '你没有把虚天殿只当成一次夺宝，而是把一起活出来的人也真正认进了后果里。很多关系真正重，不是并肩过一次，而是那次过后你还肯继续认。',
+            },
+            settle_reputation_with_profit: {
+                title: '声名也是筹码',
+                detail: '你知道名声最怕空着，于是先把它换成了看得见的筹码。后来每当别人先拿你的名声谈条件，你都会明白，这里面也有你自己做过的账。',
+            },
+            cut_tracks_and_leave: {
+                title: '并肩之后仍后退',
+                detail: '你不是不记得谁和你一起闯过，只是更怕那层关系一旦被人看清，就会反过来变成你的破绽。',
+            },
+        },
+        '23_volume_close': {
+            follow_old_alliances_home: {
+                title: '归乡是来认人',
+                detail: '你这次回天南不是因为想家，而是因为终于承认，有些旧盟、旧人和旧账必须由你自己回去认。',
+            },
+            return_with_reputation_pressure: {
+                title: '名声也会追人',
+                detail: '你很清楚再让星海风声自己发酵下去，别人就会替你把旧名和新名一起写死。名声不是壳，它也会在你想转身时从背后追上来。',
+            },
+            return_after_hiding_tracks: {
+                title: '回去也不再住回去',
+                detail: '你回得去旧地，却再也不会完全住回旧日。真正留下来的，是“我认这笔账，但我不再把自己交回去”。',
             },
         },
         '23_mocaihuan_return': {
@@ -4746,6 +4953,9 @@
             id: 21,
             title: '初入星海',
             summary: '这里比天南更自由，也更赤裸。',
+            volumeId: 'volume_four_overseas',
+            volumeRole: 'opening',
+            legacyVolumeTarget: 'volume_four_chapter_1',
             location: '乱星海',
             requirements: { storyProgress: 21 },
             beats(state) {
@@ -4755,11 +4965,12 @@
                 return [
                     beat('旁白', '乱星海群岛错落，散修、海盗、宗门与商会全混在一起。'),
                     beat('旁白', '海面没有城墙的秩序，所有人都靠资源、契约与速度来维持自己的地位。'),
+                    beat('旁白', '你离开天南时压下去的旧因果，并没有消失，只是被海风吹成了更远的回响。'),
                     beat('旁白', arrivalLine),
                     beat('旁白', '有人猎妖、有人成交、有人闭关，但他们更在意你今天交得出多少账。'),
                     beat('旁白', '猎妖是赌命的快活，跑商是抓住流动的钱，闭关则是把自己藏进孤立里。'),
                     beat('旁白', '你第一次意识到，换地图不只是换风景，而是换了活法。'),
-                    beat('旁白', '别人不会再帮你记“你从哪来”，他们只问两件事: 你守约不守约，你翻脸快不快。'),
+                    beat('旁白', '别人不会再帮你记“你从哪来”，他们只问两件事：你守约不守约，你翻脸快不快。'),
                 ];
             },
             choices() {
@@ -4773,7 +4984,7 @@
                             routeScores: { orthodox: 1 },
                             flags: { starSeaStyle: 'hunter', starSeaHunterStart: true },
                         },
-                        nextChapterId: 22,
+                        nextChapterId: '21_star_sea_foothold',
                     },
                     {
                         id: 'run_trade',
@@ -4784,7 +4995,7 @@
                             routeScores: { demonic: 1 },
                             flags: { starSeaStyle: 'merchant', starSeaTraderStart: true },
                         },
-                        nextChapterId: 22,
+                        nextChapterId: '21_star_sea_foothold',
                     },
                     {
                         id: 'seek_cave',
@@ -4793,6 +5004,67 @@
                             cultivation: 790,
                             routeScores: { secluded: 1 },
                             flags: { starSeaStyle: 'secluded', starSeaSecludedStart: true },
+                        },
+                        nextChapterId: '21_star_sea_foothold',
+                    },
+                ];
+            },
+        },
+        {
+            id: '21_star_sea_foothold',
+            title: '海外立足',
+            summary: '真正难的不是活过第一口海风，而是决定你准备靠什么在这片海上站稳。',
+            volumeId: 'volume_four_overseas',
+            volumeRole: 'escalation',
+            legacyVolumeTarget: 'volume_four_chapter_2',
+            location: '乱星海群岛',
+            requirements: { storyProgress: '21_star_sea_foothold' },
+            beats(state) {
+                const styleLine = state.flags.starSeaStyle === 'hunter'
+                    ? '你先在猎妖船和海兽尸骨里混熟了门道，很快就知道星海尊不尊重你，往往只看你敢不敢先拿命顶。'
+                    : state.flags.starSeaStyle === 'merchant'
+                        ? '你先在货舱、港口和暗价里站住脚，越算越明白星海最贵的不是货，而是谁比谁更早看懂风向。'
+                        : '你先给自己找了能喘气的洞府与退路，海上的许多人只觉得你太谨慎，只有你知道这叫先别让自己被局带着走。';
+                return [
+                    beat('旁白', '真正的立足，从来不是找到一个岛、一条船或一处洞府，而是别人开始默认你留得住、赔得起，也翻得动脸。'),
+                    beat('旁白', styleLine),
+                    beat('旁白', '你渐渐看清，乱星海并没有更讲道理，它只是把“你值不值得合作”这件事算得比天南更明白。'),
+                    beat('旁白', '猎路、货路、暗路、退路，每一条都能活人，也都能先把人逼成另一种样子。'),
+                    beat('旁白', '更麻烦的是，一旦你站稳了第一步，后面的消息、资源和试探都会自己找上门来。'),
+                    beat('旁白', '你终于知道，这一卷真正难的不是“有没有机缘”，而是“你准备拿哪种活法接机缘”。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'claim_hunter_route',
+                        text: '把猎妖路数做熟，先拿命换出一块站位',
+                        effects: {
+                            cultivation: 900,
+                            items: { yaodan: 3 },
+                            routeScores: { orthodox: 1 },
+                            flags: { starSeaFoothold: 'hunter', builtHunterFoothold: true, starSeaResourceNetwork: 'hunt' },
+                        },
+                        nextChapterId: 22,
+                    },
+                    {
+                        id: 'build_trade_route',
+                        text: '先把货路、契约和消息价码一并摸清',
+                        effects: {
+                            cultivation: 860,
+                            items: { lingshi: 30 },
+                            routeScores: { demonic: 1 },
+                            flags: { starSeaFoothold: 'merchant', builtTradeFoothold: true, starSeaResourceNetwork: 'trade' },
+                        },
+                        nextChapterId: 22,
+                    },
+                    {
+                        id: 'secure_hidden_cave',
+                        text: '先握稳洞府、补给和退路，把自己彻底藏住',
+                        effects: {
+                            cultivation: 880,
+                            routeScores: { secluded: 1 },
+                            flags: { starSeaFoothold: 'secluded', builtHiddenFoothold: true, starSeaResourceNetwork: 'hide' },
                         },
                         nextChapterId: 22,
                     },
@@ -4803,12 +5075,15 @@
             id: 22,
             title: '虚天残图',
             summary: '真正危险的不是残图太珍贵，而是你一旦知道这扇门可能存在，就很难再装作自己没看见。',
+            volumeId: 'volume_four_overseas',
+            volumeRole: 'bonding',
+            legacyVolumeTarget: 'volume_four_chapter_3',
             location: '乱星海外海',
             requirements: { storyProgress: 22, realmScoreAtLeast: 8 },
             beats(state) {
-                const infoLine = state.flags.starSeaStyle === 'merchant'
-                    ? '你先从商路听见一些碎消息: 某家商会忽然高价收破阵材料，几名来历各异的修士死前都带着同一种极隐晦的禁制痕。'
-                    : '你从猎妖和探岛里摸出一些碎线索: 异常灵潮、错位坐标、死者身上的古怪禁制，像被人故意拆散后扔进海里的拼图。';
+                const infoLine = state.flags.starSeaStyle === 'merchant' || state.flags.starSeaFoothold === 'merchant'
+                    ? '你先从商路听见一些碎消息：某家商会忽然高价收破阵材料，几名来历各异的修士死前都带着同一种极隐晦的禁制痕。'
+                    : '你从猎妖和探岛里摸出一些碎线索：异常灵潮、错位坐标、死者身上的古怪禁制，像被人故意拆散后扔进海里的拼图。';
                 return [
                     beat('旁白', '真正危险的机缘，往往不是因为它太珍贵，而是因为它会让所有知道它存在的人，在同一时间里忽然变得不再像人。'),
                     beat('旁白', '乱星海的消息比风还快，可这次不一样。越往下查，你越确定如今放出来流转的，只是别人故意切碎后让各方抢夺的残片。'),
@@ -4830,7 +5105,7 @@
                             routeScores: { orthodox: 1, demonic: 1 },
                             flags: { hasXuTianTu: true, enteredVoidHeavenMapGame: true, heldFragmentMap: true },
                         },
-                        nextChapterId: 23,
+                        nextChapterId: '22_xutian_rumor',
                     },
                     {
                         id: 'sell_map',
@@ -4841,7 +5116,7 @@
                             routeScores: { demonic: 1, secluded: 1 },
                             flags: { soldXuTianTu: true, hasXuTianTu: false, soldFragmentMapForResources: true },
                         },
-                        nextChapterId: 23,
+                        nextChapterId: '22_xutian_rumor',
                     },
                     {
                         id: 'avoid_map',
@@ -4851,6 +5126,67 @@
                             routeScores: { secluded: 2 },
                             flags: { avoidedXuTian: true, avoidedVoidHeavenCoreConflict: true },
                         },
+                        nextChapterId: '22_xutian_rumor',
+                    },
+                ];
+            },
+        },
+        {
+            id: '22_xutian_rumor',
+            title: '风声四起',
+            summary: '残图还没把门真正打开，海上的风声、试探与价码就已经先把你围住了。',
+            volumeId: 'volume_four_overseas',
+            volumeRole: 'reversal',
+            legacyVolumeTarget: 'volume_four_chapter_4',
+            location: '乱星海诸岛',
+            requirements: { storyProgress: '22_xutian_rumor', realmScoreAtLeast: 8 },
+            beats(state) {
+                const rumorLine = state.flags.hasXuTianTu
+                    ? '你手里明明只是一块残图，可所有人的眼神都像已经把你看成了通往虚天殿的半扇门。'
+                    : state.flags.soldXuTianTu
+                        ? '你把残图卖了出去，却很快发现风声不会跟着成交一起转手。许多人更想知道的，是你到底还知道多少。'
+                        : '你主动避开了残图本身，可光是“你知道这扇门存在”这一点，就足够让人重新估你的价。';
+                return [
+                    beat('旁白', '局真正开始变大时，最先变化的往往不是刀光，而是旁人怎么叫你、怎么试你、又怎么提前替你判路数。'),
+                    beat('旁白', rumorLine),
+                    beat('旁白', '海上的风声比残图跑得更快。有人想结盟，有人想试价，有人只是想先确认你该不该死。'),
+                    beat('旁白', '你慢慢意识到，虚天残图最狠的一点，不是它会给你什么，而是它会让每个人都开始提前解释你。'),
+                    beat('旁白', '这意味着就算你还没真正进虚天殿，名声、风险和关系后果也已经先一步开始累积。'),
+                    beat('旁白', '从这里开始，很多选择都不再只是“拿不拿”，而是“准备被别人当成哪种人”。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'hide_map_trace',
+                        text: '先把名字和图迹压住，别让所有人都追着你看',
+                        effects: {
+                            cultivation: 1080,
+                            routeScores: { secluded: 1 },
+                            flags: { hidXuTianTrail: true, xutianRumorMode: 'hidden' },
+                        },
+                        nextChapterId: 23,
+                    },
+                    {
+                        id: 'trade_on_rumors',
+                        text: '顺手利用风声，先把这场大局做成筹码',
+                        effects: {
+                            cultivation: 1040,
+                            items: { lingshi: 18 },
+                            routeScores: { demonic: 1 },
+                            flags: { tradedOnXuTianRumors: true, xutianRumorMode: 'profit', starSeaReputationRaisedByRumor: true },
+                        },
+                        nextChapterId: 23,
+                    },
+                    {
+                        id: 'bind_allies_before_entering',
+                        text: '先把能同行的人绑住，再谈这扇门值不值得进',
+                        effects: {
+                            cultivation: 1060,
+                            relations: { '南宫婉': 8 },
+                            routeScores: { orthodox: 1 },
+                            flags: { tiedXuTianRumorToAlliance: true, xutianRumorMode: 'alliance', tiedXuTianRiskToPeople: true },
+                        },
                         nextChapterId: 23,
                     },
                 ];
@@ -4858,9 +5194,12 @@
         },
         {
             id: 23,
-            title: '星海飞驰',
+            title: '虚天殿前后',
             summary: '虚天殿之前，真正的考验不是战力，而是你会不会在关键时刻改口。',
             location: '乱星海深处',
+            volumeId: 'volume_four_overseas',
+            volumeRole: 'climax',
+            legacyVolumeTarget: 'volume_four_chapter_5',
             requirements: { storyProgress: 23, realmScoreAtLeast: 9 },
             beats(state) {
                 const crowdLine = state.flags.hasXuTianTu
@@ -4868,9 +5207,9 @@
                     : state.flags.soldXuTianTu
                         ? '你卖掉的是图纸，没人能保证虚天殿的人不会再来找你要第二份。卖掉纸片不等于卖掉风暴。'
                         : '你原想避开虚天殿，可海上大势还是把你推到了门前。知道这扇门存在以后，很多人都再也装不回路过的样子。';
-                const reputationLine = state.flags.cooperatedAtXuTian || state.flags.openlyAcknowledgedNangongImportance
+                const reputationLine = state.flags.cooperatedAtXuTian || state.flags.openlyAcknowledgedNangongImportance || state.flags.tiedXuTianRiskToPeople
                     ? '同行之人已经开始默认，你到了最窄的路上，多半还是会先看人能不能一起活着出去。'
-                    : state.flags.mineChoice === 'betrayGate' || state.flags.mineChoice === 'harvest' || state.flags.grabbedTreasure
+                    : state.flags.mineChoice === 'betrayGate' || state.flags.mineChoice === 'harvest' || state.flags.grabbedTreasure || state.flags.tradedOnXuTianRumors
                         ? '你一路留下的锋利名声，也让旁人更早防着你会不会在关键时候第一个伸手。'
                         : '更危险的不是局本身，而是旁人已经根据你以前的样子，提前猜好了你这一步会怎样动。';
                 return [
@@ -4895,7 +5234,7 @@
                             routeScores: { demonic: 2 },
                             flags: { grabbedTreasure: true, starSeaSeizedTreasureFirst: true },
                         },
-                        nextChapterId: '23_mocaihuan_return',
+                        nextChapterId: '23_star_sea_aftermath',
                     },
                     {
                         id: 'watch_last',
@@ -4905,7 +5244,7 @@
                             routeScores: { secluded: 1 },
                             flags: { watchedXuTianFight: true, starSeaWaitedForBestMoment: true },
                         },
-                        nextChapterId: '23_mocaihuan_return',
+                        nextChapterId: '23_star_sea_aftermath',
                     },
                     {
                         id: 'sell_route_info',
@@ -4916,7 +5255,7 @@
                             routeScores: { demonic: 1 },
                             flags: { secondHandBroker: true, starSeaWaitedForBestMoment: true },
                         },
-                        nextChapterId: '23_mocaihuan_return',
+                        nextChapterId: '23_star_sea_aftermath',
                     },
                 ];
             }
@@ -4932,7 +5271,7 @@
                             routeScores: { orthodox: 1 },
                             flags: { rescuedFromXuTianEdge: true, starSeaHeldAllianceTogether: true },
                         },
-                        nextChapterId: '23_mocaihuan_return',
+                        nextChapterId: '23_star_sea_aftermath',
                     },
                     {
                         id: 'watch_last',
@@ -4942,7 +5281,7 @@
                             routeScores: { secluded: 1 },
                             flags: { watchedXuTianFight: true, starSeaWaitedForBestMoment: true },
                         },
-                        nextChapterId: '23_mocaihuan_return',
+                        nextChapterId: '23_star_sea_aftermath',
                     },
                     {
                         id: 'slip_past_palace',
@@ -4953,7 +5292,7 @@
                             routeScores: { secluded: 1 },
                             flags: { slippedPastXuTian: true, starSeaWaitedForBestMoment: true },
                         },
-                        nextChapterId: '23_mocaihuan_return',
+                        nextChapterId: '23_star_sea_aftermath',
                     },
                 ];
             }
@@ -4968,7 +5307,7 @@
                             routeScores: { demonic: 2 },
                             flags: { grabbedTreasure: true, starSeaSeizedTreasureFirst: true },
                         },
-                        nextChapterId: '23_mocaihuan_return',
+                        nextChapterId: '23_star_sea_aftermath',
                     },
                     {
                         id: 'cooperate_allies',
@@ -4979,7 +5318,7 @@
                             routeScores: { orthodox: 1 },
                             flags: { cooperatedAtXuTian: true, starSeaHeldAllianceTogether: true },
                         },
-                        nextChapterId: '23_mocaihuan_return',
+                        nextChapterId: '23_star_sea_aftermath',
                     },
                     {
                         id: 'watch_last',
@@ -4989,6 +5328,81 @@
                             routeScores: { secluded: 1 },
                             flags: { watchedXuTianFight: true, starSeaWaitedForBestMoment: true },
                         },
+                        nextChapterId: '23_star_sea_aftermath',
+                    },
+                ];
+            },
+        },
+        {
+            id: '23_star_sea_aftermath',
+            title: '并肩余波',
+            summary: '虚天殿之后，真正要收的不是宝，而是人情、名声与谁还肯继续并肩。',
+            location: '乱星海海路',
+            volumeId: 'volume_four_overseas',
+            volumeRole: 'fallout',
+            legacyVolumeTarget: 'volume_four_chapter_6',
+            requirements: { storyProgress: '23_star_sea_aftermath', realmScoreAtLeast: 9 },
+            beats(state) {
+                const allianceLine = state.flags.cooperatedAtXuTian || state.flags.rescuedFromXuTianEdge
+                    ? '虚天殿里那几步已经让旁人看清，你并不是只会在安全时候讲情义。真正难的是，殿后活下来以后，你还愿不愿意继续认这份并肩。'
+                    : state.flags.grabbedTreasure || state.flags.secondHandBroker
+                        ? '你带出来的东西很值钱，可人们先记住的反而不是宝，而是你在最窄的一刻到底把谁留在了身后。'
+                        : '你从虚天局里活着出来了，可海上的风评还没收口。很多人都在等你下一步，看你究竟会继续认人，还是只认结果。';
+                const nangongLine = (state.npcRelations['南宫婉'] || 0) >= 60 || state.flags.cooperatedAtXuTian || state.flags.rescuedFromXuTianEdge
+                    ? '南宫婉没有再追问殿中细节，只淡淡道：“并肩一回不算难，难的是出了殿以后，你还认不认这层人情。”'
+                    : '南宫婉这一线没有因为虚天结束就自动翻篇。越是临近离卷，你越看得出，有些人情拖得越久，越不会自己变轻。';
+                return [
+                    beat('旁白', '虚天殿真正留下来的，从来不只是宝。谁在殿里先伸手，谁在殿外先回头，海上所有活下来的人都记得。'),
+                    beat('旁白', allianceLine),
+                    beat('旁白', nangongLine),
+                    beat('旁白', '更麻烦的是，海上的风声已经和你的名字绑在一起。你若不主动收束，它迟早会比你先一步回到旧地。'),
+                    beat('旁白', '所以这一章真正要回答的，不是“赢没赢”，而是你要怎么带着虚天之后的人情与名声继续往前走。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'honor_alliance_after_palace',
+                        text: '先认并肩旧盟，把虚天后的情义继续接住',
+                        effects: {
+                            cultivation: 1180,
+                            relations: { '南宫婉': 12 },
+                            routeScores: { orthodox: 1 },
+                            flags: {
+                                honoredAllianceAfterXuTian: true,
+                                nangongBondStageTwoConfirmed: true,
+                                starSeaAftermathMode: 'alliance',
+                            },
+                        },
+                        nextChapterId: '23_mocaihuan_return',
+                    },
+                    {
+                        id: 'settle_reputation_with_profit',
+                        text: '顺势把名声折成筹码，先把虚天余波换成可见收益',
+                        effects: {
+                            cultivation: 1210,
+                            items: { lingshi: 24 },
+                            routeScores: { demonic: 1 },
+                            flags: {
+                                settledStarSeaReputationWithProfit: true,
+                                starSeaAftermathMode: 'profit',
+                                tiannanReturnPressureMode: 'reputation',
+                            },
+                        },
+                        nextChapterId: '23_mocaihuan_return',
+                    },
+                    {
+                        id: 'cut_tracks_and_leave',
+                        text: '先把海上的痕迹断干净，别让更多人顺着余波认出你',
+                        effects: {
+                            cultivation: 1160,
+                            routeScores: { secluded: 1 },
+                            flags: {
+                                cutStarSeaTracksAfterXuTian: true,
+                                starSeaAftermathMode: 'hidden',
+                                tiannanReturnPressureMode: 'hidden',
+                            },
+                        },
                         nextChapterId: '23_mocaihuan_return',
                     },
                 ];
@@ -4996,10 +5410,12 @@
         },
         {
             id: '23_mocaihuan_return',
-            chapterLabel: '插章·来信与重访',
             title: '来信与重访',
             summary: '墨彩环这一章不是等你给答案，而是让你看见凡人世界在你没回来时，究竟怎样自己熬了过去。',
             location: '嘉元城',
+            volumeId: 'volume_four_overseas',
+            volumeRole: 'closure',
+            legacyVolumeTarget: 'volume_four_chapter_7',
             requirements: { storyProgress: '23_mocaihuan_return' },
             beats(state) {
                 const debtLine = state.flags.daoLvPromise || state.flags.mendedMoHouseDebt
@@ -5026,7 +5442,7 @@
                             routeScores: { orthodox: 1 },
                             flags: { madeAmendsToMocaihuan: true, mendedMoHouseDebt: true },
                         },
-                        nextChapterId: 24,
+                        nextChapterId: '23_volume_close',
                     },
                     {
                         id: 'admit_old_wrong',
@@ -5036,7 +5452,7 @@
                             relations: { '墨彩环': 10 },
                             flags: { admittedOldWrongToMocaihuan: true },
                         },
-                        nextChapterId: 24,
+                        nextChapterId: '23_volume_close',
                     },
                     {
                         id: 'confirm_mocaihuan_safe',
@@ -5045,6 +5461,82 @@
                             cultivation: 1240,
                             routeScores: { secluded: 1 },
                             flags: { checkedOnMocaihuanThenLeft: true },
+                        },
+                        nextChapterId: '23_volume_close',
+                    },
+                ];
+            },
+        },
+        {
+            id: '23_volume_close',
+            title: '星海余波',
+            summary: '第四卷出口不再只是离海，而是决定你带着怎样的名声、旧盟与压力回望天南。',
+            location: '乱星海外海',
+            volumeId: 'volume_four_overseas',
+            volumeRole: 'exit',
+            legacyVolumeTarget: 'volume_four_chapter_8',
+            requirements: { storyProgress: '23_volume_close', realmScoreAtLeast: 9 },
+            beats(state) {
+                const allianceLine = state.flags.honoredAllianceAfterXuTian || state.flags.nangongBondStageTwoConfirmed
+                    ? '你没有把并肩那一夜只算成一次临时合作。到了离海之前，这已经变成别人能不能继续信你的分界。'
+                    : state.flags.settledStarSeaReputationWithProfit
+                        ? '你把名声折成过筹码，也清楚它不会就此消失。它只会先你一步，去旧地替你定义来意。'
+                        : state.flags.cutStarSeaTracksAfterXuTian
+                            ? '你把痕迹压得很低，却也知道真正重要的因果并不会因为你藏得好就彻底消失。'
+                            : '虚天之后的海路没有安静下来，只是把结盟、名声和旧债一起压成了离卷前的最后一道风。';
+                const mocaihuanLine = state.flags.madeAmendsToMocaihuan
+                    ? '嘉元城那封信让你明白，有些旧账若真肯接回手里，就不能只在心里说“以后再补”。'
+                    : state.flags.admittedOldWrongToMocaihuan
+                        ? '你承认了旧错，也知道有些东西已经回不到原样。可承认本身，至少让这笔旧账不再是假装没发生。'
+                        : '你没有把旧账全都接回手里，只是终于看清那些年里替你过日子的人，从来不是你自己。';
+                return [
+                    beat('旁白', '很多卷末真正要收的，不是地图，而是你带走的活法。乱星海给你的不是一个答案，而是一套以后会一直跟着你的处事方式。'),
+                    beat('旁白', allianceLine),
+                    beat('旁白', mocaihuanLine),
+                    beat('旁白', '现在逼你回头的，不是怀旧，而是你已经知道：有些人情、旧名与海上余波，若不自己认，就只会先一步替你开口。'),
+                    beat('旁白', '所以第四卷走到这里，真正的问题只剩一个：你要以怎样的姿态回看天南，回看旧盟，也回看那个早已不在原地等你的世界。'),
+                ];
+            },
+            choices() {
+                return [
+                    {
+                        id: 'follow_old_alliances_home',
+                        text: '顺着旧盟与并肩情义回望天南，把该认的人先认下来',
+                        effects: {
+                            cultivation: 1260,
+                            relations: { '南宫婉': 8 },
+                            routeScores: { orthodox: 1 },
+                            flags: {
+                                followedStarSeaAlliancesHome: true,
+                                tiannanReturnPressureMode: 'alliance',
+                            },
+                        },
+                        nextChapterId: 24,
+                    },
+                    {
+                        id: 'return_with_reputation_pressure',
+                        text: '带着海上名声回去，让旧地先听见你如今是什么人',
+                        effects: {
+                            cultivation: 1280,
+                            items: { lingshi: 12 },
+                            routeScores: { demonic: 1 },
+                            flags: {
+                                returnedWithStarSeaReputationPressure: true,
+                                tiannanReturnPressureMode: 'reputation',
+                            },
+                        },
+                        nextChapterId: 24,
+                    },
+                    {
+                        id: 'return_after_hiding_tracks',
+                        text: '压住海上痕迹后再回头，尽量别让旧地一下子认全你的来路',
+                        effects: {
+                            cultivation: 1240,
+                            routeScores: { secluded: 1 },
+                            flags: {
+                                returnedAfterHidingStarSeaTracks: true,
+                                tiannanReturnPressureMode: 'hidden',
+                            },
                         },
                         nextChapterId: 24,
                     },
@@ -5563,6 +6055,15 @@
                             ? '你在星海先学会的是把自己藏稳。这条活法会一路影响你后面看待机缘、旧人和终局的方式。'
                             : '初入星海真正留下的，不是风景，而是你被迫换了一套新的生存逻辑。';
                 break;
+            case '21_star_sea_foothold':
+                text = flags.starSeaStyle === 'hunter' || flags.starSeaHunterStart
+                    ? '你把最危险的猎路先走熟了。往后旁人提到你在星海立足，多半会先想起你敢不敢把命压在最凶的海口上。'
+                    : flags.starSeaStyle === 'merchant' || flags.starSeaTraderStart
+                        ? '你把货路和契约先站稳了。此后每逢大局，你都更像先把账算清，再决定要不要把人也押进去。'
+                        : flags.starSeaStyle === 'secluded' || flags.starSeaSecludedStart
+                            ? '你先把洞府、退路和藏身之法握在手里。后面很多看似从容的选择，都会沿着这条“先藏后动”的路径继续长。'
+                            : '海外立足真正留下的，不是有没有站稳，而是你到底习惯用哪种姿态活下来。';
+                break;
             case 22:
                 text = flags.enteredVoidHeavenMapGame || flags.hasXuTianTu
                     ? '残图在手之后，别人要杀你的理由已经不需要完整证据。只要怀疑你知道得比他们多，就够把你拖进更大的局。'
@@ -5571,6 +6072,33 @@
                         : flags.avoidedVoidHeavenCoreConflict || flags.avoidedXuTian
                             ? '你真正避开的不是宝，而是知道这扇门存在以后，还要装作与己无关的代价。'
                             : '虚天残图这章留下的，不是普通机缘，而是“知道”本身会不会把你拖下水。';
+                break;
+            case '22_xutian_rumor':
+                text = flags.tiedXuTianRiskToPeople
+                    ? '你在虚天开启前先把人心拴住了。此后再谈结盟，很多人都会记得你不是只会在殿里临时改口的人。'
+                    : flags.tradedOnXuTianRumors
+                        ? '你把风声也当成筹码用过了。以后只要局势再起，别人先想到的就不只是你知不知道，而是你会不会顺手再卖一次消息。'
+                        : flags.starSeaReputationRaisedByRumor || flags.xutianRumorMode === 'quiet'
+                            ? '你知道很多人不是死在不知道，而是死在太早被所有人知道。风声四起这一章，会让你后面越来越习惯先压住名字。'
+                            : '虚天殿未开，风声已经先替你写好了半份名声。真正难的是你还没进局，就已经被别人按某一种人去防。';
+                break;
+            case 23:
+                text = flags.grabbedTreasure || flags.starSeaSeizedTreasureFirst
+                    ? '虚天殿前你先伸手去夺宝，这个动作会让很多后来者直接把你归进“关键时刻会先拿”的那类人。'
+                    : flags.cooperatedAtXuTian || flags.rescuedFromXuTianEdge || flags.starSeaHeldAllianceTogether
+                        ? '你在最窄的退路上先稳住了人，这会让虚天旧盟和南宫婉那条线在后面都更有分量。'
+                        : flags.watchedXuTianFight || flags.secondHandBroker || flags.slippedPastXuTian || flags.starSeaWaitedForBestMoment
+                            ? '你在虚天局里没有先把自己摆到明面，可活下来的人也因此更难彻底信你。因为他们都记得，你最会等别人先露底。'
+                            : '虚天殿真正留下的，不是宝物本身，而是最窄那一步里你到底更像哪一类人。';
+                break;
+            case '23_star_sea_aftermath':
+                text = flags.honoredAllianceAfterXuTian
+                    ? '你没有把虚天里的并肩只算成一次临时合作。越到后面，别人越会把这一步当成你肯不肯继续认人的证据。'
+                    : flags.settledStarSeaReputationWithProfit
+                        ? '你顺手把名声折成了收益，也知道它不会就此消失。它只会先你一步，把“你值不值得信”这道题递给旧人。'
+                        : flags.cutStarSeaTracksAfterXuTian
+                            ? '你把海上的痕迹压低了，可并肩过、翻脸过的那些人仍旧记得。后面很多局里，这会让你更像一条随时准备抽身的暗线。'
+                            : '并肩余波真正留下的，不是有没有余震，而是虚天之后你到底先认人、先认利，还是先认退路。';
                 break;
             case '23_mocaihuan_return':
                 text = flags.madeAmendsToMocaihuan
@@ -5581,14 +6109,14 @@
                             ? '你确认她安好后又离开了。往后若再说自己没有辜负凡俗旧人，这一步会先跳出来拦你。'
                             : '这封来信真正留下的，不是重逢本身，而是你终于看见有人替你扛过的那些年。';
                 break;
-            case 23:
-                text = flags.grabbedTreasure || flags.starSeaSeizedTreasureFirst
-                    ? '虚天殿前你先伸手去夺宝，这个动作会让很多后来者直接把你归进“关键时刻会先拿”的那类人。'
-                    : flags.cooperatedAtXuTian || flags.rescuedFromXuTianEdge || flags.starSeaHeldAllianceTogether
-                        ? '你在最窄的退路上先稳住了人，这会让虚天旧盟和南宫婉那条线在后面都更有分量。'
-                        : flags.watchedXuTianFight || flags.secondHandBroker || flags.slippedPastXuTian || flags.starSeaWaitedForBestMoment
-                            ? '你在虚天局里没有先把自己摆到明面，可活下来的人也因此更难彻底信你。因为他们都记得，你最会等别人先露底。'
-                            : '虚天殿真正留下的，不是宝物本身，而是最窄那一步里你到底更像哪一类人。';
+            case '23_volume_close':
+                text = flags.followedStarSeaAlliancesHome
+                    ? '你带着旧盟与并肩之义回望天南，这会让后面很多“回不回头”的问题，先被人理解成你肯不肯继续认人。'
+                    : flags.returnedWithStarSeaReputationPressure
+                        ? '你带着海上的名声回去，旧地还没见到你的人，已经先听说了你如今更像什么样的人。'
+                        : flags.returnedAfterHidingStarSeaTracks
+                            ? '你尽量把海上的痕迹压到最低才回头。此后很多人提到你，都会先说你很会藏，也很少真的把自己放在别人眼前。'
+                            : '第四卷出口真正留下的，不只是去往哪一卷，而是你决定以怎样的名声与姿态回望旧地。';
                 break;
             case 24:
                 text = flags.returnedTiannanForSettlement
@@ -5655,6 +6183,8 @@
         VOLUME_TWO_CHAPTERS,
         VOLUME_TWO_LEGACY_CHAPTER_MAP,
         VOLUME_THREE_CHAPTERS,
+        VOLUME_FOUR_CHAPTERS,
+        VOLUME_FOUR_LEGACY_CHAPTER_MAP,
         LEVEL_STORY_EVENTS,
         STORY_CHAPTERS,
     };

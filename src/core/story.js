@@ -9,6 +9,7 @@
             VOLUME_ONE_CHAPTERS,
             VOLUME_TWO_CHAPTERS,
             VOLUME_THREE_CHAPTERS,
+            VOLUME_FOUR_CHAPTERS,
             constants,
         } = deps.data;
         const { DECISION_HISTORY_LIMIT, PRESSURE_COLLAPSE_THRESHOLD } = constants;
@@ -41,6 +42,15 @@
                     title: chapter.title,
                     volumeOrder: index + 1,
                     volumeLabel: '第三卷',
+                },
+            ]),
+            ...(VOLUME_FOUR_CHAPTERS || []).map((chapter, index) => [
+                chapter.id,
+                {
+                    id: chapter.id,
+                    title: chapter.title,
+                    volumeOrder: index + 1,
+                    volumeLabel: '第四卷',
                 },
             ]),
         ]);

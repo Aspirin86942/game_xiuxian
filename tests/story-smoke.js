@@ -172,7 +172,11 @@ function withInsertedChoices(choiceMap, overrides) {
         ...choiceMap,
         '16_feiyu_return': 'share_drink_and_part',
         '18_nangong_return': 'owe_nangong_silently',
+        '21_star_sea_foothold': 'claim_hunter_route',
+        '22_xutian_rumor': 'bind_allies_before_entering',
+        '23_star_sea_aftermath': 'honor_alliance_after_palace',
         '23_mocaihuan_return': 'admit_old_wrong',
+        '23_volume_close': 'follow_old_alliances_home',
         ...(overrides || {}),
     };
 }
@@ -295,7 +299,11 @@ function testMainPathIntegrity() {
     }, {
         '16_feiyu_return': 'help_feiyu_again',
         '18_nangong_return': 'acknowledge_nangong_importance',
+        '21_star_sea_foothold': 'claim_hunter_route',
+        '22_xutian_rumor': 'bind_allies_before_entering',
+        '23_star_sea_aftermath': 'honor_alliance_after_palace',
         '23_mocaihuan_return': 'support_mocaihuan_longterm',
+        '23_volume_close': 'follow_old_alliances_home',
     }));
 
     assert.strictEqual(state.ending.id, 'lingjie_xianzun');
@@ -880,6 +888,7 @@ function testChapter22ChoiceFlags() {
     assert.strictEqual(collectState.flags.hasXuTianTu, true);
     assert.strictEqual(collectState.flags.enteredVoidHeavenMapGame, true);
     assert.strictEqual(collectState.flags.heldFragmentMap, true);
+    assert.strictEqual(collectState.storyProgress, '22_xutian_rumor');
 
     const sellState = getChapterChoiceView(22).state;
     result = GameCore.chooseStoryOption(sellState, 'sell_map');
@@ -887,12 +896,42 @@ function testChapter22ChoiceFlags() {
     assert.strictEqual(sellState.flags.soldXuTianTu, true);
     assert.strictEqual(sellState.flags.soldFragmentMapForResources, true);
     assert.strictEqual(sellState.flags.hasXuTianTu, false);
+    assert.strictEqual(sellState.storyProgress, '22_xutian_rumor');
 
     const avoidState = getChapterChoiceView(22).state;
     result = GameCore.chooseStoryOption(avoidState, 'avoid_map');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(avoidState.flags.avoidedXuTian, true);
     assert.strictEqual(avoidState.flags.avoidedVoidHeavenCoreConflict, true);
+    assert.strictEqual(avoidState.storyProgress, '22_xutian_rumor');
+
+    const rumorView = getChapterChoiceView('22_xutian_rumor').view;
+    assert.deepStrictEqual(rumorView.choices.map((item) => item.id), [
+        'hide_map_trace',
+        'trade_on_rumors',
+        'bind_allies_before_entering',
+    ]);
+
+    const hiddenRumorState = getChapterChoiceView('22_xutian_rumor').state;
+    result = GameCore.chooseStoryOption(hiddenRumorState, 'hide_map_trace');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(hiddenRumorState.flags.hidXuTianTrail, true);
+    assert.strictEqual(hiddenRumorState.flags.xutianRumorMode, 'hidden');
+    assert.strictEqual(hiddenRumorState.storyProgress, 23);
+
+    const profitRumorState = getChapterChoiceView('22_xutian_rumor').state;
+    result = GameCore.chooseStoryOption(profitRumorState, 'trade_on_rumors');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(profitRumorState.flags.tradedOnXuTianRumors, true);
+    assert.strictEqual(profitRumorState.flags.starSeaReputationRaisedByRumor, true);
+    assert.strictEqual(profitRumorState.storyProgress, 23);
+
+    const allianceRumorState = getChapterChoiceView('22_xutian_rumor').state;
+    result = GameCore.chooseStoryOption(allianceRumorState, 'bind_allies_before_entering');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(allianceRumorState.flags.tiedXuTianRumorToAlliance, true);
+    assert.strictEqual(allianceRumorState.flags.tiedXuTianRiskToPeople, true);
+    assert.strictEqual(allianceRumorState.storyProgress, 23);
 }
 
 function testInsertedReturnArcFlags() {
@@ -922,6 +961,7 @@ function testInsertedReturnArcFlags() {
     assert.strictEqual(result.ok, true);
     assert.strictEqual(mocaihuanState.flags.madeAmendsToMocaihuan, true);
     assert.strictEqual(mocaihuanState.flags.mendedMoHouseDebt, true);
+    assert.strictEqual(mocaihuanState.storyProgress, '23_volume_close');
 }
 
 function testChapter24ChoicesStayVisibleAndUseDebtHooks() {
@@ -1031,6 +1071,18 @@ function testChapterEchoesStayConcrete() {
     }).view.story.beats.map((item) => item.text);
     assert(chapter23Texts.some((text) => text.includes('真正考验信义的')));
 
+    const chapter23AftermathTexts = getChapterChoiceView('23_star_sea_aftermath', (state) => {
+        state.flags.cooperatedAtXuTian = true;
+        state.npcRelations['南宫婉'] = 65;
+    }).view.story.beats.map((item) => item.text);
+    assert(chapter23AftermathTexts.some((text) => text.includes('虚天殿真正留下来的') || text.includes('并肩一回不算难')));
+
+    const chapter23CloseTexts = getChapterChoiceView('23_volume_close', (state) => {
+        state.flags.honoredAllianceAfterXuTian = true;
+        state.flags.madeAmendsToMocaihuan = true;
+    }).view.story.beats.map((item) => item.text);
+    assert(chapter23CloseTexts.some((text) => text.includes('很多卷末真正要收的') || text.includes('第四卷走到这里')));
+
     const chapter24Texts = getChapterChoiceView(24).view.story.beats.map((item) => item.text);
     assert(chapter24Texts.some((text) => text.includes('真正的返乡')));
 
@@ -1127,18 +1179,42 @@ function testChapter21StarSeaFlags() {
     assert.strictEqual(result.ok, true);
     assert.strictEqual(hunterState.flags.starSeaStyle, 'hunter');
     assert.strictEqual(hunterState.flags.starSeaHunterStart, true);
+    assert.strictEqual(hunterState.storyProgress, '21_star_sea_foothold');
 
     const traderState = getChapterChoiceView(21).state;
     result = GameCore.chooseStoryOption(traderState, 'run_trade');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(traderState.flags.starSeaStyle, 'merchant');
     assert.strictEqual(traderState.flags.starSeaTraderStart, true);
+    assert.strictEqual(traderState.storyProgress, '21_star_sea_foothold');
 
     const secludedState = getChapterChoiceView(21).state;
     result = GameCore.chooseStoryOption(secludedState, 'seek_cave');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(secludedState.flags.starSeaStyle, 'secluded');
     assert.strictEqual(secludedState.flags.starSeaSecludedStart, true);
+
+    const footholdView = getChapterChoiceView('21_star_sea_foothold').view;
+    assert.deepStrictEqual(footholdView.choices.map((item) => item.id), [
+        'claim_hunter_route',
+        'build_trade_route',
+        'secure_hidden_cave',
+    ]);
+
+    const hunterFootholdState = getChapterChoiceView('21_star_sea_foothold').state;
+    result = GameCore.chooseStoryOption(hunterFootholdState, 'claim_hunter_route');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(hunterFootholdState.storyProgress, 22);
+
+    const traderFootholdState = getChapterChoiceView('21_star_sea_foothold').state;
+    result = GameCore.chooseStoryOption(traderFootholdState, 'build_trade_route');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(traderFootholdState.storyProgress, 22);
+
+    const hiddenFootholdState = getChapterChoiceView('21_star_sea_foothold').state;
+    result = GameCore.chooseStoryOption(hiddenFootholdState, 'secure_hidden_cave');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(hiddenFootholdState.storyProgress, 22);
 }
 
 function testChapter23BranchChoices() {
@@ -1151,7 +1227,7 @@ function testChapter23BranchChoices() {
     assert(soldIds.includes('sell_route_info'));
     let result = GameCore.chooseStoryOption(soldState.state, 'sell_route_info');
     assert.strictEqual(result.ok, true);
-    assert.strictEqual(soldState.state.storyProgress, '23_mocaihuan_return');
+    assert.strictEqual(soldState.state.storyProgress, '23_star_sea_aftermath');
     assert.strictEqual(soldState.state.flags.starSeaWaitedForBestMoment, true);
 
     const avoidedState = getChapterChoiceView(23, (state) => {
@@ -1164,7 +1240,7 @@ function testChapter23BranchChoices() {
     assert.strictEqual(result.ok, true);
     assert.strictEqual(avoidedState.state.flags.rescuedFromXuTianEdge, true);
     assert.strictEqual(avoidedState.state.flags.starSeaHeldAllianceTogether, true);
-    assert.strictEqual(avoidedState.state.storyProgress, '23_mocaihuan_return');
+    assert.strictEqual(avoidedState.state.storyProgress, '23_star_sea_aftermath');
 
     const defaultState = getChapterChoiceView(23, (state) => {
         state.flags.hasXuTianTu = true;
@@ -1173,16 +1249,41 @@ function testChapter23BranchChoices() {
     result = GameCore.chooseStoryOption(defaultState.state, 'grab_treasure');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(defaultState.state.flags.starSeaSeizedTreasureFirst, true);
+    assert.strictEqual(defaultState.state.storyProgress, '23_star_sea_aftermath');
+
+    const aftermathView = getChapterChoiceView('23_star_sea_aftermath').view;
+    assert.deepStrictEqual(aftermathView.choices.map((item) => item.id), [
+        'honor_alliance_after_palace',
+        'settle_reputation_with_profit',
+        'cut_tracks_and_leave',
+    ]);
+
+    const allianceAftermathState = getChapterChoiceView('23_star_sea_aftermath').state;
+    result = GameCore.chooseStoryOption(allianceAftermathState, 'honor_alliance_after_palace');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(allianceAftermathState.flags.honoredAllianceAfterXuTian, true);
+    assert.strictEqual(allianceAftermathState.flags.nangongBondStageTwoConfirmed, true);
+    assert.strictEqual(allianceAftermathState.storyProgress, '23_mocaihuan_return');
 
     const chainedState = getChapterChoiceView(23, (state) => {
         state.flags.hasXuTianTu = true;
     }).state;
     result = GameCore.chooseStoryOption(chainedState, 'cooperate_allies');
     assert.strictEqual(result.ok, true);
+    assert.strictEqual(chainedState.storyProgress, '23_star_sea_aftermath');
+    let insertedView = playToChoices(chainedState);
+    assert.strictEqual(insertedView.chapter.id, '23_star_sea_aftermath');
+    result = GameCore.chooseStoryOption(chainedState, 'honor_alliance_after_palace');
+    assert.strictEqual(result.ok, true);
     assert.strictEqual(chainedState.storyProgress, '23_mocaihuan_return');
-    const insertedView = playToChoices(chainedState);
+    insertedView = playToChoices(chainedState);
     assert.strictEqual(insertedView.chapter.id, '23_mocaihuan_return');
     result = GameCore.chooseStoryOption(chainedState, 'admit_old_wrong');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(chainedState.storyProgress, '23_volume_close');
+    insertedView = playToChoices(chainedState);
+    assert.strictEqual(insertedView.chapter.id, '23_volume_close');
+    result = GameCore.chooseStoryOption(chainedState, 'follow_old_alliances_home');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(chainedState.storyProgress, 24);
 }
@@ -1533,7 +1634,11 @@ function testBranchEchoes() {
     }, {
         '16_feiyu_return': 'distance_from_feiyu',
         '18_nangong_return': 'avoid_nangong_again',
+        '21_star_sea_foothold': 'build_trade_route',
+        '22_xutian_rumor': 'trade_on_rumors',
+        '23_star_sea_aftermath': 'settle_reputation_with_profit',
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
+        '23_volume_close': 'return_with_reputation_pressure',
     }));
     const demonicEcho = GameCore.getEchoes(demonicState).map((item) => item.title);
     assert(demonicEcho.includes('价格先看人心'));
@@ -1582,7 +1687,11 @@ function testBranchEchoes() {
     }, {
         '16_feiyu_return': 'distance_from_feiyu',
         '18_nangong_return': 'avoid_nangong_again',
+        '21_star_sea_foothold': 'secure_hidden_cave',
+        '22_xutian_rumor': 'hide_map_trace',
+        '23_star_sea_aftermath': 'cut_tracks_and_leave',
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
+        '23_volume_close': 'return_after_hiding_tracks',
     }));
     const secludedEcho = GameCore.getEchoes(secludedState).map((item) => item.title);
     assert(secludedEcho.includes('逍遥散仙'));
@@ -1630,11 +1739,15 @@ function testExplicitBranchImpactCoverage() {
         { chapterId: 19, configure(state) { state.flags.warChoice = 'demonic'; } },
         { chapterId: 20 },
         { chapterId: 21 },
+        { chapterId: '21_star_sea_foothold' },
         { chapterId: 22 },
+        { chapterId: '22_xutian_rumor' },
         { chapterId: 23 },
         { chapterId: 23, configure(state) { state.flags.soldXuTianTu = true; } },
         { chapterId: 23, configure(state) { state.flags.avoidedXuTian = true; } },
+        { chapterId: '23_star_sea_aftermath' },
         { chapterId: '23_mocaihuan_return' },
+        { chapterId: '23_volume_close' },
         { chapterId: 24 },
         {
             chapterId: 25,
@@ -1701,9 +1814,13 @@ function testExplicitBranchImpactCoverage() {
         '19:rescue_rearguard',
         '19:open_mine_gate',
         '19:harvest_chaos',
+        '21_star_sea_foothold:build_trade_route',
+        '22_xutian_rumor:trade_on_rumors',
         '23:pull_ally_out',
         '23:sell_route_info',
         '23:slip_past_palace',
+        '23_star_sea_aftermath:settle_reputation_with_profit',
+        '23_volume_close:return_with_reputation_pressure',
         '25:lingjie_xianzun',
         '25:renjie_zhizun',
         '25:xiaoyao_sanxian',
@@ -1946,6 +2063,164 @@ function testVolumeThreeExitMovesToLaterAssets() {
     assert.notStrictEqual(nextView.chapter.chapterLabel, '第三卷·第 8 章', '卷末后不应继续停留在第三卷');
 }
 
+function testVolumeFourMetadataScaffold() {
+    assert(Array.isArray(StoryData.VOLUME_FOUR_CHAPTERS), '应导出第四卷 8 章结构');
+    assert.strictEqual(StoryData.VOLUME_FOUR_CHAPTERS.length, 8, '第四卷应固定为 8 章');
+
+    const expectedLegacyIds = [21, '21_star_sea_foothold', 22, '22_xutian_rumor', 23, '23_star_sea_aftermath', '23_mocaihuan_return', '23_volume_close'];
+    const actualLegacyIds = StoryData.VOLUME_FOUR_CHAPTERS.flatMap((chapter) => [...(chapter.legacyChapterIds || [])]);
+    assert.deepStrictEqual(actualLegacyIds, expectedLegacyIds, '第四卷卷内 8 章应覆盖当前星海正文与新增过桥章节');
+
+    const map = StoryData.VOLUME_FOUR_LEGACY_CHAPTER_MAP;
+    assert(map, '应导出第四卷旧素材映射');
+    assert.deepStrictEqual(
+        Object.keys(map).sort(),
+        ['21', '22', '23', '23_mocaihuan_return', '24', '25'].sort(),
+        '第四卷旧素材映射应覆盖 21、22、23、23_mocaihuan_return 以及 24/25 的跨卷边界',
+    );
+
+    const actions = new Set(['keep_main', 'promote_to_main', 'forward_volume_boundary']);
+    Object.entries(map).forEach(([legacyId, entry]) => {
+        assert(entry.targetChapterId, `第四卷旧素材 ${legacyId} 缺少目标章`);
+        assert(actions.has(entry.action), `第四卷旧素材 ${legacyId} action 非法`);
+    });
+
+    const exitChapter = StoryData.VOLUME_FOUR_CHAPTERS.find((chapter) => chapter.id === 'volume_four_chapter_8');
+    assert(exitChapter, '第四卷应存在卷末出口章节');
+    assert.strictEqual(exitChapter.volumeRole, 'exit');
+    assert.strictEqual(exitChapter.nextReads.length, 4, '第四卷卷末读取点应固定为 4 条');
+}
+
+function testVolumeFourChapterLabelsUseRemappedVolumeStructure() {
+    const chapter21View = getChapterChoiceView(21).view;
+    assert.strictEqual(chapter21View.chapter.chapterLabel, '第四卷·第 1 章');
+    assert.strictEqual(chapter21View.chapter.volumeChapterTitle, '初入星海');
+
+    const footholdView = getChapterChoiceView('21_star_sea_foothold').view;
+    assert.strictEqual(footholdView.chapter.chapterLabel, '第四卷·第 2 章');
+    assert.strictEqual(footholdView.chapter.volumeChapterTitle, '海外立足');
+
+    const chapter22View = getChapterChoiceView(22).view;
+    assert.strictEqual(chapter22View.chapter.chapterLabel, '第四卷·第 3 章');
+    assert.strictEqual(chapter22View.chapter.volumeChapterTitle, '虚天残图');
+
+    const rumorView = getChapterChoiceView('22_xutian_rumor').view;
+    assert.strictEqual(rumorView.chapter.chapterLabel, '第四卷·第 4 章');
+    assert.strictEqual(rumorView.chapter.volumeChapterTitle, '风声四起');
+
+    const chapter23View = getChapterChoiceView(23).view;
+    assert.strictEqual(chapter23View.chapter.chapterLabel, '第四卷·第 5 章');
+    assert.strictEqual(chapter23View.chapter.volumeChapterTitle, '虚天殿前后');
+
+    const aftermathView = getChapterChoiceView('23_star_sea_aftermath').view;
+    assert.strictEqual(aftermathView.chapter.chapterLabel, '第四卷·第 6 章');
+    assert.strictEqual(aftermathView.chapter.volumeChapterTitle, '并肩余波');
+
+    const mocaihuanView = getChapterChoiceView('23_mocaihuan_return').view;
+    assert.strictEqual(mocaihuanView.chapter.chapterLabel, '第四卷·第 7 章');
+    assert.strictEqual(mocaihuanView.chapter.volumeChapterTitle, '来信与重访');
+
+    const closeView = getChapterChoiceView('23_volume_close').view;
+    assert.strictEqual(closeView.chapter.chapterLabel, '第四卷·第 8 章');
+    assert.strictEqual(closeView.chapter.volumeChapterTitle, '星海余波');
+}
+
+function testVolumeFourEntryAndExitUseRemappedStructure() {
+    const { state: entryState, view: entryView } = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'keep_low_profile',
+        2: 'become_disciple',
+        3: 'save_li',
+        4: 'collect_evidence',
+        5: 'keep_bottle',
+        6: 'bait_and_counter',
+        7: 'keep_letter',
+        8: 'protect_mo_house',
+        9: 'repair_quhun',
+        10: 'watch_market',
+        11: 'join_yellow_maple',
+        12: 'send_word_back',
+        '12_mortal_debt': 'return_mortal_debt',
+        '12_tainan_market': 'take_black_route',
+        '12_token_kill': 'trade_information_for_entry',
+        '12_enter_yellow_maple': 'enter_as_low_profile_disciple',
+        '12_herb_garden': 'build_connections',
+        13: 'align_with_fellow_disciples',
+        '13_volume_close': 'enter_forbidden_ground_ready',
+        14: 'save_nangong',
+        15: 'accept_nangong_debt',
+        16: 'become_li_disciple',
+        '16_feiyu_return': 'help_feiyu_again',
+        17: 'show_strength_banquet',
+        18: 'fight_for_sect',
+        '18_nangong_return': 'acknowledge_nangong_importance',
+        19: 'hold_the_line',
+        20: 'go_star_sea',
+    }), 21);
+
+    assert.strictEqual(entryView.chapter.chapterLabel, '第四卷·第 1 章');
+    assert.strictEqual(entryView.chapter.volumeChapterTitle, '初入星海');
+    let result = GameCore.chooseStoryOption(entryState, 'hunt_monsters');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(entryState.storyProgress, '21_star_sea_foothold');
+    let nextView = GameCore.getStoryView(entryState);
+    assert(nextView, '第四卷入口推进后应立即进入卷内第二章');
+    assert.strictEqual(nextView.chapter.id, '21_star_sea_foothold');
+    assert.strictEqual(nextView.chapter.chapterLabel, '第四卷·第 2 章');
+
+    const { state: exitState, view: exitView } = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'keep_low_profile',
+        2: 'become_disciple',
+        3: 'save_li',
+        4: 'collect_evidence',
+        5: 'keep_bottle',
+        6: 'bait_and_counter',
+        7: 'keep_letter',
+        8: 'protect_mo_house',
+        9: 'repair_quhun',
+        10: 'watch_market',
+        11: 'join_yellow_maple',
+        12: 'send_word_back',
+        '12_mortal_debt': 'return_mortal_debt',
+        '12_tainan_market': 'take_black_route',
+        '12_token_kill': 'trade_information_for_entry',
+        '12_enter_yellow_maple': 'enter_as_low_profile_disciple',
+        '12_herb_garden': 'build_connections',
+        13: 'align_with_fellow_disciples',
+        '13_volume_close': 'enter_forbidden_ground_ready',
+        14: 'save_nangong',
+        15: 'accept_nangong_debt',
+        16: 'become_li_disciple',
+        '16_feiyu_return': 'help_feiyu_again',
+        17: 'show_strength_banquet',
+        18: 'fight_for_sect',
+        '18_nangong_return': 'acknowledge_nangong_importance',
+        19: 'hold_the_line',
+        20: 'go_star_sea',
+        21: 'hunt_monsters',
+        '21_star_sea_foothold': 'claim_hunter_route',
+        22: 'collect_map',
+        '22_xutian_rumor': 'bind_allies_before_entering',
+        23: 'cooperate_allies',
+        '23_star_sea_aftermath': 'honor_alliance_after_palace',
+        '23_mocaihuan_return': 'support_mocaihuan_longterm',
+    }), '23_volume_close');
+
+    assert.strictEqual(exitView.chapter.chapterLabel, '第四卷·第 8 章');
+    assert.strictEqual(exitView.chapter.volumeChapterTitle, '星海余波');
+    exitState.levelStoryState.events.yu_10 = { triggered: true, completed: true };
+    GameCore.setRealmScore(exitState, 10);
+    GameCore.recalculateState(exitState, false);
+    result = GameCore.chooseStoryOption(exitState, 'follow_old_alliances_home');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(exitState.storyProgress, 24, '第四卷卷末应把主线送到第 24 章后续卷入口资产');
+    nextView = GameCore.getStoryView(exitState);
+    assert(nextView, '第四卷卷末推进后应立即出现第 24 章剧情');
+    assert.strictEqual(nextView.chapter.id, 24);
+    assert.notStrictEqual(nextView.chapter.chapterLabel, '第四卷·第 8 章', '卷末后不应继续停留在第四卷');
+}
+
 function getVolumeOneExitArcTexts(configure) {
     const chapter10 = getChapterChoiceView(10, (state) => {
         GameCore.setRealmScore(state, 3);
@@ -2121,6 +2396,9 @@ testVolumeTwoExitStopsBeforeForbiddenGroundBody();
 testVolumeThreeMetadataScaffold();
 testVolumeThreeChapterLabelsUseRemappedVolumeStructure();
 testVolumeThreeExitMovesToLaterAssets();
+testVolumeFourMetadataScaffold();
+testVolumeFourChapterLabelsUseRemappedVolumeStructure();
+testVolumeFourEntryAndExitUseRemappedStructure();
 testVolumeOneLateArcLegacyProgressStaysReadable();
 testVolumeOneLedgerClosureReadsReturnLedgersPath();
 testVolumeOneLedgerClosureReadsNamesOnlyPath();

@@ -10,6 +10,8 @@ const {
     createVolumeTwoCloseScenario,
     createVolumeThreeEntryScenario,
     createVolumeThreeExitScenario,
+    createVolumeFourEntryScenario,
+    createVolumeFourExitScenario,
     createVolumeOneLedgerClosureScenario,
     createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,
@@ -254,6 +256,48 @@ test('第三卷卷末收束后会离开第三卷并进入后续入口', async ({
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedNextTitle);
     await expect(page.locator(selectors.story.title)).not.toContainText('第三卷·第 8 章');
     await expect(page.locator(selectors.story.title)).toContainText('初入星海');
+
+    const save = await readSave(page);
+    expect(save.storyProgress).toBe(scenario.expectedStoryProgress);
+});
+
+test('第四卷入口会渲染新卷标签并推进到海外立足', async ({ page }) => {
+    const scenario = createVolumeFourEntryScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
+    await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
+    await expect(page.locator(selectors.story.title)).toContainText('第四卷·第 1 章');
+    await expect(page.locator(selectors.story.title)).toContainText('初入星海');
+
+    const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
+    await expect(choiceLocator).toContainText(scenario.choiceText);
+    await choiceLocator.click();
+
+    await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedNextTitle);
+    await expect(page.locator(selectors.story.title)).toContainText('第四卷·第 2 章');
+    await expect(page.locator(selectors.story.title)).toContainText('海外立足');
+
+    const save = await readSave(page);
+    expect(save.storyProgress).toBe(scenario.expectedStoryProgress);
+});
+
+test('第四卷卷末收束后会离开第四卷并进入重返天南', async ({ page }) => {
+    const scenario = createVolumeFourExitScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
+    await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
+    await expect(page.locator(selectors.story.title)).toContainText('第四卷·第 8 章');
+    await expect(page.locator(selectors.story.title)).toContainText('星海余波');
+
+    const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
+    await expect(choiceLocator).toContainText(scenario.choiceText);
+    await choiceLocator.click();
+
+    await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedNextTitle);
+    await expect(page.locator(selectors.story.title)).not.toContainText('第四卷·第 8 章');
+    await expect(page.locator(selectors.story.title)).toContainText('重返天南');
 
     const save = await readSave(page);
     expect(save.storyProgress).toBe(scenario.expectedStoryProgress);

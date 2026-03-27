@@ -848,6 +848,48 @@ function createVolumeThreeExitScenario() {
     };
 }
 
+function createVolumeFourEntryScenario() {
+    const state = createChoiceState(21, (draft) => {
+        draft.ui.activeTab = 'story';
+        draft.flags.enteredStarSea = true;
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'hunt_monsters');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        choiceText: selectedChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedNextTitle: formatRenderedStoryTitle(previewState),
+        expectedStoryProgress: previewState.storyProgress,
+    };
+}
+
+function createVolumeFourExitScenario() {
+    const state = createChoiceState('23_volume_close', (draft) => {
+        draft.ui.activeTab = 'story';
+        setRealmScore(draft, 10);
+        draft.flags.honoredAllianceAfterXuTian = true;
+        draft.flags.madeAmendsToMocaihuan = true;
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'follow_old_alliances_home');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        choiceText: selectedChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedNextTitle: formatRenderedStoryTitle(previewState),
+        expectedStoryProgress: previewState.storyProgress,
+    };
+}
+
 function createLongChoiceScenario() {
     const state = createChoiceState(0, (draft) => {
         fillInventoryWithSamples(draft, 30);
@@ -880,6 +922,8 @@ module.exports = {
     createVolumeTwoCloseScenario,
     createVolumeThreeEntryScenario,
     createVolumeThreeExitScenario,
+    createVolumeFourEntryScenario,
+    createVolumeFourExitScenario,
     createVolumeOneLedgerClosureScenario,
     createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,

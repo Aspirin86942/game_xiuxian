@@ -35,18 +35,17 @@ function runCombatToEnd(state, combatState, rng) {
     return result;
 }
 
-function testLegacySaveCompatibility() {
+function testLegacySaveVersionGate() {
+    assert.strictEqual(GameCore.isSupportedSaveData({ version: 7 }), true);
+    assert.strictEqual(GameCore.isSupportedSaveData({ version: 6 }), false);
     const merged = GameCore.mergeSave({
-        version: 5,
+        version: 6,
         autoCultivate: true,
         ui: {
             activeTab: 'adventure',
         },
     });
-
     assert.strictEqual(merged.version, GameCore.SAVE_VERSION);
-    assert.strictEqual(GameCore.isSupportedSaveData({ version: 5 }), true);
-    assert.strictEqual(GameCore.isSupportedSaveData({ version: 4 }), false);
     assert.strictEqual(merged.offlineTraining.lastSavedAt, null);
     assert.strictEqual(merged.offlineTraining.lastGain, 0);
     assert.strictEqual(merged.offlineTraining.wasCapped, false);
@@ -214,7 +213,7 @@ function testNaturalRecoveryAppliesTickAndCap() {
     assert.strictEqual(result.lastCheckedAt, FIXED_NOW);
 }
 
-testLegacySaveCompatibility();
+testLegacySaveVersionGate();
 testTrainingSuccess();
 testTrainingFailure();
 testFullCultivationRequiresBreakthrough();

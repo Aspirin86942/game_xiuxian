@@ -395,7 +395,7 @@
         function createTribulationEnding(state) {
             const consequences = normalizeStoryConsequences(state?.storyConsequences);
             return {
-                id: 'zouhuorumo',
+                id: 'zouhuo_rumo',
                 title: '走火入魔',
                 description: `你一路累积的失败压力终于越过${consequences.pressureTier}边界。先前那些涉险而行、强撑不退的选择没有再被稳住，识海里的裂声也在此刻一起反噬回来。`,
             };

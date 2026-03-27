@@ -4,7 +4,12 @@ const { test, expect } = require('@playwright/test');
 const GameCore = require('../../game-core.js');
 const selectors = require('./helpers/selectors');
 const { openGame, readSave, waitForModalShown } = require('./helpers/harness');
-const { createAdventureTabSaveScenario, createCustomSaveScenario, createLegacySaveScenario } = require('./helpers/saveFactory');
+const {
+    createAdventureTabSaveScenario,
+    createCustomSaveScenario,
+    createInvalidSaveFixtures,
+    createUnsupportedLegacySaveScenario,
+} = require('./helpers/saveFactory');
 
 test('设置开关在刷新后保留', async ({ page }) => {
     await openGame(page);
@@ -75,11 +80,11 @@ test('存档可导出、重开并重新导入恢复', async ({ page }, testInfo)
     expect(save.settings.musicEnabled).toBe(scenario.expectedState.musicEnabled);
 });
 
-test('导入 v5 旧存档时会自动补齐并升级到当前版本', async ({ page }, testInfo) => {
+test('导入旧版存档时会提示阻断并保持当前进度', async ({ page }, testInfo) => {
     const scenario = createCustomSaveScenario();
-    const legacyScenario = createLegacySaveScenario();
-    const legacyPath = testInfo.outputPath('legacy-save-v4.json');
-    fs.writeFileSync(legacyPath, legacyScenario.serialized, 'utf8');
+    const fixtures = createInvalidSaveFixtures();
+    const legacyPath = testInfo.outputPath('legacy-save-v6.json');
+    fs.writeFileSync(legacyPath, fixtures.unsupportedLegacy, 'utf8');
 
     await openGame(page, { serializedSave: scenario.serialized });
     await expect(page.locator(selectors.status.playerName)).toHaveText(scenario.expectedState.playerName);
@@ -87,21 +92,47 @@ test('导入 v5 旧存档时会自动补齐并升级到当前版本', async ({ p
     await page.click(selectors.tabs.settings);
     await waitForModalShown(page, selectors.settings.modal);
 
+    let dialogMessage = '';
+    page.once('dialog', async (dialog) => {
+        dialogMessage = dialog.message();
+        await dialog.dismiss();
+    });
+
     const [fileChooser] = await Promise.all([
         page.waitForEvent('filechooser'),
         page.click(selectors.settings.importButton),
     ]);
     await fileChooser.setFiles(legacyPath);
 
+    await expect.poll(() => dialogMessage).not.toBe('');
+    expect(dialogMessage).toContain('旧版存档');
+    await expect(page.locator(selectors.status.playerName)).toHaveText(scenario.expectedState.playerName);
+
+    const save = await readSave(page);
+    expect(save.version).toBe(GameCore.SAVE_VERSION);
+    expect(save.playerName).toBe(scenario.expectedState.playerName);
+    expect(save.ui.activeTab).toBe('story');
+});
+
+test('打开不受支持的旧版本地存档时会提示并重置为新档', async ({ page }) => {
+    const legacyScenario = createUnsupportedLegacySaveScenario();
+    let dialogMessage = '';
+    page.once('dialog', async (dialog) => {
+        dialogMessage = dialog.message();
+        await dialog.dismiss();
+    });
+
+    await openGame(page, { serializedSave: legacyScenario.serialized });
+
+    await expect.poll(() => dialogMessage).toContain('旧版存档');
     await expect(page.locator(selectors.status.playerName)).toHaveText(legacyScenario.expectedState.playerName);
-    await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
+    await expect(page.locator(selectors.pages.cultivation)).toHaveClass(/active/);
 
     const save = await readSave(page);
     expect(save.version).toBe(GameCore.SAVE_VERSION);
     expect(save.playerName).toBe(legacyScenario.expectedState.playerName);
     expect(save.ui.activeTab).toBe(legacyScenario.expectedState.activeTab);
-    expect(save.recovery).toBeTruthy();
-    expect(save.recovery.lastCheckedAt).toBeGreaterThan(0);
+    expect(save.storyProgress).toBe(legacyScenario.expectedState.storyProgress);
 });
 
 test('导入旧的 adventure 页签存档后，会自动落到修行页', async ({ page }, testInfo) => {

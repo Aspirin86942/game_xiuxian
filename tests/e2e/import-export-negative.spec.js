@@ -66,12 +66,18 @@ test('导入截断 JSON 时会提示失败且不污染当前存档', async ({ pa
 test('导入不受支持的旧版存档时会阻断覆盖', async ({ page }, testInfo) => {
     const fixtures = createInvalidSaveFixtures();
     const snapshot = await openWithStableSave(page);
+    await page.click(selectors.tabs.story);
+    const storyTitleBeforeImport = await page.locator(selectors.story.title).textContent();
     const filePath = testInfo.outputPath('unsupported-legacy-save.json');
     fs.writeFileSync(filePath, fixtures.unsupportedLegacy, { encoding: 'utf8' });
 
     const dialogMessage = await attemptImportAndCaptureDialog(page, filePath);
     expect(dialogMessage).toContain('旧版存档');
     await expectSaveUnchanged(page, snapshot);
+
+    await page.click(selectors.settings.closeButton);
+    await page.click(selectors.tabs.story);
+    await expect(page.locator(selectors.story.title)).toHaveText(storyTitleBeforeImport || '');
 });
 
 test('导入更高版本存档时会阻断覆盖', async ({ page }, testInfo) => {

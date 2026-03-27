@@ -26,6 +26,10 @@
 4. 再看 `03-implementation-contract.md`，确认稳定字段、流程顺序、卷末回收与兼容边界。
 5. 再看 `05-content-authoring-interface.md`，确认作者写章节、choices、卷末出口和读取点时的最低合格线。
 6. 若当前任务是第一卷重构，补看 `appendix-c-volume-one-structure.md`。
+7. 若当前任务是第二卷《初踏修仙路》重构，补看 `appendix-d-volume-two-structure.md`。
+8. 若当前任务是第三卷《魔道入侵》重构，补看 `appendix-e-volume-three-structure.md`。
+9. 若当前任务是第四卷《风起海外》重构，补看 `appendix-f-volume-four-structure.md`。
+10. 若当前任务是第五卷《归乡飞升》重构，补看 `appendix-g-volume-five-structure.md`。
 
 ## 3. 工作流
 
@@ -47,6 +51,10 @@
 - `appendix-a-state-matrix.md`：收纳状态矩阵、揭示矩阵与后果矩阵。
 - `appendix-b-test-scenarios.md`：收纳设计验收与实现回归场景。
 - `appendix-c-volume-one-structure.md`：记录第一卷《七玄门风云》的 8 章卷结构和旧章映射。
+- `appendix-d-volume-two-structure.md`：记录第二卷《初踏修仙路》的 8 章卷结构、当前运行时素材吸收点与卷末读取点。
+- `appendix-e-volume-three-structure.md`：记录第三卷《魔道入侵》的 8 章卷结构、卷内插章边界与第四卷出口读取点。
+- `appendix-f-volume-four-structure.md`：记录第四卷《风起海外》的 8 章卷结构、星海中段拆章方式与第五卷入口读取点。
+- `appendix-g-volume-five-structure.md`：记录第五卷《归乡飞升》的 5 章终局卷结构、五条主终局与异常失败终局边界。
 
 ## 5. 所属系列
 
@@ -82,11 +90,14 @@
 
 ## 9. 本册当前重点
 
-- 当前第一优先任务是把第一卷《七玄门风云》从旧 `0~11` 章的线性事件串，重构成 8 章卷级闭环。
-- 本册当前不展开第二卷及以后正式细纲，只保留跨卷读取点接口。
+- 当前第一优先任务已经推进到“把第五卷《归乡飞升》正式入册并接入运行时”。
+- 第五卷当前目标是：在不回退前四卷已锁定边界的前提下，把当前 `24 / 25` 的散装后续资产整理为 5 章终局卷，围绕重返天南、旧账旧名、旧情去处、飞升前夜与终局分流展开。
+- `23_volume_close` 继续固定为第四卷卷末出口；它的职责只负责把主线送入第五卷第 1 章 `24 重返天南`，不回退第四卷已锁定的 8 章边界。
+- 第五卷终局必须改为“五条主终局 + 一条异常失败终局”的分流结构；旧的 6 条常规终局菜单不再作为第五卷目标态。
 
 ## 10. 维护规则
 
-- 任何涉及卷结构、章节角色或卷末出口的改动，至少同步检查 `00`、`03`、`05` 和 `appendix-c`。
+- 任何涉及卷结构、章节角色或卷末出口的改动，至少同步检查 `00`、`03`、`05` 以及对应卷附录。
 - 任何把旧章节下放为支线、插章或读取点的改动，都必须同步更新 `04-change-worklog.md`。
+- 任何涉及第五卷终局分流、终局命名或异常失败边界的改动，都必须同步检查 `02`、`03`、`05` 与 `appendix-g-volume-five-structure.md`。
 - 若规则书与当前代码冲突，应优先在 `01-current-behavior.md` 说明现状，而不是偷偷改写目标态定义。

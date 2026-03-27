@@ -7,20 +7,63 @@
             STORY_CHAPTERS,
             LEVEL_STORY_EVENTS,
             VOLUME_ONE_CHAPTERS,
+            VOLUME_TWO_CHAPTERS,
+            VOLUME_THREE_CHAPTERS,
+            VOLUME_FOUR_CHAPTERS,
+            VOLUME_FIVE_CHAPTERS,
             constants,
         } = deps.data;
         const { DECISION_HISTORY_LIMIT, PRESSURE_COLLAPSE_THRESHOLD } = constants;
 
         const STORY_LOOKUP = new Map(STORY_CHAPTERS.map((chapter) => [chapter.id, chapter]));
         const STORY_ORDER = new Map(STORY_CHAPTERS.map((chapter, index) => [String(chapter.id), index]));
-        const VOLUME_ONE_CHAPTER_LOOKUP = new Map((VOLUME_ONE_CHAPTERS || []).map((chapter, index) => [
-            chapter.id,
-            {
-                id: chapter.id,
-                title: chapter.title,
-                volumeOrder: index + 1,
-            },
-        ]));
+        const VOLUME_CHAPTER_LOOKUP = new Map([
+            ...(VOLUME_ONE_CHAPTERS || []).map((chapter, index) => [
+                chapter.id,
+                {
+                    id: chapter.id,
+                    title: chapter.title,
+                    volumeOrder: index + 1,
+                    volumeLabel: '第一卷',
+                },
+            ]),
+            ...(VOLUME_TWO_CHAPTERS || []).map((chapter, index) => [
+                chapter.id,
+                {
+                    id: chapter.id,
+                    title: chapter.title,
+                    volumeOrder: index + 1,
+                    volumeLabel: '第二卷',
+                },
+            ]),
+            ...(VOLUME_THREE_CHAPTERS || []).map((chapter, index) => [
+                chapter.id,
+                {
+                    id: chapter.id,
+                    title: chapter.title,
+                    volumeOrder: index + 1,
+                    volumeLabel: '第三卷',
+                },
+            ]),
+            ...(VOLUME_FOUR_CHAPTERS || []).map((chapter, index) => [
+                chapter.id,
+                {
+                    id: chapter.id,
+                    title: chapter.title,
+                    volumeOrder: index + 1,
+                    volumeLabel: '第四卷',
+                },
+            ]),
+            ...(VOLUME_FIVE_CHAPTERS || []).map((chapter, index) => [
+                chapter.id,
+                {
+                    id: chapter.id,
+                    title: chapter.title,
+                    volumeOrder: index + 1,
+                    volumeLabel: '第五卷',
+                },
+            ]),
+        ]);
         const LEGACY_ECHO_OVERRIDES = Object.freeze({
             '24:returned_tiannan_for_settlement': {
                 title: '旧账见光',
@@ -179,13 +222,13 @@
                 return null;
             }
 
-            const volumeChapter = VOLUME_ONE_CHAPTER_LOOKUP.get(targetId);
+            const volumeChapter = VOLUME_CHAPTER_LOOKUP.get(targetId);
             if (!volumeChapter) {
                 return null;
             }
 
             return {
-                label: `第一卷·第 ${volumeChapter.volumeOrder} 章`,
+                label: `${volumeChapter.volumeLabel}·第 ${volumeChapter.volumeOrder} 章`,
                 title: volumeChapter.title,
             };
         }

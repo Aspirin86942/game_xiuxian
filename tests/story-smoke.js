@@ -172,7 +172,11 @@ function withInsertedChoices(choiceMap, overrides) {
         ...choiceMap,
         '16_feiyu_return': 'share_drink_and_part',
         '18_nangong_return': 'owe_nangong_silently',
+        '21_star_sea_foothold': 'claim_hunter_route',
+        '22_xutian_rumor': 'bind_allies_before_entering',
+        '23_star_sea_aftermath': 'honor_alliance_after_palace',
         '23_mocaihuan_return': 'admit_old_wrong',
+        '23_volume_close': 'follow_old_alliances_home',
         ...(overrides || {}),
     };
 }
@@ -272,8 +276,14 @@ function testMainPathIntegrity() {
         9: 'repair_quhun',
         10: 'watch_market',
         11: 'join_yellow_maple',
-        12: 'build_connections',
-        13: 'go_team',
+        12: 'send_word_back',
+        '12_mortal_debt': 'return_mortal_debt',
+        '12_tainan_market': 'take_black_route',
+        '12_token_kill': 'trade_information_for_entry',
+        '12_enter_yellow_maple': 'enter_as_low_profile_disciple',
+        '12_herb_garden': 'build_connections',
+        13: 'align_with_fellow_disciples',
+        '13_volume_close': 'enter_forbidden_ground_ready',
         14: 'save_nangong',
         15: 'accept_nangong_debt',
         16: 'become_li_disciple',
@@ -285,14 +295,21 @@ function testMainPathIntegrity() {
         22: 'collect_map',
         23: 'cooperate_allies',
         24: 'returned_tiannan_for_bonds',
-        25: 'lingjie_xianzun',
+        '24_old_debt_and_name': 'settle_old_debts_openly',
+        '24_bond_destination': 'choose_nangong_openly',
+        25: 'walk_together_if_fate_allows',
+        '25_final_branch': 'dadao_tongguang',
     }, {
         '16_feiyu_return': 'help_feiyu_again',
         '18_nangong_return': 'acknowledge_nangong_importance',
+        '21_star_sea_foothold': 'claim_hunter_route',
+        '22_xutian_rumor': 'bind_allies_before_entering',
+        '23_star_sea_aftermath': 'honor_alliance_after_palace',
         '23_mocaihuan_return': 'support_mocaihuan_longterm',
+        '23_volume_close': 'follow_old_alliances_home',
     }));
 
-    assert.strictEqual(state.ending.id, 'lingjie_xianzun');
+    assert.strictEqual(state.ending.id, 'dadao_tongguang');
     assert(state.routeScores.orthodox > state.routeScores.demonic);
     assert((state.npcRelations['南宫婉'] || 0) >= 90);
     const endingView = GameCore.getStoryView(state);
@@ -527,6 +544,22 @@ function testProfileCollapseSaveCompatibility() {
     });
 }
 
+function testUnsupportedLegacySaveVersionRejected() {
+    const currentState = GameCore.createInitialState();
+    const supportedSave = {
+        ...currentState,
+        version: GameCore.SAVE_VERSION,
+    };
+    const unsupportedSave = {
+        ...currentState,
+        version: GameCore.MIN_SUPPORTED_SAVE_VERSION - 1,
+        storyProgress: 16,
+    };
+
+    assert.strictEqual(GameCore.isSupportedSaveData(supportedSave), true, '当前版本存档应继续被支持');
+    assert.strictEqual(GameCore.isSupportedSaveData(unsupportedSave), false, '旧版晚期剧情存档应被显式阻断');
+}
+
 function testChoiceEchoStateUpdates() {
     const { state } = getChapterChoiceView(14);
     const result = GameCore.chooseStoryOption(state, 'save_nangong');
@@ -699,7 +732,7 @@ function testTribulationDeathEnding() {
     assert.strictEqual(result.ok, true);
     assert.strictEqual(result.ending, true);
     assert.strictEqual(result.death, true);
-    assert.strictEqual(state.ending.id, 'zouhuorumo');
+    assert.strictEqual(state.ending.id, 'zouhuo_rumo');
     assert.strictEqual(state.storyProgress, -1);
     assert.strictEqual(state.storyCursor.source, 'ending');
     assert.strictEqual(state.storyConsequences.pressureTier, '失控');
@@ -858,6 +891,7 @@ function testChapter22ChoiceFlags() {
     assert.strictEqual(collectState.flags.hasXuTianTu, true);
     assert.strictEqual(collectState.flags.enteredVoidHeavenMapGame, true);
     assert.strictEqual(collectState.flags.heldFragmentMap, true);
+    assert.strictEqual(collectState.storyProgress, '22_xutian_rumor');
 
     const sellState = getChapterChoiceView(22).state;
     result = GameCore.chooseStoryOption(sellState, 'sell_map');
@@ -865,12 +899,42 @@ function testChapter22ChoiceFlags() {
     assert.strictEqual(sellState.flags.soldXuTianTu, true);
     assert.strictEqual(sellState.flags.soldFragmentMapForResources, true);
     assert.strictEqual(sellState.flags.hasXuTianTu, false);
+    assert.strictEqual(sellState.storyProgress, '22_xutian_rumor');
 
     const avoidState = getChapterChoiceView(22).state;
     result = GameCore.chooseStoryOption(avoidState, 'avoid_map');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(avoidState.flags.avoidedXuTian, true);
     assert.strictEqual(avoidState.flags.avoidedVoidHeavenCoreConflict, true);
+    assert.strictEqual(avoidState.storyProgress, '22_xutian_rumor');
+
+    const rumorView = getChapterChoiceView('22_xutian_rumor').view;
+    assert.deepStrictEqual(rumorView.choices.map((item) => item.id), [
+        'hide_map_trace',
+        'trade_on_rumors',
+        'bind_allies_before_entering',
+    ]);
+
+    const hiddenRumorState = getChapterChoiceView('22_xutian_rumor').state;
+    result = GameCore.chooseStoryOption(hiddenRumorState, 'hide_map_trace');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(hiddenRumorState.flags.hidXuTianTrail, true);
+    assert.strictEqual(hiddenRumorState.flags.xutianRumorMode, 'hidden');
+    assert.strictEqual(hiddenRumorState.storyProgress, 23);
+
+    const profitRumorState = getChapterChoiceView('22_xutian_rumor').state;
+    result = GameCore.chooseStoryOption(profitRumorState, 'trade_on_rumors');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(profitRumorState.flags.tradedOnXuTianRumors, true);
+    assert.strictEqual(profitRumorState.flags.starSeaReputationRaisedByRumor, true);
+    assert.strictEqual(profitRumorState.storyProgress, 23);
+
+    const allianceRumorState = getChapterChoiceView('22_xutian_rumor').state;
+    result = GameCore.chooseStoryOption(allianceRumorState, 'bind_allies_before_entering');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(allianceRumorState.flags.tiedXuTianRumorToAlliance, true);
+    assert.strictEqual(allianceRumorState.flags.tiedXuTianRiskToPeople, true);
+    assert.strictEqual(allianceRumorState.storyProgress, 23);
 }
 
 function testInsertedReturnArcFlags() {
@@ -900,6 +964,7 @@ function testInsertedReturnArcFlags() {
     assert.strictEqual(result.ok, true);
     assert.strictEqual(mocaihuanState.flags.madeAmendsToMocaihuan, true);
     assert.strictEqual(mocaihuanState.flags.mendedMoHouseDebt, true);
+    assert.strictEqual(mocaihuanState.storyProgress, '23_volume_close');
 }
 
 function testChapter24ChoicesStayVisibleAndUseDebtHooks() {
@@ -924,8 +989,8 @@ function testChapter24ChoicesStayVisibleAndUseDebtHooks() {
     let result = GameCore.chooseStoryOption(settlementState, 'returned_tiannan_for_settlement');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(settlementState.flags.returnedTiannanForSettlement, true);
-    assert.strictEqual(settlementState.flags.oldDebtsCleared, true);
-    assert.strictEqual(settlementState.flags.returnedToMoHouse, true);
+    assert.strictEqual(settlementState.flags.tiannanReturnMode, 'settlement');
+    assert.strictEqual(settlementState.storyProgress, '24_old_debt_and_name');
 
     const bondView = getChapterChoiceView(24, (state) => {
         state.flags.openlyAcknowledgedNangongImportance = true;
@@ -939,48 +1004,53 @@ function testChapter24ChoicesStayVisibleAndUseDebtHooks() {
         state.npcRelations['墨彩环'] = 18;
     }).view;
     assert(mocaihuanBondView.choices.find((item) => item.id === 'returned_tiannan_for_bonds').text.includes('嘉元城'));
+
+    const oldDebtView = getChapterChoiceView('24_old_debt_and_name', (state) => {
+        state.flags.daoLvPromise = true;
+        state.flags.enteredLihuayuanLineage = true;
+        state.npcRelations['墨彩环'] = 52;
+        state.npcRelations['李化元'] = 34;
+    }).view;
+    assert(oldDebtView.choices.find((item) => item.id === 'settle_old_debts_openly').text.includes('该认的账'));
 }
 
 function testEndingChoiceVisibilityTracksStoryState() {
-    const orthodoxEndingView = getChapterChoiceView(25, (state) => {
+    const sharedDaoView = getChapterChoiceView('25_final_branch', (state) => {
         state.routeScores.orthodox = 8;
-        state.routeScores.secluded = 3;
-        state.flags.returnedTiannanForBonds = true;
+        state.flags.volumeFiveBondTarget = 'nangong';
+        state.flags.volumeFiveAscensionAttitude = 'shared';
         state.npcRelations['南宫婉'] = 120;
-        state.npcRelations['李化元'] = 20;
+        state.flags.acceptedNangongPath = true;
     }).view;
-    const orthodoxEndingIds = orthodoxEndingView.choices.map((item) => item.id);
-    assert(orthodoxEndingIds.includes('lingjie_xianzun'));
+    assert(sharedDaoView.choices.map((item) => item.id).includes('dadao_tongguang'));
 
-    const renjieView = getChapterChoiceView(25, (state) => {
-        state.flags.stoodTheLine = true;
+    const redDustView = getChapterChoiceView('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'nangong';
+        state.flags.volumeFiveAscensionAttitude = 'stay';
+        state.npcRelations['南宫婉'] = 92;
     }).view;
-    assert(renjieView.choices.map((item) => item.id).includes('renjie_zhizun'));
+    assert(redDustView.choices.map((item) => item.id).includes('youxi_hongchen'));
 
-    const secludedEndingView = getChapterChoiceView(25, (state) => {
-        state.routeScores.secluded = 10;
-        state.flags.returnedToSeclusion = true;
+    const delayedView = getChapterChoiceView('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'nangong';
+        state.flags.volumeFiveAscensionAttitude = 'delay';
+        state.npcRelations['南宫婉'] = 88;
     }).view;
-    assert(secludedEndingView.choices.map((item) => item.id).includes('xiaoyao_sanxian'));
+    assert(delayedView.choices.map((item) => item.id).includes('chidu_qingtian'));
 
-    const karmaView = getChapterChoiceView(25, (state) => {
-        state.routeScores.demonic = 10;
-        state.flags.lootedMoHouse = true;
-        state.flags.executedDisabledEnemy = true;
+    const mortalFarewellView = getChapterChoiceView('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'mocaihuan';
+        state.flags.oldDebtsCleared = true;
+        state.npcRelations['墨彩环'] = 72;
     }).view;
-    assert(karmaView.choices.map((item) => item.id).includes('yinguo_chanshen'));
+    assert(mortalFarewellView.choices.map((item) => item.id).includes('xianfan_shutu'));
 
-    const fanxinView = getChapterChoiceView(25, (state) => {
-        state.flags.returnedTiannanForBonds = true;
-        state.npcRelations['南宫婉'] = 36;
+    const lonelyView = getChapterChoiceView('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'distance';
+        state.flags.volumeFiveAscensionAttitude = 'alone';
+        state.npcRelations['南宫婉'] = 84;
     }).view;
-    assert(fanxinView.choices.map((item) => item.id).includes('fanxin_weisi'));
-
-    const coldView = getChapterChoiceView(25, (state) => {
-        state.flags.cutNangongTies = true;
-        state.flags.executedDisabledEnemy = true;
-    }).view;
-    assert(coldView.choices.map((item) => item.id).includes('taishang_wangqing'));
+    assert(lonelyView.choices.map((item) => item.id).includes('zhiying_xiangdao'));
 }
 
 function testChapterEchoesStayConcrete() {
@@ -989,6 +1059,12 @@ function testChapterEchoesStayConcrete() {
 
     const chapter9Texts = getChapterChoiceView(9).view.story.beats.map((item) => item.text);
     assert(chapter9Texts.some((text) => text.includes('旧药杵') || text.includes('别过来')));
+
+    const chapter12Texts = getChapterChoiceView(12).view.story.beats.map((item) => item.text);
+    assert(chapter12Texts.some((text) => text.includes('离开第一卷之后') || text.includes('凡俗少年')));
+
+    const chapter13CloseTexts = getChapterChoiceView('13_volume_close').view.story.beats.map((item) => item.text);
+    assert(chapter13CloseTexts.some((text) => text.includes('第二卷走到这里') || text.includes('血色禁地的门就在前方')));
 
     const chapter14Texts = getChapterChoiceView(14).view.story.beats.map((item) => item.text);
     assert(chapter14Texts.some((text) => text.includes('最先开始猎杀的，从来不是妖兽')));
@@ -1003,17 +1079,37 @@ function testChapterEchoesStayConcrete() {
     }).view.story.beats.map((item) => item.text);
     assert(chapter23Texts.some((text) => text.includes('真正考验信义的')));
 
+    const chapter23AftermathTexts = getChapterChoiceView('23_star_sea_aftermath', (state) => {
+        state.flags.cooperatedAtXuTian = true;
+        state.npcRelations['南宫婉'] = 65;
+    }).view.story.beats.map((item) => item.text);
+    assert(chapter23AftermathTexts.some((text) => text.includes('虚天殿真正留下来的') || text.includes('并肩一回不算难')));
+
+    const chapter23CloseTexts = getChapterChoiceView('23_volume_close', (state) => {
+        state.flags.honoredAllianceAfterXuTian = true;
+        state.flags.madeAmendsToMocaihuan = true;
+    }).view.story.beats.map((item) => item.text);
+    assert(chapter23CloseTexts.some((text) => text.includes('很多卷末真正要收的') || text.includes('第四卷走到这里')));
+
     const chapter24Texts = getChapterChoiceView(24).view.story.beats.map((item) => item.text);
     assert(chapter24Texts.some((text) => text.includes('真正的返乡')));
 
     const chapter25Texts = getChapterChoiceView(25, (state) => {
         state.routeScores.orthodox = 8;
         state.routeScores.secluded = 3;
-        state.flags.returnedTiannanForBonds = true;
+        state.flags.volumeFiveBondTarget = 'nangong';
+        state.flags.volumeFiveOldDebtMode = 'settled';
         state.npcRelations['南宫婉'] = 108;
     }).view.story.beats.map((item) => item.text);
     assert(chapter25Texts.some((text) => text.includes('飞升前夜')));
     assert(chapter25Texts.some((text) => text.includes('你最早不是为了大道修仙')));
+
+    const chapter25FinalTexts = getChapterChoiceView('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'nangong';
+        state.flags.volumeFiveAscensionAttitude = 'shared';
+        state.npcRelations['南宫婉'] = 108;
+    }).view.story.beats.map((item) => item.text);
+    assert(chapter25FinalTexts.some((text) => text.includes('走到这里') || text.includes('真正追上来的')));
 }
 
 function testChapter17BeatsAndFlags() {
@@ -1099,18 +1195,42 @@ function testChapter21StarSeaFlags() {
     assert.strictEqual(result.ok, true);
     assert.strictEqual(hunterState.flags.starSeaStyle, 'hunter');
     assert.strictEqual(hunterState.flags.starSeaHunterStart, true);
+    assert.strictEqual(hunterState.storyProgress, '21_star_sea_foothold');
 
     const traderState = getChapterChoiceView(21).state;
     result = GameCore.chooseStoryOption(traderState, 'run_trade');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(traderState.flags.starSeaStyle, 'merchant');
     assert.strictEqual(traderState.flags.starSeaTraderStart, true);
+    assert.strictEqual(traderState.storyProgress, '21_star_sea_foothold');
 
     const secludedState = getChapterChoiceView(21).state;
     result = GameCore.chooseStoryOption(secludedState, 'seek_cave');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(secludedState.flags.starSeaStyle, 'secluded');
     assert.strictEqual(secludedState.flags.starSeaSecludedStart, true);
+
+    const footholdView = getChapterChoiceView('21_star_sea_foothold').view;
+    assert.deepStrictEqual(footholdView.choices.map((item) => item.id), [
+        'claim_hunter_route',
+        'build_trade_route',
+        'secure_hidden_cave',
+    ]);
+
+    const hunterFootholdState = getChapterChoiceView('21_star_sea_foothold').state;
+    result = GameCore.chooseStoryOption(hunterFootholdState, 'claim_hunter_route');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(hunterFootholdState.storyProgress, 22);
+
+    const traderFootholdState = getChapterChoiceView('21_star_sea_foothold').state;
+    result = GameCore.chooseStoryOption(traderFootholdState, 'build_trade_route');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(traderFootholdState.storyProgress, 22);
+
+    const hiddenFootholdState = getChapterChoiceView('21_star_sea_foothold').state;
+    result = GameCore.chooseStoryOption(hiddenFootholdState, 'secure_hidden_cave');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(hiddenFootholdState.storyProgress, 22);
 }
 
 function testChapter23BranchChoices() {
@@ -1123,7 +1243,7 @@ function testChapter23BranchChoices() {
     assert(soldIds.includes('sell_route_info'));
     let result = GameCore.chooseStoryOption(soldState.state, 'sell_route_info');
     assert.strictEqual(result.ok, true);
-    assert.strictEqual(soldState.state.storyProgress, '23_mocaihuan_return');
+    assert.strictEqual(soldState.state.storyProgress, '23_star_sea_aftermath');
     assert.strictEqual(soldState.state.flags.starSeaWaitedForBestMoment, true);
 
     const avoidedState = getChapterChoiceView(23, (state) => {
@@ -1136,7 +1256,7 @@ function testChapter23BranchChoices() {
     assert.strictEqual(result.ok, true);
     assert.strictEqual(avoidedState.state.flags.rescuedFromXuTianEdge, true);
     assert.strictEqual(avoidedState.state.flags.starSeaHeldAllianceTogether, true);
-    assert.strictEqual(avoidedState.state.storyProgress, '23_mocaihuan_return');
+    assert.strictEqual(avoidedState.state.storyProgress, '23_star_sea_aftermath');
 
     const defaultState = getChapterChoiceView(23, (state) => {
         state.flags.hasXuTianTu = true;
@@ -1145,16 +1265,41 @@ function testChapter23BranchChoices() {
     result = GameCore.chooseStoryOption(defaultState.state, 'grab_treasure');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(defaultState.state.flags.starSeaSeizedTreasureFirst, true);
+    assert.strictEqual(defaultState.state.storyProgress, '23_star_sea_aftermath');
+
+    const aftermathView = getChapterChoiceView('23_star_sea_aftermath').view;
+    assert.deepStrictEqual(aftermathView.choices.map((item) => item.id), [
+        'honor_alliance_after_palace',
+        'settle_reputation_with_profit',
+        'cut_tracks_and_leave',
+    ]);
+
+    const allianceAftermathState = getChapterChoiceView('23_star_sea_aftermath').state;
+    result = GameCore.chooseStoryOption(allianceAftermathState, 'honor_alliance_after_palace');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(allianceAftermathState.flags.honoredAllianceAfterXuTian, true);
+    assert.strictEqual(allianceAftermathState.flags.nangongBondStageTwoConfirmed, true);
+    assert.strictEqual(allianceAftermathState.storyProgress, '23_mocaihuan_return');
 
     const chainedState = getChapterChoiceView(23, (state) => {
         state.flags.hasXuTianTu = true;
     }).state;
     result = GameCore.chooseStoryOption(chainedState, 'cooperate_allies');
     assert.strictEqual(result.ok, true);
+    assert.strictEqual(chainedState.storyProgress, '23_star_sea_aftermath');
+    let insertedView = playToChoices(chainedState);
+    assert.strictEqual(insertedView.chapter.id, '23_star_sea_aftermath');
+    result = GameCore.chooseStoryOption(chainedState, 'honor_alliance_after_palace');
+    assert.strictEqual(result.ok, true);
     assert.strictEqual(chainedState.storyProgress, '23_mocaihuan_return');
-    const insertedView = playToChoices(chainedState);
+    insertedView = playToChoices(chainedState);
     assert.strictEqual(insertedView.chapter.id, '23_mocaihuan_return');
     result = GameCore.chooseStoryOption(chainedState, 'admit_old_wrong');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(chainedState.storyProgress, '23_volume_close');
+    insertedView = playToChoices(chainedState);
+    assert.strictEqual(insertedView.chapter.id, '23_volume_close');
+    result = GameCore.chooseStoryOption(chainedState, 'follow_old_alliances_home');
     assert.strictEqual(result.ok, true);
     assert.strictEqual(chainedState.storyProgress, 24);
 }
@@ -1285,8 +1430,8 @@ function testEndingEchoTextsStayReflective() {
     const chapterView = getChapterChoiceView(25, (state) => {
         state.routeScores.orthodox = 8;
         state.routeScores.secluded = 3;
-        state.flags.acceptedNangongDebt = true;
-        state.flags.returnedTiannanForBonds = true;
+        state.flags.volumeFiveOldDebtMode = 'settled';
+        state.flags.volumeFiveBondTarget = 'nangong';
         state.npcRelations['南宫婉'] = 108;
     }).view;
     const beatTexts = chapterView.story.beats.map((item) => item.text);
@@ -1294,27 +1439,24 @@ function testEndingEchoTextsStayReflective() {
     assert(beatTexts.some((text) => text.includes('你最早不是为了大道修仙')));
     assert(beatTexts.some((text) => text.includes('正道、魔道、苟修')));
 
-    const orthodoxState = getChapterChoiceView(25, (state) => {
+    const orthodoxState = getChapterChoiceView('25_final_branch', (state) => {
         state.routeScores.orthodox = 8;
-        state.routeScores.secluded = 4;
-        state.flags.acceptedNangongDebt = true;
-        state.flags.returnedTiannanForBonds = true;
+        state.flags.volumeFiveBondTarget = 'nangong';
+        state.flags.volumeFiveAscensionAttitude = 'shared';
         state.npcRelations['南宫婉'] = 108;
-        state.npcRelations['李化元'] = 20;
     }).state;
-    let result = GameCore.chooseStoryOption(orthodoxState, 'lingjie_xianzun');
+    let result = GameCore.chooseStoryOption(orthodoxState, 'dadao_tongguang');
     assert.strictEqual(result.ok, true);
-    assert(orthodoxState.ending.description.includes('并非因为你比谁更干净'));
+    assert(orthodoxState.ending.description.includes('并肩') || orthodoxState.ending.description.includes('共破天劫'));
 
-    const causalState = getChapterChoiceView(25, (state) => {
-        state.routeScores.demonic = 12;
-        state.flags.cutEmotion = true;
-        state.flags.executedDisabledEnemy = true;
-        state.flags.lootedMoHouse = true;
+    const mortalState = getChapterChoiceView('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'mocaihuan';
+        state.flags.oldDebtsCleared = true;
+        state.npcRelations['墨彩环'] = 70;
     }).state;
-    result = GameCore.chooseStoryOption(causalState, 'yinguo_chanshen');
+    result = GameCore.chooseStoryOption(mortalState, 'xianfan_shutu');
     assert.strictEqual(result.ok, true);
-    assert(causalState.ending.description.includes('旧因旧果'));
+    assert(mortalState.ending.description.includes('太晚') || mortalState.ending.description.includes('凡心'));
 }
 
 function testStringChapterLogsNoNaN() {
@@ -1438,8 +1580,14 @@ function testBranchEchoes() {
         9: 'repair_quhun',
         10: 'watch_market',
         11: 'join_yellow_maple',
-        12: 'build_connections',
-        13: 'go_team',
+        12: 'send_word_back',
+        '12_mortal_debt': 'return_mortal_debt',
+        '12_tainan_market': 'take_black_route',
+        '12_token_kill': 'trade_information_for_entry',
+        '12_enter_yellow_maple': 'enter_as_low_profile_disciple',
+        '12_herb_garden': 'build_connections',
+        13: 'align_with_fellow_disciples',
+        '13_volume_close': 'enter_forbidden_ground_ready',
         14: 'save_nangong',
         15: 'accept_nangong_debt',
         16: 'become_li_disciple',
@@ -1451,7 +1599,10 @@ function testBranchEchoes() {
         22: 'collect_map',
         23: 'cooperate_allies',
         24: 'returned_tiannan_for_bonds',
-        25: 'lingjie_xianzun',
+        '24_old_debt_and_name': 'settle_old_debts_openly',
+        '24_bond_destination': 'choose_nangong_openly',
+        25: 'walk_together_if_fate_allows',
+        '25_final_branch': 'dadao_tongguang',
     }, {
         '16_feiyu_return': 'help_feiyu_again',
         '18_nangong_return': 'acknowledge_nangong_importance',
@@ -1459,9 +1610,9 @@ function testBranchEchoes() {
     }));
     const orthodoxEcho = GameCore.getEchoes(orthodoxState).map((item) => item.title);
     assert(orthodoxEcho.includes('有人不能再拖'));
-    assert(orthodoxEcho.includes('灵界仙尊'));
+    assert(orthodoxEcho.includes('大道同光'));
     assert(!orthodoxEcho.includes('即时结果'));
-    assert(orthodoxState.ending.recapLines.some((line) => line.includes('有人不能再拖') || line.includes('灵界仙尊')));
+    assert(orthodoxState.ending.recapLines.some((line) => line.includes('有人不能再拖') || line.includes('大道同光')));
 
     const demonicState = runMainPath(withInsertedChoices({
         0: 'set_out_now',
@@ -1476,8 +1627,14 @@ function testBranchEchoes() {
         9: 'take_quhun',
         10: 'watch_market',
         11: 'sell_token',
-        12: 'push_growth',
-        13: 'go_solo',
+        12: 'cut_old_name',
+        '12_mortal_debt': 'keep_debt_distant',
+        '12_tainan_market': 'observe_without_buying',
+        '12_token_kill': 'kill_for_token_path',
+        '12_enter_yellow_maple': 'enter_with_tradeoff',
+        '12_herb_garden': 'push_growth',
+        13: 'stock_foundation_supplies',
+        '13_volume_close': 'enter_forbidden_ground_from_shadows',
         14: 'kill_for_gain',
         15: 'cut_nangong_ties',
         16: 'learn_in_secret',
@@ -1489,22 +1646,28 @@ function testBranchEchoes() {
         22: 'sell_map',
         23: 'grab_treasure',
         24: 'returned_tiannan_for_settlement',
-        25: 'renjie_zhizun',
+        '24_old_debt_and_name': 'cut_old_name_after_minimum_duty',
+        '24_bond_destination': 'keep_everyone_at_distance',
+        25: 'say_nothing_and_walk_alone',
     }, {
         '16_feiyu_return': 'distance_from_feiyu',
         '18_nangong_return': 'avoid_nangong_again',
+        '21_star_sea_foothold': 'build_trade_route',
+        '22_xutian_rumor': 'trade_on_rumors',
+        '23_star_sea_aftermath': 'settle_reputation_with_profit',
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
+        '23_volume_close': 'return_with_reputation_pressure',
     }));
     const demonicEcho = GameCore.getEchoes(demonicState).map((item) => item.title);
-    assert(demonicEcho.includes('高效成瘾'));
-    assert(demonicEcho.includes('记忆未断'));
+    assert(demonicEcho.includes('价格先看人心'));
+    assert(demonicEcho.includes('旧债压成底色'));
     assert(!demonicEcho.includes('即时结果'));
     assert(!demonicEcho.includes('长期提示'));
     const demonicEndingView = GameCore.getStoryView(demonicState);
     assert.strictEqual(demonicEndingView.source, 'ending');
-    assert.strictEqual(demonicEndingView.ending.id, 'zouhuorumo');
+    assert.strictEqual(demonicEndingView.ending.id, 'zouhuo_rumo');
     assert.strictEqual(demonicState.storyConsequences.pressureTier, '失控');
-    assert(demonicEndingView.ending.recapLines.some((line) => line.includes('高效成瘾') || line.includes('记忆未断')));
+    assert(demonicEndingView.ending.recapLines.some((line) => line.includes('价格先看人心') || line.includes('旧债压成底色')));
 
     const secludedState = runMainPath(withInsertedChoices({
         0: 'pack_and_leave',
@@ -1519,8 +1682,14 @@ function testBranchEchoes() {
         9: 'release_quhun',
         10: 'buy_rumor',
         11: 'shop_other_sects',
-        12: 'farm_quietly',
-        13: 'prepare_heavy',
+        12: 'leave_without_return',
+        '12_mortal_debt': 'leave_resources_only',
+        '12_tainan_market': 'buy_market_rule',
+        '12_token_kill': 'trade_information_for_entry',
+        '12_enter_yellow_maple': 'enter_by_detour',
+        '12_herb_garden': 'farm_quietly',
+        13: 'keep_low_profile_before_trial',
+        '13_volume_close': 'enter_forbidden_ground_with_debt',
         14: 'watch_and_wait',
         15: 'suppress_nangong_feelings',
         16: 'keep_free',
@@ -1532,20 +1701,27 @@ function testBranchEchoes() {
         22: 'avoid_map',
         23: 'watch_last',
         24: 'returned_tiannan_but_remained_hidden',
-        25: 'xiaoyao_sanxian',
+        '24_old_debt_and_name': 'cut_old_name_after_minimum_duty',
+        '24_bond_destination': 'keep_everyone_at_distance',
+        25: 'say_nothing_and_walk_alone',
+        '25_final_branch': 'zhiying_xiangdao',
     }, {
         '16_feiyu_return': 'distance_from_feiyu',
         '18_nangong_return': 'avoid_nangong_again',
+        '21_star_sea_foothold': 'secure_hidden_cave',
+        '22_xutian_rumor': 'hide_map_trace',
+        '23_star_sea_aftermath': 'cut_tracks_and_leave',
         '23_mocaihuan_return': 'confirm_mocaihuan_safe',
+        '23_volume_close': 'return_after_hiding_tracks',
     }));
     const secludedEcho = GameCore.getEchoes(secludedState).map((item) => item.title);
-    assert(secludedEcho.includes('逍遥散仙'));
+    assert(secludedEcho.includes('只影向道'));
     assert(secludedEcho.includes('来过却不住回去'));
     assert(!secludedEcho.includes('即时结果'));
     const secludedEndingView = GameCore.getStoryView(secludedState);
     assert.strictEqual(secludedEndingView.source, 'ending');
-    assert.strictEqual(secludedEndingView.ending.id, 'xiaoyao_sanxian');
-    assert(secludedEndingView.ending.recapLines.some((line) => line.includes('逍遥散仙') || line.includes('来过却不住回去')));
+    assert.strictEqual(secludedEndingView.ending.id, 'zhiying_xiangdao');
+    assert(secludedEndingView.ending.recapLines.some((line) => line.includes('只影向道') || line.includes('来过却不住回去')));
 }
 
 function testExplicitBranchImpactCoverage() {
@@ -1565,7 +1741,13 @@ function testExplicitBranchImpactCoverage() {
         { chapterId: 10 },
         { chapterId: 11 },
         { chapterId: 12 },
+        { chapterId: '12_mortal_debt' },
+        { chapterId: '12_tainan_market' },
+        { chapterId: '12_token_kill' },
+        { chapterId: '12_enter_yellow_maple' },
+        { chapterId: '12_herb_garden' },
         { chapterId: 13 },
+        { chapterId: '13_volume_close' },
         { chapterId: 14 },
         { chapterId: 15 },
         { chapterId: 16 },
@@ -1578,12 +1760,18 @@ function testExplicitBranchImpactCoverage() {
         { chapterId: 19, configure(state) { state.flags.warChoice = 'demonic'; } },
         { chapterId: 20 },
         { chapterId: 21 },
+        { chapterId: '21_star_sea_foothold' },
         { chapterId: 22 },
+        { chapterId: '22_xutian_rumor' },
         { chapterId: 23 },
         { chapterId: 23, configure(state) { state.flags.soldXuTianTu = true; } },
         { chapterId: 23, configure(state) { state.flags.avoidedXuTian = true; } },
+        { chapterId: '23_star_sea_aftermath' },
         { chapterId: '23_mocaihuan_return' },
+        { chapterId: '23_volume_close' },
         { chapterId: 24 },
+        { chapterId: '24_old_debt_and_name' },
+        { chapterId: '24_bond_destination' },
         {
             chapterId: 25,
             configure(state) {
@@ -1628,6 +1816,47 @@ function testExplicitBranchImpactCoverage() {
                 state.npcRelations['墨彩环'] = 30;
             },
         },
+        {
+            chapterId: '25_final_branch',
+            configure(state) {
+                state.routeScores = { orthodox: 8 };
+                state.flags.volumeFiveBondTarget = 'nangong';
+                state.flags.volumeFiveAscensionAttitude = 'shared';
+                state.npcRelations['南宫婉'] = 108;
+            },
+        },
+        {
+            chapterId: '25_final_branch',
+            configure(state) {
+                state.flags.volumeFiveBondTarget = 'distance';
+                state.flags.volumeFiveAscensionAttitude = 'alone';
+                state.npcRelations['南宫婉'] = 84;
+            },
+        },
+        {
+            chapterId: '25_final_branch',
+            configure(state) {
+                state.flags.volumeFiveBondTarget = 'mocaihuan';
+                state.flags.oldDebtsCleared = true;
+                state.npcRelations['墨彩环'] = 72;
+            },
+        },
+        {
+            chapterId: '25_final_branch',
+            configure(state) {
+                state.flags.volumeFiveBondTarget = 'nangong';
+                state.flags.volumeFiveAscensionAttitude = 'delay';
+                state.npcRelations['南宫婉'] = 88;
+            },
+        },
+        {
+            chapterId: '25_final_branch',
+            configure(state) {
+                state.flags.volumeFiveBondTarget = 'nangong';
+                state.flags.volumeFiveAscensionAttitude = 'stay';
+                state.npcRelations['南宫婉'] = 92;
+            },
+        },
     ];
 
     scenarios.forEach(({ chapterId, configure }) => {
@@ -1649,15 +1878,21 @@ function testExplicitBranchImpactCoverage() {
         '19:rescue_rearguard',
         '19:open_mine_gate',
         '19:harvest_chaos',
+        '21_star_sea_foothold:build_trade_route',
+        '22_xutian_rumor:trade_on_rumors',
         '23:pull_ally_out',
         '23:sell_route_info',
         '23:slip_past_palace',
-        '25:lingjie_xianzun',
-        '25:renjie_zhizun',
-        '25:xiaoyao_sanxian',
-        '25:taishang_wangqing',
-        '25:yinguo_chanshen',
-        '25:fanxin_weisi',
+        '23_star_sea_aftermath:settle_reputation_with_profit',
+        '23_volume_close:return_with_reputation_pressure',
+        '24_old_debt_and_name:settle_old_debts_openly',
+        '24_bond_destination:choose_nangong_openly',
+        '25:walk_together_if_fate_allows',
+        '25_final_branch:dadao_tongguang',
+        '25_final_branch:zhiying_xiangdao',
+        '25_final_branch:xianfan_shutu',
+        '25_final_branch:chidu_qingtian',
+        '25_final_branch:youxi_hongchen',
     ].forEach((key) => {
         assert(seenKeys.has(key), `动态分支未被测试覆盖：${key}`);
     });
@@ -1732,6 +1967,370 @@ function testVolumeOneLegacyChapterLabelsUseRemappedVolumeStructure() {
     const chapter11View = getChapterChoiceView(11).view;
     assert.strictEqual(chapter11View.chapter.chapterLabel, '第一卷·第 8 章');
     assert.strictEqual(chapter11View.chapter.volumeChapterTitle, '升仙路口');
+}
+
+function testVolumeTwoMetadataScaffold() {
+    assert(Array.isArray(StoryData.VOLUME_TWO_CHAPTERS), '应导出第二卷 8 章结构');
+    assert.strictEqual(StoryData.VOLUME_TWO_CHAPTERS.length, 8, '第二卷应固定为 8 章');
+
+    const map = StoryData.VOLUME_TWO_LEGACY_CHAPTER_MAP;
+    assert(map, '应导出第二卷旧素材映射');
+    const keys = Object.keys(map).map((value) => Number(value)).sort((left, right) => left - right);
+    assert.deepStrictEqual(keys, [10, 11, 12, 13, 14, 15, 16], '第二卷旧素材映射应覆盖当前 10~16 章边界');
+
+    const actions = new Set(['reframe_runtime_material', 'forward_volume_boundary']);
+    Object.entries(map).forEach(([legacyId, entry]) => {
+        assert(entry.targetChapterId, `第二卷旧素材 ${legacyId} 缺少目标章`);
+        assert(actions.has(entry.action), `第二卷旧素材 ${legacyId} action 非法`);
+    });
+
+    const exitChapter = StoryData.VOLUME_TWO_CHAPTERS.find((chapter) => chapter.id === 'volume_two_chapter_8');
+    assert(exitChapter, '第二卷应存在卷末收束章节');
+    assert.strictEqual(exitChapter.volumeRole, 'exit');
+    assert.strictEqual(exitChapter.nextReads.length, 4, '第二卷卷末读取点应固定为 4 条');
+}
+
+function testVolumeTwoChapterLabelsUseRemappedVolumeStructure() {
+    const chapter12View = getChapterChoiceView(12).view;
+    assert.strictEqual(chapter12View.chapter.chapterLabel, '第二卷·第 1 章');
+    assert.strictEqual(chapter12View.chapter.volumeChapterTitle, '离开旧地');
+
+    const chapterDebtView = getChapterChoiceView('12_mortal_debt').view;
+    assert.strictEqual(chapterDebtView.chapter.chapterLabel, '第二卷·第 2 章');
+    assert.strictEqual(chapterDebtView.chapter.volumeChapterTitle, '凡俗旧债未清');
+
+    const chapter13View = getChapterChoiceView(13, (state) => {
+        GameCore.setRealmScore(state, 4);
+    }).view;
+    assert.strictEqual(chapter13View.chapter.chapterLabel, '第二卷·第 7 章');
+    assert.strictEqual(chapter13View.chapter.volumeChapterTitle, '宗门人际与禁地前夜');
+
+    const chapterCloseView = getChapterChoiceView('13_volume_close').view;
+    assert.strictEqual(chapterCloseView.chapter.chapterLabel, '第二卷·第 8 章');
+    assert.strictEqual(chapterCloseView.chapter.volumeChapterTitle, '卷末收束');
+}
+
+function testVolumeTwoExitStopsBeforeForbiddenGroundBody() {
+    const { state, view } = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'keep_low_profile',
+        2: 'become_disciple',
+        3: 'save_li',
+        4: 'collect_evidence',
+        5: 'keep_bottle',
+        6: 'bait_and_counter',
+        7: 'keep_letter',
+        8: 'protect_mo_house',
+        9: 'repair_quhun',
+        10: 'watch_market',
+        11: 'join_yellow_maple',
+        12: 'send_word_back',
+        '12_mortal_debt': 'return_mortal_debt',
+        '12_tainan_market': 'take_black_route',
+        '12_token_kill': 'trade_information_for_entry',
+        '12_enter_yellow_maple': 'enter_as_low_profile_disciple',
+        '12_herb_garden': 'build_connections',
+        13: 'align_with_fellow_disciples',
+    }), '13_volume_close');
+
+    assert.strictEqual(view.chapter.chapterLabel, '第二卷·第 8 章');
+    assert.strictEqual(view.chapter.volumeChapterTitle, '卷末收束');
+    const selectedChoice = view.choices.find((choice) => choice.id === 'enter_forbidden_ground_ready');
+    const result = GameCore.chooseStoryOption(state, selectedChoice.id);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(state.storyProgress, 14, '第二卷卷末应把主线送到第 14 章第三卷入口');
+    const nextView = GameCore.getStoryView(state);
+    assert(nextView, '卷末推进后应立即出现下一章剧情');
+    assert.strictEqual(nextView.chapter.id, 14);
+    assert.notStrictEqual(nextView.chapter.chapterLabel, '第二卷·第 8 章', '卷末后不应继续停留在第二卷');
+}
+
+function testVolumeThreeMetadataScaffold() {
+    assert(Array.isArray(StoryData.VOLUME_THREE_CHAPTERS), '应导出第三卷 8 章结构');
+    assert.strictEqual(StoryData.VOLUME_THREE_CHAPTERS.length, 8, '第三卷应固定为 8 章');
+
+    const expectedLegacyIds = [14, 15, 16, 17, 18, '18_nangong_return', 19, 20];
+    const actualLegacyIds = StoryData.VOLUME_THREE_CHAPTERS.flatMap((chapter) => [...(chapter.legacyChapterIds || [])]);
+    assert.deepStrictEqual(actualLegacyIds, expectedLegacyIds, '第三卷旧素材映射应覆盖当前 14~20 主链并纳入 18_nangong_return');
+
+    const exitChapter = StoryData.VOLUME_THREE_CHAPTERS.find((chapter) => chapter.id === 'volume_three_chapter_8');
+    assert(exitChapter, '第三卷应存在卷末出口章节');
+    assert.strictEqual(exitChapter.volumeRole, 'exit');
+    assert.strictEqual(exitChapter.nextReads.length, 4, '第三卷卷末读取点应固定为 4 条');
+}
+
+function testVolumeThreeChapterLabelsUseRemappedVolumeStructure() {
+    const chapter14View = getChapterChoiceView(14).view;
+    assert.strictEqual(chapter14View.chapter.chapterLabel, '第三卷·第 1 章');
+    assert.strictEqual(chapter14View.chapter.volumeChapterTitle, '血色禁地');
+
+    const chapter18View = getChapterChoiceView(18, (state) => {
+        GameCore.setRealmScore(state, 6);
+    }).view;
+    assert.strictEqual(chapter18View.chapter.chapterLabel, '第三卷·第 5 章');
+    assert.strictEqual(chapter18View.chapter.volumeChapterTitle, '魔道争锋');
+
+    const nangongFalloutView = getChapterChoiceView('18_nangong_return').view;
+    assert.strictEqual(nangongFalloutView.chapter.chapterLabel, '第三卷·第 6 章');
+    assert.strictEqual(nangongFalloutView.chapter.volumeChapterTitle, '并肩之后');
+
+    const feiyuInsertView = getChapterChoiceView('16_feiyu_return').view;
+    assert.strictEqual(feiyuInsertView.chapter.chapterLabel, '插章·旧友重逢');
+    assert.strictEqual(feiyuInsertView.chapter.volumeChapterTitle, null);
+
+    const chapter20View = getChapterChoiceView(20, (state) => {
+        GameCore.setRealmScore(state, 7);
+    }).view;
+    assert.strictEqual(chapter20View.chapter.chapterLabel, '第三卷·第 8 章');
+    assert.strictEqual(chapter20View.chapter.volumeChapterTitle, '再别天南');
+}
+
+function testVolumeThreeExitMovesToLaterAssets() {
+    const { state, view } = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'keep_low_profile',
+        2: 'become_disciple',
+        3: 'save_li',
+        4: 'collect_evidence',
+        5: 'keep_bottle',
+        6: 'bait_and_counter',
+        7: 'keep_letter',
+        8: 'protect_mo_house',
+        9: 'repair_quhun',
+        10: 'watch_market',
+        11: 'join_yellow_maple',
+        12: 'send_word_back',
+        '12_mortal_debt': 'return_mortal_debt',
+        '12_tainan_market': 'take_black_route',
+        '12_token_kill': 'trade_information_for_entry',
+        '12_enter_yellow_maple': 'enter_as_low_profile_disciple',
+        '12_herb_garden': 'build_connections',
+        13: 'align_with_fellow_disciples',
+        '13_volume_close': 'enter_forbidden_ground_ready',
+        14: 'save_nangong',
+        15: 'accept_nangong_debt',
+        16: 'become_li_disciple',
+        '16_feiyu_return': 'help_feiyu_again',
+        17: 'show_strength_banquet',
+        18: 'fight_for_sect',
+        '18_nangong_return': 'acknowledge_nangong_importance',
+        19: 'hold_the_line',
+    }), 20);
+
+    assert.strictEqual(view.chapter.chapterLabel, '第三卷·第 8 章');
+    assert.strictEqual(view.chapter.volumeChapterTitle, '再别天南');
+    const selectedChoice = view.choices.find((choice) => choice.id === 'go_star_sea');
+    const result = GameCore.chooseStoryOption(state, selectedChoice.id);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(state.storyProgress, 21, '第三卷卷末应把主线送到第 21 章后续卷入口');
+    const nextView = GameCore.getStoryView(state);
+    assert(nextView, '卷末推进后应立即出现后续章节剧情');
+    assert.strictEqual(nextView.chapter.id, 21);
+    assert.notStrictEqual(nextView.chapter.chapterLabel, '第三卷·第 8 章', '卷末后不应继续停留在第三卷');
+}
+
+function testVolumeFourMetadataScaffold() {
+    assert(Array.isArray(StoryData.VOLUME_FOUR_CHAPTERS), '应导出第四卷 8 章结构');
+    assert.strictEqual(StoryData.VOLUME_FOUR_CHAPTERS.length, 8, '第四卷应固定为 8 章');
+
+    const expectedLegacyIds = [21, '21_star_sea_foothold', 22, '22_xutian_rumor', 23, '23_star_sea_aftermath', '23_mocaihuan_return', '23_volume_close'];
+    const actualLegacyIds = StoryData.VOLUME_FOUR_CHAPTERS.flatMap((chapter) => [...(chapter.legacyChapterIds || [])]);
+    assert.deepStrictEqual(actualLegacyIds, expectedLegacyIds, '第四卷卷内 8 章应覆盖当前星海正文与新增过桥章节');
+
+    const map = StoryData.VOLUME_FOUR_LEGACY_CHAPTER_MAP;
+    assert(map, '应导出第四卷旧素材映射');
+    assert.deepStrictEqual(
+        Object.keys(map).sort(),
+        ['21', '22', '23', '23_mocaihuan_return', '24', '25'].sort(),
+        '第四卷旧素材映射应覆盖 21、22、23、23_mocaihuan_return 以及 24/25 的跨卷边界',
+    );
+
+    const actions = new Set(['keep_main', 'promote_to_main', 'forward_volume_boundary']);
+    Object.entries(map).forEach(([legacyId, entry]) => {
+        assert(entry.targetChapterId, `第四卷旧素材 ${legacyId} 缺少目标章`);
+        assert(actions.has(entry.action), `第四卷旧素材 ${legacyId} action 非法`);
+    });
+
+    const exitChapter = StoryData.VOLUME_FOUR_CHAPTERS.find((chapter) => chapter.id === 'volume_four_chapter_8');
+    assert(exitChapter, '第四卷应存在卷末出口章节');
+    assert.strictEqual(exitChapter.volumeRole, 'exit');
+    assert.strictEqual(exitChapter.nextReads.length, 4, '第四卷卷末读取点应固定为 4 条');
+}
+
+function testVolumeFourChapterLabelsUseRemappedVolumeStructure() {
+    const chapter21View = getChapterChoiceView(21).view;
+    assert.strictEqual(chapter21View.chapter.chapterLabel, '第四卷·第 1 章');
+    assert.strictEqual(chapter21View.chapter.volumeChapterTitle, '初入星海');
+
+    const footholdView = getChapterChoiceView('21_star_sea_foothold').view;
+    assert.strictEqual(footholdView.chapter.chapterLabel, '第四卷·第 2 章');
+    assert.strictEqual(footholdView.chapter.volumeChapterTitle, '海外立足');
+
+    const chapter22View = getChapterChoiceView(22).view;
+    assert.strictEqual(chapter22View.chapter.chapterLabel, '第四卷·第 3 章');
+    assert.strictEqual(chapter22View.chapter.volumeChapterTitle, '虚天残图');
+
+    const rumorView = getChapterChoiceView('22_xutian_rumor').view;
+    assert.strictEqual(rumorView.chapter.chapterLabel, '第四卷·第 4 章');
+    assert.strictEqual(rumorView.chapter.volumeChapterTitle, '风声四起');
+
+    const chapter23View = getChapterChoiceView(23).view;
+    assert.strictEqual(chapter23View.chapter.chapterLabel, '第四卷·第 5 章');
+    assert.strictEqual(chapter23View.chapter.volumeChapterTitle, '虚天殿前后');
+
+    const aftermathView = getChapterChoiceView('23_star_sea_aftermath').view;
+    assert.strictEqual(aftermathView.chapter.chapterLabel, '第四卷·第 6 章');
+    assert.strictEqual(aftermathView.chapter.volumeChapterTitle, '并肩余波');
+
+    const mocaihuanView = getChapterChoiceView('23_mocaihuan_return').view;
+    assert.strictEqual(mocaihuanView.chapter.chapterLabel, '第四卷·第 7 章');
+    assert.strictEqual(mocaihuanView.chapter.volumeChapterTitle, '来信与重访');
+
+    const closeView = getChapterChoiceView('23_volume_close').view;
+    assert.strictEqual(closeView.chapter.chapterLabel, '第四卷·第 8 章');
+    assert.strictEqual(closeView.chapter.volumeChapterTitle, '星海余波');
+}
+
+function testVolumeFiveMetadataScaffold() {
+    assert(Array.isArray(StoryData.VOLUME_FIVE_CHAPTERS), '应导出第五卷 5 章结构');
+    assert.strictEqual(StoryData.VOLUME_FIVE_CHAPTERS.length, 5, '第五卷应固定为 5 章');
+
+    const expectedLegacyIds = [24, '24_old_debt_and_name', '24_bond_destination', 25, '25_final_branch'];
+    const actualLegacyIds = StoryData.VOLUME_FIVE_CHAPTERS.flatMap((chapter) => [...(chapter.legacyChapterIds || [])]);
+    assert.deepStrictEqual(actualLegacyIds, expectedLegacyIds, '第五卷 5 章应覆盖当前 24 / 25 与新增过桥章节');
+
+    const map = StoryData.VOLUME_FIVE_LEGACY_CHAPTER_MAP;
+    assert(map, '应导出第五卷旧素材映射');
+    assert.deepStrictEqual(
+        Object.keys(map).sort(),
+        ['24', '24_old_debt_and_name', '24_bond_destination', '25', '25_final_branch'].sort(),
+        '第五卷旧素材映射应覆盖 24、24_old_debt_and_name、24_bond_destination、25 与 25_final_branch',
+    );
+
+    const actions = new Set(['keep_main', 'expand_main', 'reframe_runtime_material']);
+    Object.entries(map).forEach(([legacyId, entry]) => {
+        assert(entry.targetChapterId, `第五卷旧素材 ${legacyId} 缺少目标章`);
+        assert(actions.has(entry.action), `第五卷旧素材 ${legacyId} action 非法`);
+    });
+}
+
+function testVolumeFiveChapterLabelsUseRemappedVolumeStructure() {
+    const chapter24View = getChapterChoiceView(24).view;
+    assert.strictEqual(chapter24View.chapter.chapterLabel, '第五卷·第 1 章');
+    assert.strictEqual(chapter24View.chapter.volumeChapterTitle, '重返天南');
+
+    const debtView = getChapterChoiceView('24_old_debt_and_name').view;
+    assert.strictEqual(debtView.chapter.chapterLabel, '第五卷·第 2 章');
+    assert.strictEqual(debtView.chapter.volumeChapterTitle, '旧账与旧名');
+
+    const bondView = getChapterChoiceView('24_bond_destination').view;
+    assert.strictEqual(bondView.chapter.chapterLabel, '第五卷·第 3 章');
+    assert.strictEqual(bondView.chapter.volumeChapterTitle, '旧情去处');
+
+    const chapter25View = getChapterChoiceView(25).view;
+    assert.strictEqual(chapter25View.chapter.chapterLabel, '第五卷·第 4 章');
+    assert.strictEqual(chapter25View.chapter.volumeChapterTitle, '飞升前夜');
+
+    const finalView = getChapterChoiceView('25_final_branch').view;
+    assert.strictEqual(finalView.chapter.chapterLabel, '第五卷·第 5 章');
+    assert.strictEqual(finalView.chapter.volumeChapterTitle, '终局分流');
+}
+
+function testVolumeFourEntryAndExitUseRemappedStructure() {
+    const { state: entryState, view: entryView } = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'keep_low_profile',
+        2: 'become_disciple',
+        3: 'save_li',
+        4: 'collect_evidence',
+        5: 'keep_bottle',
+        6: 'bait_and_counter',
+        7: 'keep_letter',
+        8: 'protect_mo_house',
+        9: 'repair_quhun',
+        10: 'watch_market',
+        11: 'join_yellow_maple',
+        12: 'send_word_back',
+        '12_mortal_debt': 'return_mortal_debt',
+        '12_tainan_market': 'take_black_route',
+        '12_token_kill': 'trade_information_for_entry',
+        '12_enter_yellow_maple': 'enter_as_low_profile_disciple',
+        '12_herb_garden': 'build_connections',
+        13: 'align_with_fellow_disciples',
+        '13_volume_close': 'enter_forbidden_ground_ready',
+        14: 'save_nangong',
+        15: 'accept_nangong_debt',
+        16: 'become_li_disciple',
+        '16_feiyu_return': 'help_feiyu_again',
+        17: 'show_strength_banquet',
+        18: 'fight_for_sect',
+        '18_nangong_return': 'acknowledge_nangong_importance',
+        19: 'hold_the_line',
+        20: 'go_star_sea',
+    }), 21);
+
+    assert.strictEqual(entryView.chapter.chapterLabel, '第四卷·第 1 章');
+    assert.strictEqual(entryView.chapter.volumeChapterTitle, '初入星海');
+    let result = GameCore.chooseStoryOption(entryState, 'hunt_monsters');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(entryState.storyProgress, '21_star_sea_foothold');
+    let nextView = GameCore.getStoryView(entryState);
+    assert(nextView, '第四卷入口推进后应立即进入卷内第二章');
+    assert.strictEqual(nextView.chapter.id, '21_star_sea_foothold');
+    assert.strictEqual(nextView.chapter.chapterLabel, '第四卷·第 2 章');
+
+    const { state: exitState, view: exitView } = runUntilChapter(withInsertedChoices({
+        0: 'set_out_now',
+        1: 'keep_low_profile',
+        2: 'become_disciple',
+        3: 'save_li',
+        4: 'collect_evidence',
+        5: 'keep_bottle',
+        6: 'bait_and_counter',
+        7: 'keep_letter',
+        8: 'protect_mo_house',
+        9: 'repair_quhun',
+        10: 'watch_market',
+        11: 'join_yellow_maple',
+        12: 'send_word_back',
+        '12_mortal_debt': 'return_mortal_debt',
+        '12_tainan_market': 'take_black_route',
+        '12_token_kill': 'trade_information_for_entry',
+        '12_enter_yellow_maple': 'enter_as_low_profile_disciple',
+        '12_herb_garden': 'build_connections',
+        13: 'align_with_fellow_disciples',
+        '13_volume_close': 'enter_forbidden_ground_ready',
+        14: 'save_nangong',
+        15: 'accept_nangong_debt',
+        16: 'become_li_disciple',
+        '16_feiyu_return': 'help_feiyu_again',
+        17: 'show_strength_banquet',
+        18: 'fight_for_sect',
+        '18_nangong_return': 'acknowledge_nangong_importance',
+        19: 'hold_the_line',
+        20: 'go_star_sea',
+        21: 'hunt_monsters',
+        '21_star_sea_foothold': 'claim_hunter_route',
+        22: 'collect_map',
+        '22_xutian_rumor': 'bind_allies_before_entering',
+        23: 'cooperate_allies',
+        '23_star_sea_aftermath': 'honor_alliance_after_palace',
+        '23_mocaihuan_return': 'support_mocaihuan_longterm',
+    }), '23_volume_close');
+
+    assert.strictEqual(exitView.chapter.chapterLabel, '第四卷·第 8 章');
+    assert.strictEqual(exitView.chapter.volumeChapterTitle, '星海余波');
+    exitState.levelStoryState.events.yu_10 = { triggered: true, completed: true };
+    GameCore.setRealmScore(exitState, 10);
+    GameCore.recalculateState(exitState, false);
+    result = GameCore.chooseStoryOption(exitState, 'follow_old_alliances_home');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(exitState.storyProgress, 24, '第四卷卷末应把主线送到第五卷第 1 章');
+    nextView = GameCore.getStoryView(exitState);
+    assert(nextView, '第四卷卷末推进后应立即出现第 24 章剧情');
+    assert.strictEqual(nextView.chapter.id, 24);
+    assert.strictEqual(nextView.chapter.chapterLabel, '第五卷·第 1 章');
+    assert.notStrictEqual(nextView.chapter.chapterLabel, '第四卷·第 8 章', '卷末后不应继续停留在第四卷');
 }
 
 function getVolumeOneExitArcTexts(configure) {
@@ -1864,6 +2463,7 @@ testLevelEventCoverage();
 testBreakthroughQueuesLevelStory();
 testMissedLevelStoryCanRecover();
 testProfileCollapseSaveCompatibility();
+testUnsupportedLegacySaveVersionRejected();
 testChoiceEchoStateUpdates();
 testPendingEchoesStayHiddenFromVisibleFeed();
 testChoiceTextsHideTradeoffPreview();
@@ -1902,6 +2502,17 @@ testExplicitBranchImpactCoverage();
 testVolumeOneRemapCoverage();
 testVolumeOneMetadataScaffold();
 testVolumeOneLegacyChapterLabelsUseRemappedVolumeStructure();
+testVolumeTwoMetadataScaffold();
+testVolumeTwoChapterLabelsUseRemappedVolumeStructure();
+testVolumeTwoExitStopsBeforeForbiddenGroundBody();
+testVolumeThreeMetadataScaffold();
+testVolumeThreeChapterLabelsUseRemappedVolumeStructure();
+testVolumeThreeExitMovesToLaterAssets();
+testVolumeFourMetadataScaffold();
+testVolumeFourChapterLabelsUseRemappedVolumeStructure();
+testVolumeFiveMetadataScaffold();
+testVolumeFiveChapterLabelsUseRemappedVolumeStructure();
+testVolumeFourEntryAndExitUseRemappedStructure();
 testVolumeOneLateArcLegacyProgressStaysReadable();
 testVolumeOneLedgerClosureReadsReturnLedgersPath();
 testVolumeOneLedgerClosureReadsNamesOnlyPath();

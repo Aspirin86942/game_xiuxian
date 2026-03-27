@@ -538,6 +538,32 @@ function createLegacySaveScenario() {
     };
 }
 
+function createUnsupportedLegacySaveScenario() {
+    const { state } = createSerializedState((draft) => {
+        draft.playerName = '旧版断档';
+        draft.ui.activeTab = 'story';
+        draft.storyProgress = 16;
+        draft.chapterChoices[16] = 'become_li_disciple';
+    });
+    const legacyState = cloneState(state);
+    legacyState.version = GameCore.MIN_SUPPORTED_SAVE_VERSION - 1;
+    legacyState.storyProgress = 16;
+    legacyState.chapterChoices = {
+        ...legacyState.chapterChoices,
+        16: 'become_li_disciple',
+    };
+    const resetState = GameCore.createInitialState();
+    return {
+        serialized: JSON.stringify(legacyState),
+        expectedState: {
+            version: GameCore.SAVE_VERSION,
+            playerName: resetState.playerName,
+            activeTab: resetState.ui.activeTab,
+            storyProgress: resetState.storyProgress,
+        },
+    };
+}
+
 function createAdventureTabSaveScenario() {
     const { state } = createSerializedState((draft) => {
         draft.playerName = '游历旧页签档';
@@ -724,6 +750,10 @@ function createInvalidSaveFixtures() {
         unsupportedLegacy: JSON.stringify({
             ...cloneState(baseState),
             version: GameCore.MIN_SUPPORTED_SAVE_VERSION - 1,
+            storyProgress: 16,
+            chapterChoices: {
+                16: 'become_li_disciple',
+            },
         }, null, 2),
         futureVersion: JSON.stringify({
             ...cloneState(baseState),
@@ -733,6 +763,153 @@ function createInvalidSaveFixtures() {
             ...cloneState(baseState),
             playerName: '超'.repeat(140_000),
         }),
+    };
+}
+
+function createVolumeTwoEntryScenario() {
+    const state = createChoiceState(12, (draft) => {
+        draft.ui.activeTab = 'story';
+        draft.flags.joinedYellowMaple = true;
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'send_word_back');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        choiceText: selectedChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedNextTitle: formatRenderedStoryTitle(previewState),
+        expectedStoryProgress: previewState.storyProgress,
+    };
+}
+
+function createVolumeTwoCloseScenario() {
+    const state = createChoiceState('13_volume_close', (draft) => {
+        draft.ui.activeTab = 'story';
+        draft.flags.volumeTwoMortalDebtFaced = true;
+        draft.flags.alignedWithFellowDisciples = true;
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'enter_forbidden_ground_ready');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        choiceText: selectedChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedNextTitle: formatRenderedStoryTitle(previewState),
+        expectedStoryProgress: previewState.storyProgress,
+    };
+}
+
+function createVolumeThreeEntryScenario() {
+    const state = createChoiceState(14, (draft) => {
+        draft.ui.activeTab = 'story';
+        draft.flags.forbiddenGroundEntryReady = true;
+        setRealmScore(draft, 5);
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'save_nangong');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        choiceText: selectedChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedNextTitle: formatRenderedStoryTitle(previewState),
+        expectedStoryProgress: previewState.storyProgress,
+    };
+}
+
+function createVolumeThreeExitScenario() {
+    const state = createChoiceState(20, (draft) => {
+        draft.ui.activeTab = 'story';
+        draft.flags.mineChoice = 'hold';
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'go_star_sea');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        choiceText: selectedChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedNextTitle: formatRenderedStoryTitle(previewState),
+        expectedStoryProgress: previewState.storyProgress,
+    };
+}
+
+function createVolumeFourEntryScenario() {
+    const state = createChoiceState(21, (draft) => {
+        draft.ui.activeTab = 'story';
+        draft.flags.enteredStarSea = true;
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'hunt_monsters');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        choiceText: selectedChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedNextTitle: formatRenderedStoryTitle(previewState),
+        expectedStoryProgress: previewState.storyProgress,
+    };
+}
+
+function createVolumeFourExitScenario() {
+    const state = createChoiceState('23_volume_close', (draft) => {
+        draft.ui.activeTab = 'story';
+        setRealmScore(draft, 10);
+        draft.flags.honoredAllianceAfterXuTian = true;
+        draft.flags.madeAmendsToMocaihuan = true;
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'follow_old_alliances_home');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        choiceText: selectedChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedNextTitle: formatRenderedStoryTitle(previewState),
+        expectedStoryProgress: previewState.storyProgress,
+    };
+}
+
+function createVolumeFiveEntryScenario() {
+    const state = createChoiceState(24, (draft) => {
+        draft.ui.activeTab = 'story';
+        setRealmScore(draft, 10);
+        draft.flags.savedNangong = true;
+        draft.npcRelations['南宫婉'] = 72;
+        draft.npcRelations['墨彩环'] = 48;
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'returned_tiannan_for_bonds');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        choiceText: selectedChoice.text,
+        expectedTitle: formatRenderedStoryTitle(state),
+        expectedNextTitle: formatRenderedStoryTitle(previewState),
+        expectedStoryProgress: previewState.storyProgress,
     };
 }
 
@@ -764,6 +941,13 @@ module.exports = {
     createReadStoryAwayScenario,
     createBlockedMainChapterScenario,
     createShengxianlingChapterScenario,
+    createVolumeTwoEntryScenario,
+    createVolumeTwoCloseScenario,
+    createVolumeThreeEntryScenario,
+    createVolumeThreeExitScenario,
+    createVolumeFourEntryScenario,
+    createVolumeFourExitScenario,
+    createVolumeFiveEntryScenario,
     createVolumeOneLedgerClosureScenario,
     createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,
@@ -773,6 +957,7 @@ module.exports = {
     createHighTierBreakthroughScenario,
     createCustomSaveScenario,
     createLegacySaveScenario,
+    createUnsupportedLegacySaveScenario,
     createAdventureTabSaveScenario,
     createJourneyScenario,
     createInvalidSaveFixtures,

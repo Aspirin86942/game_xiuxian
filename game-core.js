@@ -17,6 +17,10 @@
         LEVEL_STORY_EVENTS,
         SIDE_QUESTS_V1,
         VOLUME_ONE_CHAPTERS,
+        VOLUME_TWO_CHAPTERS,
+        VOLUME_THREE_CHAPTERS,
+        VOLUME_FOUR_CHAPTERS,
+        VOLUME_FIVE_CHAPTERS,
     } = dataSource;
 
     function loadSharedHelpers() {
@@ -44,8 +48,8 @@
         throw new Error('GameCore 内部模块未完整加载');
     }
 
-    const SAVE_VERSION = 6;
-    const MIN_SUPPORTED_SAVE_VERSION = 5;
+    const SAVE_VERSION = 7;
+    const MIN_SUPPORTED_SAVE_VERSION = 7;
     const MAX_LOGS = 120;
     const DECISION_HISTORY_LIMIT = 64;
     const ENDING_SEED_LIMIT = 4;
@@ -88,6 +92,10 @@
             LEVEL_STORY_EVENTS,
             SIDE_QUESTS_V1,
             VOLUME_ONE_CHAPTERS,
+            VOLUME_TWO_CHAPTERS,
+            VOLUME_THREE_CHAPTERS,
+            VOLUME_FOUR_CHAPTERS,
+            VOLUME_FIVE_CHAPTERS,
             constants: {
                 MAX_LOGS,
                 SAVE_VERSION,

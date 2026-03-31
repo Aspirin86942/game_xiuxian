@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const GameCore = require('../../game-core.js');
+const StoryData = require('../../story-data.js');
 const selectors = require('./helpers/selectors');
 const { openGame, readSave } = require('./helpers/harness');
 const {
@@ -17,6 +18,17 @@ const {
     createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,
 } = require('./helpers/saveFactory');
+
+const ADAPTED_VOLUME_LABELS = Object.freeze({
+    volume_two_ascending_path: StoryData.VOLUME_DISPLAY_META.volume_two_ascending_path.displayLabel,
+    volume_three_magic_invasion: StoryData.VOLUME_DISPLAY_META.volume_three_magic_invasion.displayLabel,
+    volume_four_overseas: StoryData.VOLUME_DISPLAY_META.volume_four_overseas.displayLabel,
+    volume_five_homecoming: StoryData.VOLUME_DISPLAY_META.volume_five_homecoming.displayLabel,
+});
+
+function formatAdaptedVolumeLabel(volumeId, order) {
+    return `${ADAPTED_VOLUME_LABELS[volumeId]}·第 ${order} 章`;
+}
 
 function createQueuedStoryBadgeScenario() {
     const state = GameCore.createInitialState();
@@ -184,7 +196,7 @@ test('第二卷入口会渲染新卷标签并推进到凡俗旧债未清', async
 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第二卷·第 1 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_two_ascending_path', 1));
     await expect(page.locator(selectors.story.title)).toContainText('离开旧地');
 
     const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
@@ -192,11 +204,20 @@ test('第二卷入口会渲染新卷标签并推进到凡俗旧债未清', async
     await choiceLocator.click();
 
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedNextTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第二卷·第 2 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_two_ascending_path', 2));
     await expect(page.locator(selectors.story.title)).toContainText('凡俗旧债未清');
 
     const save = await readSave(page);
     expect(save.storyProgress).toBe(scenario.expectedStoryProgress);
+});
+
+test('第二卷入口摘要使用场景钩子而不是总论句', async ({ page }) => {
+    const scenario = createVolumeTwoEntryScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
+    await expect(page.locator('#story-summary')).toHaveText('越国边境风硬，回头路也硬。你还没走远，旧地的人与事却已经开始在背后追。');
+    await expect(page.locator('#story-summary')).not.toContainText('真正离开旧地，不是走远');
 });
 
 test('第二卷卷末收束后会立刻交给血色禁地入口', async ({ page }) => {
@@ -205,7 +226,7 @@ test('第二卷卷末收束后会立刻交给血色禁地入口', async ({ page 
 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第二卷·第 8 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_two_ascending_path', 8));
     await expect(page.locator(selectors.story.title)).toContainText('此卷尽处');
 
     const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
@@ -213,7 +234,7 @@ test('第二卷卷末收束后会立刻交给血色禁地入口', async ({ page 
     await choiceLocator.click();
 
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedNextTitle);
-    await expect(page.locator(selectors.story.title)).not.toContainText('第二卷·第 8 章');
+    await expect(page.locator(selectors.story.title)).not.toContainText(formatAdaptedVolumeLabel('volume_two_ascending_path', 8));
     await expect(page.locator(selectors.story.title)).toContainText('血色禁地');
 
     const save = await readSave(page);
@@ -226,7 +247,7 @@ test('第三卷入口会渲染新卷标签并推进到情债与筑基', async ({
 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第三卷·第 1 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_three_magic_invasion', 1));
     await expect(page.locator(selectors.story.title)).toContainText('血色禁地');
 
     const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
@@ -234,7 +255,7 @@ test('第三卷入口会渲染新卷标签并推进到情债与筑基', async ({
     await choiceLocator.click();
 
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedNextTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第三卷·第 2 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_three_magic_invasion', 2));
     await expect(page.locator(selectors.story.title)).toContainText('情债与筑基');
 
     const save = await readSave(page);
@@ -247,7 +268,7 @@ test('第三卷卷末收束后会离开第三卷并进入后续入口', async ({
 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第三卷·第 8 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_three_magic_invasion', 8));
     await expect(page.locator(selectors.story.title)).toContainText('再别天南');
 
     const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
@@ -255,7 +276,7 @@ test('第三卷卷末收束后会离开第三卷并进入后续入口', async ({
     await choiceLocator.click();
 
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedNextTitle);
-    await expect(page.locator(selectors.story.title)).not.toContainText('第三卷·第 8 章');
+    await expect(page.locator(selectors.story.title)).not.toContainText(formatAdaptedVolumeLabel('volume_three_magic_invasion', 8));
     await expect(page.locator(selectors.story.title)).toContainText('初入星海');
 
     const save = await readSave(page);
@@ -268,7 +289,7 @@ test('第四卷入口会渲染新卷标签并推进到海外立足', async ({ pa
 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第四卷·第 1 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_four_overseas', 1));
     await expect(page.locator(selectors.story.title)).toContainText('初入星海');
 
     const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
@@ -276,7 +297,7 @@ test('第四卷入口会渲染新卷标签并推进到海外立足', async ({ pa
     await choiceLocator.click();
 
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedNextTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第四卷·第 2 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_four_overseas', 2));
     await expect(page.locator(selectors.story.title)).toContainText('海外立足');
 
     const save = await readSave(page);
@@ -289,7 +310,7 @@ test('第四卷卷末收束后会离开第四卷并进入重返天南', async ({
 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第四卷·第 8 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_four_overseas', 8));
     await expect(page.locator(selectors.story.title)).toContainText('星海余波');
 
     const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
@@ -297,8 +318,8 @@ test('第四卷卷末收束后会离开第四卷并进入重返天南', async ({
     await choiceLocator.click();
 
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedNextTitle);
-    await expect(page.locator(selectors.story.title)).not.toContainText('第四卷·第 8 章');
-    await expect(page.locator(selectors.story.title)).toContainText('第五卷·第 1 章');
+    await expect(page.locator(selectors.story.title)).not.toContainText(formatAdaptedVolumeLabel('volume_four_overseas', 8));
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_five_homecoming', 1));
     await expect(page.locator(selectors.story.title)).toContainText('重返天南');
 
     const save = await readSave(page);
@@ -311,7 +332,7 @@ test('第五卷第 1 章选择后会进入旧账与旧名', async ({ page }) => 
 
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第五卷·第 1 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_five_homecoming', 1));
     await expect(page.locator(selectors.story.title)).toContainText('重返天南');
 
     const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
@@ -319,11 +340,20 @@ test('第五卷第 1 章选择后会进入旧账与旧名', async ({ page }) => 
     await choiceLocator.click();
 
     await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedNextTitle);
-    await expect(page.locator(selectors.story.title)).toContainText('第五卷·第 2 章');
+    await expect(page.locator(selectors.story.title)).toContainText(formatAdaptedVolumeLabel('volume_five_homecoming', 2));
     await expect(page.locator(selectors.story.title)).toContainText('旧账与旧名');
 
     const save = await readSave(page);
     expect(save.storyProgress).toBe(scenario.expectedStoryProgress);
+});
+
+test('第五卷入口摘要使用场景钩子而不是怀旧总论', async ({ page }) => {
+    const scenario = createVolumeFiveEntryScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
+    await expect(page.locator('#story-summary')).toHaveText('天南风物仍旧，认你的人却已经不是当年那一批。');
+    await expect(page.locator('#story-summary')).not.toContainText('真正涌上来的不是怀旧');
 });
 
 test('正式支线可在同行回响区接取并卡内结算', async ({ page }) => {

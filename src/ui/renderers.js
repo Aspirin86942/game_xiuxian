@@ -321,9 +321,7 @@
 
             ctx.elements.storyTitle.textContent = `${sourceLabel} · ${chapterTitle}`;
             ctx.elements.storyMeta.textContent = `${isLevelStory ? '悟境' : '主线'}${realmLabel}`;
-            ctx.elements.storySummary.textContent = isLevelStory
-                ? `${view.chapter.summary} 这一念会直接牵动你的道心、手头资源或后面的人情。`
-                : view.chapter.summary;
+            ctx.elements.storySummary.textContent = view.chapter.summary;
             ctx.elements.storyProgress.textContent = view.mode === 'choices'
                 ? `第 ${totalPages} / ${totalPages} 页 · 抉择`
                 : `第 ${currentPage} / ${totalPages} 页`;
@@ -345,7 +343,7 @@
                         <span class="choice-tag">${choice.promiseLabel || '承诺未定'}</span>
                         <span class="choice-tag risk-${choice.riskTier || 'steady'}">${choice.riskLabel || '稳妥'}</span>
                     </div>
-                    <span class="choice-cost">${choice.visibleCostLabel || (choice.costs ? `消耗：${ctx.GameCore.formatCosts(choice.costs)}` : '此举代价：往后总有回身来认的时候')}</span>
+                    <span class="choice-cost">${choice.visibleCostLabel || (choice.costs ? `消耗：${ctx.GameCore.formatCosts(choice.costs)}` : '代价未明：这一步得先踏出去，回头再看余波。')}</span>
                     ${choice.disabledReason ? `<span class="choice-disabled-reason">${choice.disabledReason}</span>` : ''}
                 </button>
             `).join('');

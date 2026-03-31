@@ -1119,7 +1119,7 @@ function testChapterEchoesStayConcrete() {
     assert(chapter12Texts.some((text) => text.includes('离开第一卷之后') || text.includes('凡俗少年')));
 
     const chapter13CloseTexts = getChapterChoiceView('13_volume_close').view.story.beats.map((item) => item.text);
-    assert(chapter13CloseTexts.some((text) => text.includes('此卷尽处真正留下的') || text.includes('门墙、旧债与准备')));
+    assert(chapter13CloseTexts.some((text) => text.includes('离谷前最后一盏灯压得很低') || text.includes('升仙令、门墙和旧债')));
 
     const chapter14Texts = getChapterChoiceView(14).view.story.beats.map((item) => item.text);
     assert(chapter14Texts.some((text) => text.includes('最先开始猎杀的，从来不是妖兽')));
@@ -1138,7 +1138,7 @@ function testChapterEchoesStayConcrete() {
         state.flags.cooperatedAtXuTian = true;
         state.npcRelations['南宫婉'] = 65;
     }).view.story.beats.map((item) => item.text);
-    assert(chapter23AftermathTexts.some((text) => text.includes('虚天殿真正留下来的') || text.includes('并肩一回不算难')));
+    assert(chapter23AftermathTexts.some((text) => text.includes('虚天殿的盐气还挂在衣上') || text.includes('各自记住了你回身的那一下')));
 
     const chapter23CloseTexts = getChapterChoiceView('23_volume_close', (state) => {
         state.flags.honoredAllianceAfterXuTian = true;
@@ -1555,6 +1555,71 @@ function testEndingEchoTextsStayReflective() {
     result = GameCore.chooseStoryOption(mortalState, 'xianfan_shutu');
     assert.strictEqual(result.ok, true);
     assert(mortalState.ending.description.includes('太晚') || mortalState.ending.description.includes('凡心'));
+}
+
+function testLateVolumeEchoesAndEndingDescriptionsExactMatch() {
+    const chapterEchoExpectations = [
+        {
+            chapterId: '12_tainan_market',
+            expectedText: '太南山散场后，摊位热气散得很快，你先记住的却是谁把消息当价码，谁把命当零头。',
+        },
+        {
+            chapterId: 13,
+            expectedText: '夜还没过三更，同门排位和话头已经先替禁地定了座次。你站到哪里，旁人便记到哪里。',
+        },
+        {
+            chapterId: '13_volume_close',
+            expectedText: '离谷前最后一盏灯压得很低，你背上的升仙令、门墙和旧债却一件也没轻。',
+        },
+        {
+            chapterId: '23_star_sea_aftermath',
+            expectedText: '虚天殿的盐气还挂在衣上，并肩与翻脸的人却已经各自记住了你回身的那一下。',
+        },
+        {
+            chapterId: '24_old_debt_and_name',
+            expectedText: '旧账摊开时，最先发紧的不是旁人的眼色，而是你自己握着账页的手。',
+        },
+        {
+            chapterId: '24_bond_destination',
+            expectedText: '旧人真站到面前后，你才知道“认人”不是想起谁，而是肯不肯把脚步慢下来等一句回话。',
+        },
+        {
+            chapterId: '25_final_branch',
+            expectedText: '门槛就在脚边，你若还把话往后拖，这阵风会先替你把那份迟疑吹回耳边。',
+        },
+    ];
+
+    chapterEchoExpectations.forEach(({ chapterId, expectedText }) => {
+        const chapterTexts = getChapterChoiceView(chapterId).view.story.beats.map((item) => item.text);
+        assert(chapterTexts.includes(expectedText), `章节 ${chapterId} 应命中指定晚期 echo 文案`);
+    });
+
+    const sharedDaoState = getChapterChoiceView('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'nangong';
+        state.flags.volumeFiveAscensionAttitude = 'shared';
+        state.npcRelations['南宫婉'] = 108;
+    }).state;
+    let result = GameCore.chooseStoryOption(sharedDaoState, 'dadao_tongguang');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(sharedDaoState.ending.description, '雷光压到肩头时，你与南宫婉背贴着背把最后一重天劫扛了过去。门开那一瞬，你第一次觉得大道也会给并肩的人让路。');
+
+    const mortalFarewellState = getChapterChoiceView('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'mocaihuan';
+        state.flags.oldDebtsCleared = true;
+        state.npcRelations['墨彩环'] = 72;
+    }).state;
+    result = GameCore.chooseStoryOption(mortalFarewellState, 'xianfan_shutu');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(mortalFarewellState.ending.description, '嘉元城灯火还在，墨彩环也站在旧门前。你把迟到太久的话说完，终究还是各自转身，只把那点最晚醒来的凡心带上了天路。');
+
+    const lonelyDaoState = getChapterChoiceView('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'distance';
+        state.flags.volumeFiveAscensionAttitude = 'alone';
+        state.npcRelations['南宫婉'] = 84;
+    }).state;
+    result = GameCore.chooseStoryOption(lonelyDaoState, 'zhiying_xiangdao');
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(lonelyDaoState.ending.description, '门开时你身边没有第二个人。风从袖口一直灌到心口，你才听清那些年总被你按下去的话，终究还是没人替你补上。');
 }
 
 function testStringChapterLogsNoNaN() {
@@ -2605,13 +2670,13 @@ function testLateVolumeHooksAvoidMetaThesisLines() {
             chapterId: 25,
             summary: '天门未开，案上的旧物先把你这一生照亮了一半。',
             hookField: 'beats',
-            hookText: '案上的旧物一件件摊开后，你才发现门前最响的不是天风，而是那些一路被你压到今天才肯一起出声的旧事。',
+            hookText: '天门就在前头，案上的旧物和身后的旧人却把去路逼得比雷声还窄。',
         },
         {
             chapterId: '25_final_branch',
             summary: '门前无人催你，倒是一路没说完的话先挤到了喉间。',
             hookField: 'echoBeat',
-            hookText: '门缝里有风，你却先听见自己这些年最熟悉的那句拖延又一次追了上来：再晚一点，再往后一点。',
+            hookText: '门槛就在脚边，你若还把话往后拖，这阵风会先替你把那份迟疑吹回耳边。',
         },
     ];
 
@@ -2669,6 +2734,7 @@ testEchoesAndSideStoriesIncludeNewSignals();
 testSideQuestStateLifecycleV1();
 testNpcDialogueUsesChapterEchoes();
 testEndingEchoTextsStayReflective();
+testLateVolumeEchoesAndEndingDescriptionsExactMatch();
 testStringChapterLogsNoNaN();
 testStoryPagingState();
 testMainStoryChoiceQueuesUnreadForNextChapter();

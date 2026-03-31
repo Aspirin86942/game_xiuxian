@@ -2636,19 +2636,22 @@
         if (choice?.costs && Object.keys(choice.costs).length > 0) {
             return `消耗：${formatChoiceCosts(choice.costs)}`;
         }
+        if (choice?.ending) {
+            return '此举代价：门前再退半步，答案就会被拖到以后。';
+        }
         if (riskLabel === '涉险') {
-            return '此举代价：会让心劫更易反扑';
+            return '此举代价：心劫会先记住这一念。';
         }
         if (riskLabel === '有压') {
             return '此举代价：旧人旧账会更早找上门。';
         }
         if (promiseLabel === '藏锋') {
-            return '此举代价：眼前脚步会慢半分';
+            return '此举代价：得先把自己再往暗处压半步。';
         }
         if (promiseLabel === '试探') {
-            return '此举代价：眼前果报会来得更迟';
+            return '此举代价：得先挨着风声再往前探。';
         }
-        return '此举代价：这一步会把后路也一并写进来。';
+        return '此举代价：会把后面的去路牵得更紧。';
     }
 
     function normalizeImmediateResult(rawResult, fallbackTitle, fallbackDetail) {
@@ -2747,20 +2750,16 @@
         const chapterTitle = String(context?.chapterTitle || '这一节路').trim();
         const chapterSummary = String(context?.chapterSummary || '').trim();
 
-        if (choice?.ending?.description) {
-            return choice.ending.description;
-        }
-
         if (riskLabel === '涉险') {
-            return `走过“${chapterTitle}”这一节后，这一步会先在暗处压着你。眼下不一定立刻翻涌，可一到关键处，它总会比旁事更早响。`;
+            return `在“${chapterTitle}”之后，这一步像把刀意压回袖里。眼下还没见血，可风声一紧，它就会先从手上发冷。`;
         }
         if (riskLabel === '有压') {
-            return `走过“${chapterTitle}”这一节后，这一步像旧针藏进袖里。平时不见锋，可真到门前回看，它会先把你叫住。`;
+            return `在“${chapterTitle}”之后，你没有把话说满，可那股压着不发的劲已经留在身上。等旧人旧账再追上来时，先抬头的就是这一念。`;
         }
         if (chapterSummary) {
-            return `${chapterSummary} 这一步不会留在纸上，它会在后面的相逢与旧账里，再次把你叫回来。`;
+            return `${chapterSummary} 这一页合上后，余温不会立刻散，往后的路回头时还会先照到你。`;
         }
-        return '这一步不会停在眼前。后面路再拐回来时，你会先听见它，再看见当时的自己。';
+        return '这一念没有留在原地。等后路再拐回来时，先认出你的，会是它留下的动静。';
     }
 
     function normalizeBranchImpact(choice, context, echoPack, promiseLabel, riskLabel) {
@@ -2795,16 +2794,19 @@
         if (choice?.ending) {
             return `门前若真走到“${choice.ending.title}”，这一念会先来讨你一句实话。`;
         }
+        if (riskLabel === '涉险') {
+            return '这一念会先记在心劫里，往后风声一紧，它就先响。';
+        }
         if (riskLabel === '有压') {
             return '这一念不会当场闹大，可等你再站到门前时，旧人旧账会先一起回声。';
         }
-        if (echoPack?.delayed?.detail) {
-            return echoPack.delayed.detail;
+        if (promiseLabel === '藏锋') {
+            return '这一念先被你压进袖里，等路更窄时才会露出锋口。';
         }
-        if (riskLabel === '涉险') {
-            return `这一步会让你的${promiseLabel}之心更见锋芒，也更容易在往后的局里逼出心劫反噬。`;
+        if (promiseLabel === '试探') {
+            return '这一念先落在试探里，等旁人回看时才知道你当时把谁先摆上了秤。';
         }
-        return `这一步会把“${promiseLabel}”留在你的命数里，往后的相逢、旧账与门前抉择都会重新照见它。`;
+        return '这一念已经留在路上，往后总会有人顺着它认出你来。';
     }
 
     function normalizeDelayedEchoes(choice, chapterId, choiceId, sourceType, echoPack, longTermHint, promiseLabel) {

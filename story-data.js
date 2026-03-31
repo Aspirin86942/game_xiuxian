@@ -1606,7 +1606,7 @@
             },
             returned_tiannan_for_bonds: {
                 immediate: { title: '接住旧情', detail: '你没有再把最重要的人往“以后再说”里推。这一步看似不大，实际上比很多杀伐决断都更难。' },
-                delayed: { title: '有人不能再拖', detail: '你终于不能再假装自己的一生只需要对大道负责。因为你已经亲手承认，有些人也该算进去。', npc: '南宫婉' },
+                delayed: { title: '有人不能再拖', detail: '这一念不会当场闹大，可等你再站到门前时，旧人旧账会先一起回声。', npc: '南宫婉' },
                 npcComment: { '南宫婉': { high: '你总算不是只在最危险的时候才想起回头。', neutral: '你既然回来了，就别再把真正重要的人留在“以后再说”里。' }, '墨彩环': { neutral: '你若真记得谁重要，就别总拿“以后”来糊弄现在。' } },
             },
             returned_tiannan_but_remained_hidden: {
@@ -2750,6 +2750,10 @@
         const chapterTitle = String(context?.chapterTitle || '这一节路').trim();
         const chapterSummary = String(context?.chapterSummary || '').trim();
 
+        if (choice?.ending?.description) {
+            return choice.ending.description;
+        }
+
         if (riskLabel === '涉险') {
             return `在“${chapterTitle}”之后，这一步像把刀意压回袖里。眼下还没见血，可风声一紧，它就会先从手上发冷。`;
         }
@@ -2790,6 +2794,9 @@
     function buildLongTermHint(choice, riskLabel, promiseLabel, echoPack) {
         if (typeof choice?.longTermHint === 'string' && choice.longTermHint.trim()) {
             return choice.longTermHint.trim();
+        }
+        if (echoPack?.delayed?.detail) {
+            return echoPack.delayed.detail;
         }
         if (choice?.ending) {
             return `门前若真走到“${choice.ending.title}”，这一念会先来讨你一句实话。`;

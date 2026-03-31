@@ -97,6 +97,7 @@ Phase 2 should audit and repair the following runtime surfaces:
 
 - Story summary fallback logic.
 - Default `choice-cost` copy when no explicit `visibleCostLabel` exists.
+- Inter-chapter bridge copy shown after one chapter ends but before the next chapter is available.
 - Any late-story default prompt or empty-state wording that still speaks in old meta prose.
 
 ## 8. Runtime Design
@@ -124,6 +125,8 @@ It should not:
 
 Renderers should present authored text plainly. If the runtime adds explanatory suffixes or default prose, those additions must remain short, in-world, and contract-tested.
 
+For the specific inter-chapter waiting case, the preferred treatment is deletion rather than rewrite. If the player is between chapters, the UI should not emit a self-explaining line like "这条主线并未断，只是火候还没到" or equivalent thesis bridge text. Phase 2 should remove that bridge copy instead of polishing it.
+
 ## 9. Test Strategy
 
 Phase 2 needs stronger tests than Phase 1 in two ways.
@@ -149,6 +152,7 @@ Focused E2E should cover at least:
 
 - late-story summary copy,
 - at least one fallback `choice-cost` rendering path,
+- at least one inter-chapter waiting state proving the bridge sentence has been removed,
 - at least one ending or pre-ending player-visible copy path if Phase 2 changes those surfaces.
 
 ## 10. Rulebook Alignment

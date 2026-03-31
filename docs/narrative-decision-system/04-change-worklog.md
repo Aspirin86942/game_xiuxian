@@ -662,3 +662,47 @@
 - 涉及文件：`story-data.js`、`src/ui/renderers.js`、`tests/story-smoke.js`、`tests/e2e/story.spec.js`
 - 保持不变：`storyProgress` 流程、`nextChapterId` 收束拓扑、存档结构、DOM 锚点
 - 结论：本轮只修文本与呈现，不把“真分支拓扑”混进同一次回归
+
+### `[2026-03-31] Narrative Repair Phase 2：晚期系统清洗`
+
+#### 改动内容
+
+- 清理晚期自动生成文案：`visibleCostLabel`、`longTermHint`、`endingSeeds.note`、blocked main hint。
+- 清理第四卷后半与第五卷的 `getChapterEchoes()`、关键 beats 与主终局描述。
+- 补齐 smoke / E2E / 规则书对同一晚期词面合同的同步保护。
+
+#### 改动原因
+
+- Phase 1 只修了高可见章节摘要；Phase 2 需要把运行时 emitters、等待态、终局页和规则书一起拉到同一口径。
+- 用户已明确要求删除章节间“主线并未断，只是火候还没到”桥接句，而不是润色它。
+
+#### 预期玩家体验 / 用户体验变化
+
+- 晚期剧情页、等待态和终局页不再突然掉回作者总结腔。
+- 玩家在章节空窗、终局前问心和最终尾声里看到的是场景压力，不是系统解释。
+
+#### 设计前提是否改变
+
+- `选前揭示但不过度透题`：否
+- `失败压力可管理而非随机暴毙`：否
+- `choice 必须留下至少两层系统痕迹`：否
+- `终局必须回指关键承诺链`：否
+
+#### 是否影响旧状态 / 旧存档 / 旧客户端
+
+- 否
+- 本次不改存档结构、章节 id、`nextChapterId` 或 DOM 锚点。
+
+#### 是否需要同步更新测试
+
+- 是
+- 若是，需要更新：
+  - 文档校验：晚期词面合同与测试场景
+  - smoke：generated hint / echo / ending 正向断言
+  - e2e：blocked hint、默认代价、终局页可见文本
+
+#### 回退条件
+
+- 若剧情等待态重新出现“火候未到”桥接句。
+- 若 late-game echo 或 ending 描述重新落回作者总结腔。
+- 若 smoke / e2e / docs 对晚期词面合同再次漂移。

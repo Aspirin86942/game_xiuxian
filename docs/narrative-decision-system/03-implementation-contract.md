@@ -108,6 +108,13 @@
 - 不允许把技术语义直接作为显示词面，例如把 `branchImpact`、`closure`、`final branch` 原样展示给玩家。
 - 不允许把回响正文写成“资源兑换 / 关系后果 / 情绪奖励”这类系统总结句。
 
+### 3.4.1 晚期叙事词面合同
+
+- `getBlockedMainStoryHint()` 只负责说明门槛与当前可做事项，不再补“主线未断 / 火候未到”桥接句。
+- 自动生成的 `visibleCostLabel / longTermHint / endingSeeds.note` 必须写成世界内代价、旧账、风声或门前压力，不能写“这一步会在后续重新照见它”这一类作者总结句。
+- `getChapterEchoes()`、晚期章节 closing beats、`ending.description` 必须落在场景、物件、动作、关系压力之一，不得落回“这一章真正留下的是什么”。
+- smoke 与 E2E 必须分别保护：章节正文、echo、blocked hint、ending 描述，不允许再把它们混成“最后一句文案”一个断言。
+
 ### 3.5 终局契约
 
 未来实现必须继续稳定表达：

@@ -162,4 +162,11 @@
 - 旧版存档加载 / 导入时必须提示并阻断。
 - 进入终局后，剧情视图固定切换到 `ending` 模式。
 
+## 2.4 晚期默认文案出口
+
+- `src/core/story.js#getBlockedMainStoryHint()`：主线未解锁时的唯一门槛提示来源。
+- `story-data.js#buildVisibleCostLabel()`：无手写 `visibleCostLabel` 时的默认代价文案来源。
+- `story-data.js#buildLongTermHint()` 与 `normalizeEndingSeeds()`：无手写长尾提示或终局种子备注时的默认来源。
+- `story-data.js#getChapterEchoes()` 与 `ending.description`：晚期剧情页第二层正文，不得再视为可随手总结的说明栏。
+
 若后续实现再次偏离本文件，应同步回写 `02`、`03`、`05`；若仅为实现落地与测试追平，则继续以本文件记录当前运行时事实。

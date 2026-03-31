@@ -569,6 +569,67 @@
         },
     ];
 
+    const VOLUME_CONTRACT = Object.freeze({
+        id: 'adapted_custom_volume_contract_v1',
+        kind: 'adapted_custom_volumes',
+        labelPrefix: '改编',
+        originalBoundaryGuarantee: false,
+        playerFacingNotes: Object.freeze([
+            '当前主线卷采用改编后的自定义分卷。',
+            '只借用原著世界观和部分卷名意象，不承诺与原著卷界一一对应。',
+            '改编第五卷《归乡飞升》是自定义终局卷，不对应原著第五卷《名震一方》。',
+        ]),
+    });
+
+    const VOLUME_DISPLAY_META = Object.freeze({
+        volume_one_qixuanmen: Object.freeze({
+            volumeId: 'volume_one_qixuanmen',
+            displayLabel: '改编第一卷',
+            displayTitle: '改编第一卷《七玄门风云》',
+            volumeTitle: '七玄门风云',
+            originalNovelVolumeTitle: '七玄门风云',
+            matchesOriginalBoundary: false,
+            contractNote: '当前采用改编分卷，只借用原著卷名意象，不承诺与原著卷界一致。',
+        }),
+        volume_two_ascending_path: Object.freeze({
+            volumeId: 'volume_two_ascending_path',
+            displayLabel: '改编第二卷',
+            displayTitle: '改编第二卷《初踏修仙路》',
+            volumeTitle: '初踏修仙路',
+            originalNovelVolumeTitle: '初踏修仙路',
+            matchesOriginalBoundary: false,
+            contractNote: '当前采用改编分卷，只借用原著卷名意象，不承诺与原著卷界一致。',
+        }),
+        volume_three_magic_invasion: Object.freeze({
+            volumeId: 'volume_three_magic_invasion',
+            displayLabel: '改编第三卷',
+            displayTitle: '改编第三卷《魔道入侵》',
+            volumeTitle: '魔道入侵',
+            originalNovelVolumeTitle: '魔道入侵',
+            matchesOriginalBoundary: false,
+            contractNote: '当前采用改编分卷，只借用原著卷名意象，不承诺与原著卷界一致。',
+        }),
+        volume_four_overseas: Object.freeze({
+            volumeId: 'volume_four_overseas',
+            displayLabel: '改编第四卷',
+            displayTitle: '改编第四卷《风起海外》',
+            volumeTitle: '风起海外',
+            originalNovelVolumeTitle: '风起海外',
+            matchesOriginalBoundary: false,
+            contractNote: '当前采用改编分卷，只借用原著卷名意象，不承诺与原著卷界一致。',
+        }),
+        volume_five_homecoming: Object.freeze({
+            volumeId: 'volume_five_homecoming',
+            displayLabel: '改编第五卷',
+            displayTitle: '改编第五卷《归乡飞升》',
+            volumeTitle: '归乡飞升',
+            originalNovelVolumeTitle: '名震一方',
+            matchesOriginalBoundary: false,
+            isCustomFinalVolume: true,
+            contractNote: '当前改编第五卷是自定义终局卷，不对应原著第五卷《名震一方》。',
+        }),
+    });
+
     // 第一卷先用静态映射固定“新 8 章结构”和“旧 0~11 章归类”，避免后续改代码时边改边漂移。
     const VOLUME_ONE_CHAPTERS = Object.freeze([
         {
@@ -5807,23 +5868,24 @@
         {
             id: '23_mocaihuan_return',
             title: '来信与重访',
-            summary: '墨彩环这一章不是等你给答案，而是让你看见凡人世界在你没回来时，究竟怎样自己熬了过去。',
+            summary: '一封家书把你重新拽回嘉元城。院门还在，等门的人已经学会不再把答案只押在你身上。',
             location: '嘉元城',
             volumeId: 'volume_four_overseas',
             volumeRole: 'closure',
             legacyVolumeTarget: 'volume_four_chapter_7',
             requirements: { storyProgress: '23_mocaihuan_return' },
             beats(state) {
-                const debtLine = state.flags.daoLvPromise || state.flags.mendedMoHouseDebt
-                    ? '那封信没有一句“你为何不回”，却句句都在写你不在的时候，药行换了东主，旧仆散了几人，日子是怎样一点点自己熬过去的。'
-                    : '信纸普通，字也算不上好看，只是写得很稳。越是平静，你越看得出那几年里真正替你承担后果的人，从来不是你自己。';
+                const debtLine = state.flags.madeAmendsToMocaihuan || state.flags.mendedMoHouseDebt
+                    ? '你上次留下的补偿还在起作用，可那并不等于这次进门就能当作什么都没欠。'
+                    : '你带回来的不是迟到的义气，而是一个早该亲自回来交代的人。';
                 return [
-                    beat('旁白', '修士常以为“以后再补”是一种宽容，可对凡人来说，很多事没有以后，只有你没回来时，他们是怎么自己熬过去的。'),
+                    beat('旁白', '信纸并不名贵，边角却被人折得很平。你在海上看惯了生死和试探，反倒是这样一封只写日常的来信，让手指迟迟没能松开。'),
                     beat('旁白', debtLine),
-                    beat('旁白', '你后来重返嘉元城时，墨彩环已经不再是站在旧宅里等答案的人。她有自己的日子、自己的判断，也有了不再把你当成唯一答案的疏离。'),
-                    beat('墨彩环', '我后来才明白，等一个修仙的人，其实和等一场雨差不多。你不知道它什么时候来，也不知道来了之后，究竟是解渴，还是把屋子冲塌。'),
-                    beat('旁白', '这话并不尖刻，却比责怪更重。因为你终于看见，那些你以为能以后再补的旧账，在别人身上其实早就已经按年过完了。'),
-                    beat('旁白', '她没有拦你，也没有再往前靠一步。你只能决定，自己是把这层因果接回手里，还是只确认她安好后再次离开。'),
+                    beat('旁白', '再回嘉元城时，墨府门前的石阶已经换过两块。门里灯火不旺，却也没有你想象中的那种“只等你来定生死”的气息。'),
+                    beat('墨彩环', '你总算肯回来一趟。别紧张，我不是来逼你补一张旧账单的。只是有些话若再不当面说，就真要烂在旧屋里了。'),
+                    beat('你', '我欠下的，不止一张账单。只是这些年总想着先把命保住，回头便回得越来越晚。'),
+                    beat('墨彩环', '凡人的日子不是给你存着的。你回来，我认；你不回来，我们也照样过。可你若进了这道门，总得先说明白，这次是来认人，还是只来看看。'),
+                    beat('旁白', '她说话不急，分量却比责怪更重。你这才真听见这些年被自己一句“以后再补”压下去的声音。'),
                 ];
             },
             choices() {
@@ -6089,7 +6151,7 @@
         {
             id: '24_old_debt_and_name',
             title: '旧账与旧名',
-            summary: '真正难的不是回去，而是回去之后承认哪些账必须由你自己来结，哪些名字还要继续背。',
+            summary: '嘉元城与黄枫谷都还记得你。难的不是回来，而是回来后不能再把该认的都推给明天。',
             volumeId: 'volume_five_homecoming',
             volumeRole: 'escalation',
             legacyVolumeTarget: 'volume_five_chapter_2',
@@ -6111,11 +6173,14 @@
                     ? '黄枫谷旧门墙也在等你回话。真正要认的不是名分，而是你这些年借过、背过、又想甩开的那些东西。'
                     : '就算你没有正式把名字落在门墙里，旧宗门与旧战局也不会真把你当成无关人。';
                 return [
-                    beat('旁白', '回乡之后最先逼过来的，不是谁来找你算旧账，而是你忽然发现很多事若你自己不认，就再也不会有人替你认了。'),
+                    beat('旁白', '回乡之后最先围上来的不是刀，而是两种完全不同的目光：一种来自还在等你给话的人，一种来自早就把你算进旧案里的人。'),
+                    beat('墨彩环', '你若只把灵石放下，和从前把事往后拖，其实没多大分别。'),
                     beat('旁白', returnLine),
+                    beat('黄枫谷执事', '李师叔当年替你压过的话，如今总该有人亲口回一句。你要认门墙，还是认完便走，今天都得说清。'),
                     beat('旁白', moLine),
                     beat('旁白', liLine),
-                    beat('旁白', '第五卷走到这里，真正的问题已经不再是“你回没回来”，而是“你到底准备把自己哪一部分也一起留在这里”。'),
+                    beat('你', '我今天回来，不是为了把旧名重新挂回身上，而是为了把该我自己接的那一段先接住。'),
+                    beat('旁白', '话一出口，旧屋、旧门和旧案才像真的落回了地上。很多年里你第一次不再只想着怎么脱身，而是先想怎么把这一步站稳。'),
                 ];
             },
             choices(state) {
@@ -6699,6 +6764,8 @@
     const StoryData = {
         STORAGE_KEY,
         CONFIG,
+        VOLUME_CONTRACT,
+        VOLUME_DISPLAY_META,
         REALMS,
         ITEMS,
         ALCHEMY_RECIPES,

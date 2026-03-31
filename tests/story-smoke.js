@@ -2,6 +2,18 @@ const assert = require('assert');
 const GameCore = require('../game-core.js');
 const StoryData = require('../story-data.js');
 
+const ADAPTED_VOLUME_LABELS = Object.freeze({
+    volume_one_qixuanmen: StoryData.VOLUME_DISPLAY_META.volume_one_qixuanmen.displayLabel,
+    volume_two_ascending_path: StoryData.VOLUME_DISPLAY_META.volume_two_ascending_path.displayLabel,
+    volume_three_magic_invasion: StoryData.VOLUME_DISPLAY_META.volume_three_magic_invasion.displayLabel,
+    volume_four_overseas: StoryData.VOLUME_DISPLAY_META.volume_four_overseas.displayLabel,
+    volume_five_homecoming: StoryData.VOLUME_DISPLAY_META.volume_five_homecoming.displayLabel,
+});
+
+function formatAdaptedVolumeLabel(volumeId, order) {
+    return `${ADAPTED_VOLUME_LABELS[volumeId]}·第 ${order} 章`;
+}
+
 function satisfyMainChapter(state) {
     const chapter = GameCore.getChapterById(state.storyProgress);
     if (!chapter) {
@@ -161,6 +173,16 @@ function getChapterChoiceView(chapterId, configure) {
     const view = playToChoices(state);
     assert.strictEqual(view.chapter.id, chapterId);
     return { state, view };
+}
+
+function getChapterTexts(chapterId, configure) {
+    const { state, view } = getChapterChoiceView(chapterId, configure);
+    return {
+        state,
+        summary: view.chapter.summary,
+        beats: view.story.beats.map((item) => item.text),
+        dialogueCount: view.story.beats.filter((item) => item.speaker !== '旁白').length,
+    };
 }
 
 function getVisibleSideQuestById(state, questId) {
@@ -1129,6 +1151,13 @@ function testChapterEchoesStayConcrete() {
     assertTextContainsNone(chapter25FinalText, forbiddenMetaWords, '门前问心段落不应再出现分支影响等黑话');
 }
 
+function testReturnHomeCharacterChaptersUseLiveDialogue() {
+    ['23_mocaihuan_return', '24_old_debt_and_name'].forEach((chapterId) => {
+        const { dialogueCount } = getChapterTexts(chapterId);
+        assert(dialogueCount >= 2, `章节 ${chapterId} 至少应有 2 段人物对白，避免整章只剩旁白总结`);
+    });
+}
+
 function testChapter17BeatsAndFlags() {
     const { view } = getChapterChoiceView(17, (state) => {
         state.flags.enteredLihuayuanLineage = true;
@@ -1942,6 +1971,18 @@ function testVolumeOneRemapCoverage() {
     assert(exitChapter.nextReads.length <= 3, '第一卷卷末跨卷读取点不应超过 3 条');
 }
 
+function testAdaptedVolumeContractMetadata() {
+    assert(StoryData.VOLUME_CONTRACT, '应导出改编分卷合同');
+    assert.strictEqual(StoryData.VOLUME_CONTRACT.kind, 'adapted_custom_volumes');
+    assert.strictEqual(StoryData.VOLUME_CONTRACT.originalBoundaryGuarantee, false);
+    assert(
+        StoryData.VOLUME_CONTRACT.playerFacingNotes.some((note) => note.includes('不承诺与原著卷界一一对应')),
+        '改编分卷合同应明确声明不承诺与原著卷界一一对应',
+    );
+    assert.strictEqual(StoryData.VOLUME_DISPLAY_META.volume_five_homecoming.originalNovelVolumeTitle, '名震一方');
+    assert.strictEqual(StoryData.VOLUME_DISPLAY_META.volume_five_homecoming.isCustomFinalVolume, true);
+}
+
 function testVolumeOneMetadataScaffold() {
     const firstVolumeChapters = StoryData.STORY_CHAPTERS.filter((chapter) => typeof chapter.id === 'number' && chapter.id >= 0 && chapter.id <= 11);
     assert.strictEqual(firstVolumeChapters.length, 12, '应保留旧 0~11 章以供兼容映射');
@@ -1970,19 +2011,19 @@ function testVolumeOneMetadataScaffold() {
 
 function testVolumeOneLegacyChapterLabelsUseRemappedVolumeStructure() {
     const chapter8View = getChapterChoiceView(8).view;
-    assert.strictEqual(chapter8View.chapter.chapterLabel, '第一卷·第 7 章');
+    assert.strictEqual(chapter8View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_one_qixuanmen', 7));
     assert.strictEqual(chapter8View.chapter.volumeChapterTitle, '七玄门风波');
 
     const chapter9View = getChapterChoiceView(9).view;
-    assert.strictEqual(chapter9View.chapter.chapterLabel, '第一卷·第 7 章');
+    assert.strictEqual(chapter9View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_one_qixuanmen', 7));
     assert.strictEqual(chapter9View.chapter.volumeChapterTitle, '七玄门风波');
 
     const chapter10View = getChapterChoiceView(10).view;
-    assert.strictEqual(chapter10View.chapter.chapterLabel, '第一卷·第 8 章');
+    assert.strictEqual(chapter10View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_one_qixuanmen', 8));
     assert.strictEqual(chapter10View.chapter.volumeChapterTitle, '升仙路口');
 
     const chapter11View = getChapterChoiceView(11).view;
-    assert.strictEqual(chapter11View.chapter.chapterLabel, '第一卷·第 8 章');
+    assert.strictEqual(chapter11View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_one_qixuanmen', 8));
     assert.strictEqual(chapter11View.chapter.volumeChapterTitle, '升仙路口');
 }
 
@@ -2009,21 +2050,21 @@ function testVolumeTwoMetadataScaffold() {
 
 function testVolumeTwoChapterLabelsUseRemappedVolumeStructure() {
     const chapter12View = getChapterChoiceView(12).view;
-    assert.strictEqual(chapter12View.chapter.chapterLabel, '第二卷·第 1 章');
+    assert.strictEqual(chapter12View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_two_ascending_path', 1));
     assert.strictEqual(chapter12View.chapter.volumeChapterTitle, '离开旧地');
 
     const chapterDebtView = getChapterChoiceView('12_mortal_debt').view;
-    assert.strictEqual(chapterDebtView.chapter.chapterLabel, '第二卷·第 2 章');
+    assert.strictEqual(chapterDebtView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_two_ascending_path', 2));
     assert.strictEqual(chapterDebtView.chapter.volumeChapterTitle, '凡俗旧债未清');
 
     const chapter13View = getChapterChoiceView(13, (state) => {
         GameCore.setRealmScore(state, 4);
     }).view;
-    assert.strictEqual(chapter13View.chapter.chapterLabel, '第二卷·第 7 章');
+    assert.strictEqual(chapter13View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_two_ascending_path', 7));
     assert.strictEqual(chapter13View.chapter.volumeChapterTitle, '宗门人际与禁地前夜');
 
     const chapterCloseView = getChapterChoiceView('13_volume_close').view;
-    assert.strictEqual(chapterCloseView.chapter.chapterLabel, '第二卷·第 8 章');
+    assert.strictEqual(chapterCloseView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_two_ascending_path', 8));
     assert.strictEqual(chapterCloseView.chapter.volumeChapterTitle, '此卷尽处');
 }
 
@@ -2050,7 +2091,7 @@ function testVolumeTwoExitStopsBeforeForbiddenGroundBody() {
         13: 'align_with_fellow_disciples',
     }), '13_volume_close');
 
-    assert.strictEqual(view.chapter.chapterLabel, '第二卷·第 8 章');
+    assert.strictEqual(view.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_two_ascending_path', 8));
     assert.strictEqual(view.chapter.volumeChapterTitle, '此卷尽处');
     const selectedChoice = view.choices.find((choice) => choice.id === 'enter_forbidden_ground_ready');
     const result = GameCore.chooseStoryOption(state, selectedChoice.id);
@@ -2059,7 +2100,7 @@ function testVolumeTwoExitStopsBeforeForbiddenGroundBody() {
     const nextView = GameCore.getStoryView(state);
     assert(nextView, '卷末推进后应立即出现下一章剧情');
     assert.strictEqual(nextView.chapter.id, 14);
-    assert.notStrictEqual(nextView.chapter.chapterLabel, '第二卷·第 8 章', '卷末后不应继续停留在第二卷');
+    assert.notStrictEqual(nextView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_two_ascending_path', 8), '卷末后不应继续停留在第二卷');
 }
 
 function testVolumeThreeMetadataScaffold() {
@@ -2078,17 +2119,17 @@ function testVolumeThreeMetadataScaffold() {
 
 function testVolumeThreeChapterLabelsUseRemappedVolumeStructure() {
     const chapter14View = getChapterChoiceView(14).view;
-    assert.strictEqual(chapter14View.chapter.chapterLabel, '第三卷·第 1 章');
+    assert.strictEqual(chapter14View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_three_magic_invasion', 1));
     assert.strictEqual(chapter14View.chapter.volumeChapterTitle, '血色禁地');
 
     const chapter18View = getChapterChoiceView(18, (state) => {
         GameCore.setRealmScore(state, 6);
     }).view;
-    assert.strictEqual(chapter18View.chapter.chapterLabel, '第三卷·第 5 章');
+    assert.strictEqual(chapter18View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_three_magic_invasion', 5));
     assert.strictEqual(chapter18View.chapter.volumeChapterTitle, '魔道争锋');
 
     const nangongFalloutView = getChapterChoiceView('18_nangong_return').view;
-    assert.strictEqual(nangongFalloutView.chapter.chapterLabel, '第三卷·第 6 章');
+    assert.strictEqual(nangongFalloutView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_three_magic_invasion', 6));
     assert.strictEqual(nangongFalloutView.chapter.volumeChapterTitle, '并肩之后');
 
     const feiyuInsertView = getChapterChoiceView('16_feiyu_return').view;
@@ -2098,7 +2139,7 @@ function testVolumeThreeChapterLabelsUseRemappedVolumeStructure() {
     const chapter20View = getChapterChoiceView(20, (state) => {
         GameCore.setRealmScore(state, 7);
     }).view;
-    assert.strictEqual(chapter20View.chapter.chapterLabel, '第三卷·第 8 章');
+    assert.strictEqual(chapter20View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_three_magic_invasion', 8));
     assert.strictEqual(chapter20View.chapter.volumeChapterTitle, '再别天南');
 }
 
@@ -2134,7 +2175,7 @@ function testVolumeThreeExitMovesToLaterAssets() {
         19: 'hold_the_line',
     }), 20);
 
-    assert.strictEqual(view.chapter.chapterLabel, '第三卷·第 8 章');
+    assert.strictEqual(view.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_three_magic_invasion', 8));
     assert.strictEqual(view.chapter.volumeChapterTitle, '再别天南');
     const selectedChoice = view.choices.find((choice) => choice.id === 'go_star_sea');
     const result = GameCore.chooseStoryOption(state, selectedChoice.id);
@@ -2143,7 +2184,7 @@ function testVolumeThreeExitMovesToLaterAssets() {
     const nextView = GameCore.getStoryView(state);
     assert(nextView, '卷末推进后应立即出现后续章节剧情');
     assert.strictEqual(nextView.chapter.id, 21);
-    assert.notStrictEqual(nextView.chapter.chapterLabel, '第三卷·第 8 章', '卷末后不应继续停留在第三卷');
+    assert.notStrictEqual(nextView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_three_magic_invasion', 8), '卷末后不应继续停留在第三卷');
 }
 
 function testVolumeFourMetadataScaffold() {
@@ -2176,35 +2217,35 @@ function testVolumeFourMetadataScaffold() {
 
 function testVolumeFourChapterLabelsUseRemappedVolumeStructure() {
     const chapter21View = getChapterChoiceView(21).view;
-    assert.strictEqual(chapter21View.chapter.chapterLabel, '第四卷·第 1 章');
+    assert.strictEqual(chapter21View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 1));
     assert.strictEqual(chapter21View.chapter.volumeChapterTitle, '初入星海');
 
     const footholdView = getChapterChoiceView('21_star_sea_foothold').view;
-    assert.strictEqual(footholdView.chapter.chapterLabel, '第四卷·第 2 章');
+    assert.strictEqual(footholdView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 2));
     assert.strictEqual(footholdView.chapter.volumeChapterTitle, '海外立足');
 
     const chapter22View = getChapterChoiceView(22).view;
-    assert.strictEqual(chapter22View.chapter.chapterLabel, '第四卷·第 3 章');
+    assert.strictEqual(chapter22View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 3));
     assert.strictEqual(chapter22View.chapter.volumeChapterTitle, '虚天残图');
 
     const rumorView = getChapterChoiceView('22_xutian_rumor').view;
-    assert.strictEqual(rumorView.chapter.chapterLabel, '第四卷·第 4 章');
+    assert.strictEqual(rumorView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 4));
     assert.strictEqual(rumorView.chapter.volumeChapterTitle, '风声四起');
 
     const chapter23View = getChapterChoiceView(23).view;
-    assert.strictEqual(chapter23View.chapter.chapterLabel, '第四卷·第 5 章');
+    assert.strictEqual(chapter23View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 5));
     assert.strictEqual(chapter23View.chapter.volumeChapterTitle, '虚天殿前后');
 
     const aftermathView = getChapterChoiceView('23_star_sea_aftermath').view;
-    assert.strictEqual(aftermathView.chapter.chapterLabel, '第四卷·第 6 章');
+    assert.strictEqual(aftermathView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 6));
     assert.strictEqual(aftermathView.chapter.volumeChapterTitle, '并肩余波');
 
     const mocaihuanView = getChapterChoiceView('23_mocaihuan_return').view;
-    assert.strictEqual(mocaihuanView.chapter.chapterLabel, '第四卷·第 7 章');
+    assert.strictEqual(mocaihuanView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 7));
     assert.strictEqual(mocaihuanView.chapter.volumeChapterTitle, '来信与重访');
 
     const closeView = getChapterChoiceView('23_volume_close').view;
-    assert.strictEqual(closeView.chapter.chapterLabel, '第四卷·第 8 章');
+    assert.strictEqual(closeView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 8));
     assert.strictEqual(closeView.chapter.volumeChapterTitle, '星海余波');
 }
 
@@ -2233,23 +2274,23 @@ function testVolumeFiveMetadataScaffold() {
 
 function testVolumeFiveChapterLabelsUseRemappedVolumeStructure() {
     const chapter24View = getChapterChoiceView(24).view;
-    assert.strictEqual(chapter24View.chapter.chapterLabel, '第五卷·第 1 章');
+    assert.strictEqual(chapter24View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_five_homecoming', 1));
     assert.strictEqual(chapter24View.chapter.volumeChapterTitle, '重返天南');
 
     const debtView = getChapterChoiceView('24_old_debt_and_name').view;
-    assert.strictEqual(debtView.chapter.chapterLabel, '第五卷·第 2 章');
+    assert.strictEqual(debtView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_five_homecoming', 2));
     assert.strictEqual(debtView.chapter.volumeChapterTitle, '旧账与旧名');
 
     const bondView = getChapterChoiceView('24_bond_destination').view;
-    assert.strictEqual(bondView.chapter.chapterLabel, '第五卷·第 3 章');
+    assert.strictEqual(bondView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_five_homecoming', 3));
     assert.strictEqual(bondView.chapter.volumeChapterTitle, '旧情去处');
 
     const chapter25View = getChapterChoiceView(25).view;
-    assert.strictEqual(chapter25View.chapter.chapterLabel, '第五卷·第 4 章');
+    assert.strictEqual(chapter25View.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_five_homecoming', 4));
     assert.strictEqual(chapter25View.chapter.volumeChapterTitle, '飞升前夜');
 
     const finalView = getChapterChoiceView('25_final_branch').view;
-    assert.strictEqual(finalView.chapter.chapterLabel, '第五卷·第 5 章');
+    assert.strictEqual(finalView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_five_homecoming', 5));
     assert.strictEqual(finalView.chapter.volumeChapterTitle, '门前问心');
 }
 
@@ -2286,7 +2327,7 @@ function testVolumeFourEntryAndExitUseRemappedStructure() {
         20: 'go_star_sea',
     }), 21);
 
-    assert.strictEqual(entryView.chapter.chapterLabel, '第四卷·第 1 章');
+    assert.strictEqual(entryView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 1));
     assert.strictEqual(entryView.chapter.volumeChapterTitle, '初入星海');
     let result = GameCore.chooseStoryOption(entryState, 'hunt_monsters');
     assert.strictEqual(result.ok, true);
@@ -2294,7 +2335,7 @@ function testVolumeFourEntryAndExitUseRemappedStructure() {
     let nextView = GameCore.getStoryView(entryState);
     assert(nextView, '第四卷入口推进后应立即进入卷内第二章');
     assert.strictEqual(nextView.chapter.id, '21_star_sea_foothold');
-    assert.strictEqual(nextView.chapter.chapterLabel, '第四卷·第 2 章');
+    assert.strictEqual(nextView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 2));
 
     const { state: exitState, view: exitView } = runUntilChapter(withInsertedChoices({
         0: 'set_out_now',
@@ -2335,7 +2376,7 @@ function testVolumeFourEntryAndExitUseRemappedStructure() {
         '23_mocaihuan_return': 'support_mocaihuan_longterm',
     }), '23_volume_close');
 
-    assert.strictEqual(exitView.chapter.chapterLabel, '第四卷·第 8 章');
+    assert.strictEqual(exitView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 8));
     assert.strictEqual(exitView.chapter.volumeChapterTitle, '星海余波');
     exitState.levelStoryState.events.yu_10 = { triggered: true, completed: true };
     GameCore.setRealmScore(exitState, 10);
@@ -2346,8 +2387,8 @@ function testVolumeFourEntryAndExitUseRemappedStructure() {
     nextView = GameCore.getStoryView(exitState);
     assert(nextView, '第四卷卷末推进后应立即出现第 24 章剧情');
     assert.strictEqual(nextView.chapter.id, 24);
-    assert.strictEqual(nextView.chapter.chapterLabel, '第五卷·第 1 章');
-    assert.notStrictEqual(nextView.chapter.chapterLabel, '第四卷·第 8 章', '卷末后不应继续停留在第四卷');
+    assert.strictEqual(nextView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_five_homecoming', 1));
+    assert.notStrictEqual(nextView.chapter.chapterLabel, formatAdaptedVolumeLabel('volume_four_overseas', 8), '卷末后不应继续停留在第四卷');
 }
 
 function getVolumeOneExitArcTexts(configure) {
@@ -2429,7 +2470,7 @@ function testVolumeOneLateArcLegacyProgressStaysReadable() {
         assert(view, `旧存档 storyProgress=${progress} 不应出现空剧情`);
         assert.strictEqual(view.source, 'main');
         assert.strictEqual(view.chapter.volumeChapterTitle, expectedVolumeTitle);
-        assert.strictEqual(view.chapter.chapterLabel.startsWith('第一卷·第 '), true);
+        assert.strictEqual(view.chapter.chapterLabel.startsWith(`${ADAPTED_VOLUME_LABELS.volume_one_qixuanmen}·第 `), true);
     });
 }
 
@@ -2503,6 +2544,7 @@ testInsertedReturnArcFlags();
 testChapter24ChoicesStayVisibleAndUseDebtHooks();
 testEndingChoiceVisibilityTracksStoryState();
 testChapterEchoesStayConcrete();
+testReturnHomeCharacterChaptersUseLiveDialogue();
 testChapter17BeatsAndFlags();
 testChapter19RouteChoices();
 testChapter21StarSeaFlags();
@@ -2521,6 +2563,7 @@ testChapter10BidTokenAwardsShengxianling();
 testBranchEchoes();
 testExplicitBranchImpactCoverage();
 testVolumeOneRemapCoverage();
+testAdaptedVolumeContractMetadata();
 testVolumeOneMetadataScaffold();
 testVolumeOneLegacyChapterLabelsUseRemappedVolumeStructure();
 testVolumeTwoMetadataScaffold();

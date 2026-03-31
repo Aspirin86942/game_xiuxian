@@ -113,7 +113,9 @@
 - `getBlockedMainStoryHint()` 只负责说明门槛与当前可做事项，不再补“主线未断 / 火候未到”桥接句。
 - 自动生成的 `visibleCostLabel / longTermHint / endingSeeds.note` 必须写成世界内代价、旧账、风声或门前压力，不能写“这一步会在后续重新照见它”这一类作者总结句。
 - `getChapterEchoes()`、晚期章节 closing beats、`ending.description` 必须落在场景、物件、动作、关系压力之一，不得落回“这一章真正留下的是什么”。
-- smoke 与 E2E 必须分别保护：章节正文、echo、blocked hint、ending 描述，不允许再把它们混成“最后一句文案”一个断言。
+- smoke 负责保护：章节正文、echo、blocked hint、ending 描述。
+- E2E 至少保护：blocked hint、默认代价、终局页可见文本。
+- 两层断言都不允许再混成“最后一句文案”一个断言。
 
 ### 3.5 终局契约
 

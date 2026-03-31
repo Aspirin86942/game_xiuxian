@@ -168,5 +168,6 @@
 - `story-data.js#buildVisibleCostLabel()`：无手写 `visibleCostLabel` 时的默认代价文案来源。
 - `story-data.js#buildLongTermHint()` 与 `normalizeEndingSeeds()`：无手写长尾提示或终局种子备注时的默认来源。
 - `story-data.js#getChapterEchoes()` 与 `ending.description`：晚期剧情页第二层正文，不得再视为可随手总结的说明栏。
+- 当前已锁定到 Phase 2 smoke / E2E 合同的范围，主要是晚期门槛提示、默认代价、长尾提示、终局种子备注与终局页主要描述；未纳入本轮合同的存量晚期 `echo / summary` 仍可能保留旧口径，后续清理需继续回写规则书。
 
 若后续实现再次偏离本文件，应同步回写 `02`、`03`、`05`；若仅为实现落地与测试追平，则继续以本文件记录当前运行时事实。

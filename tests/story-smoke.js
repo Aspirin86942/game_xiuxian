@@ -175,6 +175,17 @@ function getChapterChoiceView(chapterId, configure) {
     return { state, view };
 }
 
+function getGeneratedHintSnapshot(chapterId, choiceId, configure) {
+    const { view } = getChapterChoiceView(chapterId, configure);
+    const choice = view.choices.find((item) => item.id === choiceId);
+    assert(choice, `章节 ${chapterId} 缺少选项 ${choiceId}`);
+    return {
+        visibleCostLabel: choice.visibleCostLabel,
+        longTermHint: choice.longTermHint,
+        endingSeedNotes: (choice.endingSeeds || []).map((item) => item.note),
+    };
+}
+
 function getChapterTexts(chapterId, configure) {
     const { state, view } = getChapterChoiceView(chapterId, configure);
     const speakers = view.story.beats
@@ -1041,6 +1052,22 @@ function testChapter24ChoicesStayVisibleAndUseDebtHooks() {
     assert(oldDebtView.choices.find((item) => item.id === 'settle_old_debts_openly').text.includes('该认的账'));
 }
 
+function testLateGameGeneratedHintsContract() {
+    const chapter24Hints = getGeneratedHintSnapshot(24, 'returned_tiannan_for_bonds');
+    assert.strictEqual(chapter24Hints.visibleCostLabel, '此举代价：旧人旧账会更早找上门。');
+    assert.strictEqual(chapter24Hints.longTermHint, '这一念不会当场闹大，可等你再站到门前时，旧人旧账会先一起回声。');
+
+    const finalChoiceHints = getGeneratedHintSnapshot('25_final_branch', 'zhiying_xiangdao', (state) => {
+        state.routeScores.secluded = 8;
+        state.flags.volumeFiveBondTarget = 'distance';
+        state.flags.volumeFiveAscensionAttitude = 'alone';
+        state.npcRelations['南宫婉'] = 84;
+    });
+    assert.deepStrictEqual(finalChoiceHints.endingSeedNotes, [
+        '门前若真走到“只影向道”，这一念会先来讨你一句实话。',
+    ]);
+}
+
 function testEndingChoiceVisibilityTracksStoryState() {
     const sharedDaoView = getChapterChoiceView('25_final_branch', (state) => {
         state.routeScores.orthodox = 8;
@@ -1616,9 +1643,10 @@ function testBlockedMainChapterHintStaysConcrete() {
 
     const nextGoal = GameCore.getNextGoalText(state);
     const blockedHint = GameCore.getBlockedMainStoryHint(state);
-    assert(nextGoal.includes('太南小会'));
-    assert(nextGoal.includes('修至筑基初期'));
-    assert(blockedHint.includes('升仙令这一线，火候到了自会续上'));
+    assert.strictEqual(blockedHint, '主线《太南小会》尚未开卷：需先修至筑基初期。');
+    assert.strictEqual(nextGoal, '主线《太南小会》尚未开卷：需先修至筑基初期。');
+    assert(!blockedHint.includes('火候'));
+    assert(!nextGoal.includes('火候'));
     assert(state.logs.some((entry) => entry.message.includes('太南小会') && entry.message.includes('筑基初期')));
 }
 
@@ -2629,6 +2657,7 @@ testChapter16ChoiceFlags();
 testChapter22ChoiceFlags();
 testInsertedReturnArcFlags();
 testChapter24ChoicesStayVisibleAndUseDebtHooks();
+testLateGameGeneratedHintsContract();
 testEndingChoiceVisibilityTracksStoryState();
 testChapterEchoesStayConcrete();
 testReturnHomeCharacterChaptersUseLiveDialogue();

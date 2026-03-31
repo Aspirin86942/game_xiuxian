@@ -798,15 +798,12 @@
             }
 
             const baseHint = `主线《${chapter.title}》尚未开卷：需先${hints.join('，')}。`;
-            const extraHint = chapter.id === 10
-                ? '升仙令这一线，火候到了自会续上。'
-                : '这条主线并未断，只是火候还没到。';
             const levelEvent = getAvailableLevelEvent(state);
             if (!levelEvent) {
-                return `${baseHint}${extraHint}`;
+                return baseHint;
             }
 
-            return `${baseHint}${extraHint}眼下可先去应这一段悟境：《${levelEvent.title}》。`;
+            return `${baseHint}眼下可先去应这一段悟境：《${levelEvent.title}》。`;
         }
 
         function getRouteSummary(state) {

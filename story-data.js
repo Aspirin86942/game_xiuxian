@@ -2639,13 +2639,16 @@
         if (riskLabel === '涉险') {
             return '此举代价：会让心劫更易反扑';
         }
+        if (riskLabel === '有压') {
+            return '此举代价：旧人旧账会更早找上门。';
+        }
         if (promiseLabel === '藏锋') {
             return '此举代价：眼前脚步会慢半分';
         }
         if (promiseLabel === '试探') {
             return '此举代价：眼前果报会来得更迟';
         }
-        return '此举代价：会牵动后面的因果与去处';
+        return '此举代价：这一步会把后路也一并写进来。';
     }
 
     function normalizeImmediateResult(rawResult, fallbackTitle, fallbackDetail) {
@@ -2749,15 +2752,15 @@
         }
 
         if (riskLabel === '涉险') {
-            return `在“${chapterTitle}”之后，这一步像把锋芒压进了袖里。眼下未必立刻见血，可往后局势一紧，它总会先在心里亮一下。`;
+            return `走过“${chapterTitle}”这一节后，这一步会先在暗处压着你。眼下不一定立刻翻涌，可一到关键处，它总会比旁事更早响。`;
         }
         if (riskLabel === '有压') {
-            return `在“${chapterTitle}”之后，这一步没有立刻大声作响，却像在骨缝里留下一点能被认出的纹路。等路再拐回来时，你会先认出它，再认出当时的自己。`;
+            return `走过“${chapterTitle}”这一节后，这一步像旧针藏进袖里。平时不见锋，可真到门前回看，它会先把你叫住。`;
         }
         if (chapterSummary) {
-            return `${chapterSummary} 它没有停在这一页里，而是像没散尽的余温，等后面的路回头时再把你照一下。`;
+            return `${chapterSummary} 这一步不会留在纸上，它会在后面的相逢与旧账里，再次把你叫回来。`;
         }
-        return '这一步没有停在眼前。等后面的路重新拐回来时，它会先从暗处露出轮廓，再把当时的你一起带回来。';
+        return '这一步不会停在眼前。后面路再拐回来时，你会先听见它，再看见当时的自己。';
     }
 
     function normalizeBranchImpact(choice, context, echoPack, promiseLabel, riskLabel) {
@@ -2789,17 +2792,17 @@
         if (typeof choice?.longTermHint === 'string' && choice.longTermHint.trim()) {
             return choice.longTermHint.trim();
         }
+        if (choice?.ending) {
+            return `门前若真走到“${choice.ending.title}”，这一念会先来讨你一句实话。`;
+        }
+        if (riskLabel === '有压') {
+            return '这一念不会当场闹大，可等你再站到门前时，旧人旧账会先一起回声。';
+        }
         if (echoPack?.delayed?.detail) {
             return echoPack.delayed.detail;
         }
-        if (choice?.ending) {
-            return '这一念会落到门前问心之处，决定你最后如何回看这一生的承诺。';
-        }
         if (riskLabel === '涉险') {
             return `这一步会让你的${promiseLabel}之心更见锋芒，也更容易在往后的局里逼出心劫反噬。`;
-        }
-        if (riskLabel === '有压') {
-            return `这一步不会立刻发作，却会在后面的几段路上留下能被认出的${promiseLabel}余波。`;
         }
         return `这一步会把“${promiseLabel}”留在你的命数里，往后的相逢、旧账与门前抉择都会重新照见它。`;
     }
@@ -2859,7 +2862,7 @@
         return [{
             id: `${choiceId}_seed`,
             note: choice?.ending
-                ? `这一步会把你推向“${choice.ending.title}”对应的终局解释。`
+                ? `门前若真走到“${choice.ending.title}”，这一念会先来讨你一句实话。`
                 : longTermHint,
             promiseType,
         }];

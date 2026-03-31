@@ -2539,6 +2539,21 @@ function testVolumeOneApothecaryClosureReadsSealPath() {
     assertTextContainsOneOf(text, ['压下', '封住', '不再继续', '没有回答'], '压下残影路径应在卷末主线明确说明是暂时封住而非完全消失');
 }
 
+function testLateVolumeHooksAvoidMetaThesisLines() {
+    const banned = [
+        '这一章真正留下的',
+        '这一卷真正',
+        '真正的问题已经不再是',
+        '到了这里，真正要收拢的',
+    ];
+
+    [12, '12_mortal_debt', 23, 24, 25, '25_final_branch'].forEach((chapterId) => {
+        const { summary, beats } = getChapterTexts(chapterId);
+        const sample = [summary, beats[beats.length - 1]].join('\n');
+        assertTextContainsNone(sample, banned, `章节 ${chapterId} 仍带有作者总结腔`);
+    });
+}
+
 testStoryCursorSwitching();
 testAlchemyRecipeCraftingSuccess();
 testAlchemyRecipeInsufficientMaterialsDoesNotPolluteInventory();
@@ -2606,5 +2621,6 @@ testVolumeOneLedgerClosureReadsReturnLedgersPath();
 testVolumeOneLedgerClosureReadsNamesOnlyPath();
 testVolumeOneApothecaryClosureReadsTracePath();
 testVolumeOneApothecaryClosureReadsSealPath();
+testLateVolumeHooksAvoidMetaThesisLines();
 
 console.log('story smoke passed');

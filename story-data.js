@@ -4309,7 +4309,7 @@
         {
             id: 12,
             title: '离开旧地',
-            summary: '真正离开旧地，不是走远，而是承认凡俗旧路已经不能再替你兜底。',
+            summary: '越国边境风硬，回头路也硬。你还没走远，旧地的人与事却已经开始在背后追。',
             volumeId: 'volume_two_ascending_path',
             volumeRole: 'opening',
             legacyVolumeTarget: 'volume_two_chapter_1',
@@ -4362,7 +4362,7 @@
         {
             id: '12_mortal_debt',
             title: '凡俗旧债未清',
-            summary: '真正麻烦的，不是旧债还在，而是别人已经替你把这些年过完了。',
+            summary: '嘉元城门没变，变的是门里那些等不起的人。',
             volumeId: 'volume_two_ascending_path',
             volumeRole: 'escalation',
             legacyVolumeTarget: 'volume_two_chapter_2',
@@ -5652,7 +5652,7 @@
         {
             id: 23,
             title: '虚天殿前后',
-            summary: '虚天殿之前，真正的考验不是战力，而是你会不会在关键时刻改口。',
+            summary: '虚天将开，海雾里每一句“同行”都像先写好的试探。',
             location: '乱星海深处',
             volumeId: 'volume_four_overseas',
             volumeRole: 'climax',
@@ -6004,7 +6004,7 @@
         {
             id: 24,
             title: '重返天南',
-            summary: '你回到天南时才发现，真正涌上来的不是怀旧，而是那些还没认完的人、账与名字。',
+            summary: '天南风物仍旧，认你的人却已经不是当年那一批。',
             volumeId: 'volume_five_homecoming',
             volumeRole: 'opening',
             legacyVolumeTarget: 'volume_five_chapter_1',
@@ -6328,7 +6328,7 @@
         {
             id: 25,
             title: '飞升前夜',
-            summary: '飞升前最后要认的，不是自己够不够强，而是这一生的关系、旧账与路数你究竟肯不肯承认。',
+            summary: '天门未开，案上的旧物先把你这一生照亮了一半。',
             volumeId: 'volume_five_homecoming',
             volumeRole: 'closure',
             legacyVolumeTarget: 'volume_five_chapter_4',
@@ -6358,7 +6358,7 @@
                     beat('旁白', '你终于不能再把很多事归结成“当时别无选择”。因为如今你有得选了。也正因如此，过去那些选过的，才变得格外重。'),
                     beat('旁白', debtLine),
                     beat('旁白', bondLine),
-                    beat('旁白', '大道尽头，从来没有早已摆好的几扇门任人挑选。你这一生结下的因果、欠下的旧账与斩不断的尘缘，终会自己拼出那个属于你的答案。'),
+                    beat('旁白', '案上的旧物一件件摊开后，你才发现门前最响的不是天风，而是那些一路被你压到今天才肯一起出声的旧事。'),
                     beat('旁白', '你最早不是为了大道修仙，只是太早见过无能为力。'),
                     beat('旁白', '一路遇见的人，并非全是道上的过客；他们是见过你、逼过你、成全过你，也让你再难轻易骗过自己的人。'),
                     beat('旁白', '正道、魔道、苟修，从来都不是别人给你的牌子，而是你一次次面对“我能不能为了更稳更快而舍别人”时交出的答案。'),
@@ -6426,7 +6426,7 @@
         {
             id: '25_final_branch',
             title: '门前问心',
-            summary: '到了这里，真正要收拢的，是你一路留下的人、账与活法，而后它们自会合成你的答案。',
+            summary: '门前无人催你，倒是一路没说完的话先挤到了喉间。',
             volumeId: 'volume_five_homecoming',
             volumeRole: 'ending',
             legacyVolumeTarget: 'volume_five_chapter_5',
@@ -6511,10 +6511,10 @@
                     ? '你离开旧地时没有把过去完全按死。这会让你后面很多“只谈活路”的选择，都被旧名旧债重新拽住一点。'
                     : flags.buriedOldNameOnRoad
                         ? '你从这一章起学会先把名字和来路藏起来。后面局势越大，这种先藏再动的习惯就越会变成你的本能。'
-                        : '从这里起，你才算真正离开旧地。不是换了个落脚处，而是往后连活法都得跟着改。';
+                        : '官道拐向太南山时，你终于把最后一次回头忍住了。前路还没稳，旧地也没断，只是从这一步起，它再不会替你挡风。';
                 break;
             case '12_mortal_debt':
-                text = '凡俗旧债并没有因为你走远就自动失效。你在这里怎么认账，后面就会怎么理解“修仙之后还认不认人”。';
+                text = '你走出嘉元城时没有比来时轻松多少，只是终于知道：这地方欠你的会疼，你欠这地方的也会疼。';
                 break;
             case '12_tainan_market':
                 text = '太南山留下来的，不只是一个交易场，而是你第一次真正明白：灵石、消息与性命，有时都能被同时摆上秤盘。';
@@ -6654,7 +6654,7 @@
                     ? '你在最窄的退路上先稳住了人。往后无论是虚天旧盟还是南宫婉，与这一步都再难分开。'
                         : flags.watchedXuTianFight || flags.secondHandBroker || flags.slippedPastXuTian || flags.starSeaWaitedForBestMoment
                             ? '你在虚天局里没有先把自己摆到明面，可活下来的人也因此更难彻底信你。因为他们都记得，你最会等别人先露底。'
-                            : '虚天殿真正留下的，不是宝物本身，而是最窄那一步里你到底更像哪一类人。';
+                            : '殿门后的风还带着盐气，你却先记住了是谁在最窄那一步伸手，谁在最窄那一步松手。';
                 break;
             case '23_star_sea_aftermath':
                 text = flags.honoredAllianceAfterXuTian
@@ -6690,7 +6690,7 @@
                         ? '旧人看见的不是“你终于回来了”，而是你终于肯承认，有些人和承诺不能一直拖到以后。'
                         : flags.returnedTiannanButRemainedHidden || flags.returnedToSeclusion
                             ? '你回过天南，却没有把自己重新交给天南。旧人只来得及看见一道影子，更多话仍被你留在背后。'
-                            : '回到天南之后，嘉元城的旧屋、黄枫谷的门墙和禁地里的名字，都会轮番来认你。';
+                            : '你才踏进天南几步，旧屋、门墙和故人的名字便一个接一个撞了上来，谁都没打算让你安静路过。';
                 break;
             case '24_old_debt_and_name':
                 text = flags.volumeFiveOldDebtMode === 'settled'
@@ -6726,7 +6726,7 @@
                     ? '到了最后，南宫婉这一笔已经不能再被你装成路过。你会得到哪一种答案，全看你这些年究竟把她放在了哪里。'
                     : flags.volumeFiveBondTarget === 'mocaihuan'
                         ? '到了最后，真正被你带到门前的，不只是修为和旧账，还有那份来得太晚的凡心。'
-                        : '到了最后，最会追上来的不是别人，而是你一路以来最熟悉的迟疑：总想以后再说。';
+                        : '门缝里有风，你却先听见自己这些年最熟悉的那句拖延又一次追了上来：再晚一点，再往后一点。';
                 break;
             default:
                 text = routeName === '正道'

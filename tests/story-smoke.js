@@ -1637,13 +1637,13 @@ function testLateGameEchoesUseSceneHooks() {
     const chapter25FinalMocaihuan = getChapterTexts('25_final_branch', (state) => {
         state.flags.volumeFiveBondTarget = 'mocaihuan';
     }).echoBeat;
-    const chapter25FinalDefault = getChapterTexts('25_final_branch', (state) => {
-        delete state.flags.volumeFiveBondTarget;
+    const chapter25FinalDistance = getChapterTexts('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'distance';
     }).echoBeat;
     assert.strictEqual(chapter25FinalNangong, '门槛已经在脚边，南宫婉这一笔也跟着站到了门前。你往前迈多快，她就会把这一步照得多亮。');
     assert.strictEqual(chapter25FinalMocaihuan, '门前最先响起来的不是天风，而是嘉元城旧灯和那句终究说晚了的话。');
-    assert.strictEqual(chapter25FinalDefault, '门槛就在脚边，你若还把话往后拖，这阵风会先替你把那份迟疑吹回耳边。');
-    assert.strictEqual(new Set([chapter25FinalNangong, chapter25FinalMocaihuan, chapter25FinalDefault]).size, 3, 'case 25_final_branch 三层分支都应存在');
+    assert.strictEqual(chapter25FinalDistance, '门槛就在脚边，你若还把话往后拖，这阵风会先替你把那份迟疑吹回耳边。');
+    assert.strictEqual(new Set([chapter25FinalNangong, chapter25FinalMocaihuan, chapter25FinalDistance]).size, 3, 'case 25_final_branch 三层分支都应存在');
 
     const chapter12MarketEcho = getChapterTexts('12_tainan_market').echoBeat;
     const chapter13VolumeCloseEcho = getChapterTexts('13_volume_close').echoBeat;

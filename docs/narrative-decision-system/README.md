@@ -16,7 +16,9 @@
 补充说明：
 
 - 当前运行时真实行为，仍以代码与 `01-current-behavior.md` 为准。
-- 本册其余文件定义的是目标态和接入契约，用来约束后续第一卷《七玄门风云》及后续卷的系统化改写。
+- 本册其余文件定义的是目标态和接入契约，用来约束后续改编第一卷《七玄门风云》及后续卷的系统化改写。
+- 当前主线卷采用“改编后的自定义分卷”合同：只借用原著世界观与部分卷名意象，不承诺与原著卷界一一对应。
+- 玩家可见卷标签统一使用 `改编第一卷` 到 `改编第五卷`；改编第五卷《归乡飞升》是自定义终局卷，不对应原著第五卷《名震一方》。
 
 ## 2. 使用顺序
 
@@ -26,10 +28,10 @@
 4. 再看 `03-implementation-contract.md`，确认稳定字段、流程顺序、卷末回收与兼容边界。
 5. 再看 `05-content-authoring-interface.md`，确认作者写章节、choices、卷末出口和读取点时的最低合格线。
 6. 若当前任务是第一卷重构，补看 `appendix-c-volume-one-structure.md`。
-7. 若当前任务是第二卷《初踏修仙路》重构，补看 `appendix-d-volume-two-structure.md`。
-8. 若当前任务是第三卷《魔道入侵》重构，补看 `appendix-e-volume-three-structure.md`。
-9. 若当前任务是第四卷《风起海外》重构，补看 `appendix-f-volume-four-structure.md`。
-10. 若当前任务是第五卷《归乡飞升》重构，补看 `appendix-g-volume-five-structure.md`。
+7. 若当前任务是改编第二卷《初踏修仙路》重构，补看 `appendix-d-volume-two-structure.md`。
+8. 若当前任务是改编第三卷《魔道入侵》重构，补看 `appendix-e-volume-three-structure.md`。
+9. 若当前任务是改编第四卷《风起海外》重构，补看 `appendix-f-volume-four-structure.md`。
+10. 若当前任务是改编第五卷《归乡飞升》重构，补看 `appendix-g-volume-five-structure.md`。
 
 ## 3. 工作流
 
@@ -50,11 +52,11 @@
 - `05-content-authoring-interface.md`：定义章节、choices、分支记忆、读取点和卷末出口的作者接口。
 - `appendix-a-state-matrix.md`：收纳状态矩阵、揭示矩阵与后果矩阵。
 - `appendix-b-test-scenarios.md`：收纳设计验收与实现回归场景。
-- `appendix-c-volume-one-structure.md`：记录第一卷《七玄门风云》的 8 章卷结构和旧章映射。
-- `appendix-d-volume-two-structure.md`：记录第二卷《初踏修仙路》的 8 章卷结构、当前运行时素材吸收点与卷末读取点。
-- `appendix-e-volume-three-structure.md`：记录第三卷《魔道入侵》的 8 章卷结构、卷内插章边界与第四卷出口读取点。
-- `appendix-f-volume-four-structure.md`：记录第四卷《风起海外》的 8 章卷结构、星海中段拆章方式与第五卷入口读取点。
-- `appendix-g-volume-five-structure.md`：记录第五卷《归乡飞升》的 5 章终局卷结构、五条主终局与异常失败终局边界。
+- `appendix-c-volume-one-structure.md`：记录改编第一卷《七玄门风云》的 8 章卷结构和旧章映射。
+- `appendix-d-volume-two-structure.md`：记录改编第二卷《初踏修仙路》的 8 章卷结构、当前运行时素材吸收点与卷末读取点。
+- `appendix-e-volume-three-structure.md`：记录改编第三卷《魔道入侵》的 8 章卷结构、卷内插章边界与第四卷出口读取点。
+- `appendix-f-volume-four-structure.md`：记录改编第四卷《风起海外》的 8 章卷结构、星海中段拆章方式与第五卷入口读取点。
+- `appendix-g-volume-five-structure.md`：记录改编第五卷《归乡飞升》的 5 章终局卷结构、五条主终局与异常失败终局边界。
 
 ## 5. 所属系列
 
@@ -90,7 +92,7 @@
 
 ## 9. 本册当前重点
 
-- 当前第一优先任务已经推进到“把第五卷《归乡飞升》正式入册并接入运行时”。
+- 当前第一优先任务已经推进到“把改编第五卷《归乡飞升》正式入册并接入运行时”。
 - 第五卷当前目标是：在不回退前四卷已锁定边界的前提下，把当前 `24 / 25` 的散装后续资产整理为 5 章终局卷，围绕重返天南、旧账旧名、旧情去处、飞升前夜与终局分流展开。
 - `23_volume_close` 继续固定为第四卷卷末出口；它的职责只负责把主线送入第五卷第 1 章 `24 重返天南`，不回退第四卷已锁定的 8 章边界。
 - 第五卷终局必须改为“五条主终局 + 一条异常失败终局”的分流结构；旧的 6 条常规终局菜单不再作为第五卷目标态。

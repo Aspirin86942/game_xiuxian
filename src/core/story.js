@@ -6,6 +6,7 @@
             REALMS,
             STORY_CHAPTERS,
             LEVEL_STORY_EVENTS,
+            VOLUME_DISPLAY_META,
             VOLUME_ONE_CHAPTERS,
             VOLUME_TWO_CHAPTERS,
             VOLUME_THREE_CHAPTERS,
@@ -17,52 +18,24 @@
 
         const STORY_LOOKUP = new Map(STORY_CHAPTERS.map((chapter) => [chapter.id, chapter]));
         const STORY_ORDER = new Map(STORY_CHAPTERS.map((chapter, index) => [String(chapter.id), index]));
+        const VOLUME_GROUPS = Object.freeze([
+            Object.freeze({ volumeId: 'volume_one_qixuanmen', fallbackLabel: '第一卷', chapters: VOLUME_ONE_CHAPTERS }),
+            Object.freeze({ volumeId: 'volume_two_ascending_path', fallbackLabel: '第二卷', chapters: VOLUME_TWO_CHAPTERS }),
+            Object.freeze({ volumeId: 'volume_three_magic_invasion', fallbackLabel: '第三卷', chapters: VOLUME_THREE_CHAPTERS }),
+            Object.freeze({ volumeId: 'volume_four_overseas', fallbackLabel: '第四卷', chapters: VOLUME_FOUR_CHAPTERS }),
+            Object.freeze({ volumeId: 'volume_five_homecoming', fallbackLabel: '第五卷', chapters: VOLUME_FIVE_CHAPTERS }),
+        ]);
         const VOLUME_CHAPTER_LOOKUP = new Map([
-            ...(VOLUME_ONE_CHAPTERS || []).map((chapter, index) => [
+            ...VOLUME_GROUPS.flatMap(({ volumeId, fallbackLabel, chapters }) => (chapters || []).map((chapter, index) => [
                 chapter.id,
                 {
                     id: chapter.id,
                     title: chapter.title,
+                    volumeId,
                     volumeOrder: index + 1,
-                    volumeLabel: '第一卷',
+                    volumeLabel: VOLUME_DISPLAY_META?.[volumeId]?.displayLabel || fallbackLabel,
                 },
-            ]),
-            ...(VOLUME_TWO_CHAPTERS || []).map((chapter, index) => [
-                chapter.id,
-                {
-                    id: chapter.id,
-                    title: chapter.title,
-                    volumeOrder: index + 1,
-                    volumeLabel: '第二卷',
-                },
-            ]),
-            ...(VOLUME_THREE_CHAPTERS || []).map((chapter, index) => [
-                chapter.id,
-                {
-                    id: chapter.id,
-                    title: chapter.title,
-                    volumeOrder: index + 1,
-                    volumeLabel: '第三卷',
-                },
-            ]),
-            ...(VOLUME_FOUR_CHAPTERS || []).map((chapter, index) => [
-                chapter.id,
-                {
-                    id: chapter.id,
-                    title: chapter.title,
-                    volumeOrder: index + 1,
-                    volumeLabel: '第四卷',
-                },
-            ]),
-            ...(VOLUME_FIVE_CHAPTERS || []).map((chapter, index) => [
-                chapter.id,
-                {
-                    id: chapter.id,
-                    title: chapter.title,
-                    volumeOrder: index + 1,
-                    volumeLabel: '第五卷',
-                },
-            ]),
+            ])),
         ]);
         const LEGACY_ECHO_OVERRIDES = Object.freeze({
             '24:returned_tiannan_for_settlement': {

@@ -177,10 +177,14 @@ function getChapterChoiceView(chapterId, configure) {
 
 function getChapterTexts(chapterId, configure) {
     const { state, view } = getChapterChoiceView(chapterId, configure);
+    const speakers = view.story.beats
+        .map((item) => item.speaker)
+        .filter((speaker) => speaker && speaker !== '旁白');
     return {
         state,
         summary: view.chapter.summary,
         beats: view.story.beats.map((item) => item.text),
+        speakers,
         dialogueCount: view.story.beats.filter((item) => item.speaker !== '旁白').length,
     };
 }
@@ -1152,10 +1156,30 @@ function testChapterEchoesStayConcrete() {
 }
 
 function testReturnHomeCharacterChaptersUseLiveDialogue() {
-    ['23_mocaihuan_return', '24_old_debt_and_name'].forEach((chapterId) => {
-        const { dialogueCount } = getChapterTexts(chapterId);
-        assert(dialogueCount >= 2, `章节 ${chapterId} 至少应有 2 段人物对白，避免整章只剩旁白总结`);
+    const chapter23 = getChapterTexts('23_mocaihuan_return');
+    assert.strictEqual(
+        chapter23.summary,
+        '一封家书把你重新拽回嘉元城。院门还在，等门的人已经学会不再把答案只押在你身上。',
+        '章节 23_mocaihuan_return 的 summary 应命中本次重写文案',
+    );
+    assert(chapter23.dialogueCount >= 2, '章节 23_mocaihuan_return 至少应有 2 段人物对白，避免整章只剩旁白总结');
+    assert(chapter23.speakers.includes('墨彩环'), '章节 23_mocaihuan_return 应包含墨彩环对白');
+    assert(chapter23.speakers.includes('你'), '章节 23_mocaihuan_return 应包含“你”的对白');
+
+    const chapter24 = getChapterTexts('24_old_debt_and_name', (state) => {
+        state.flags.returnedTiannanForSettlement = true;
+        state.flags.tiannanReturnMode = 'settlement';
     });
+    assert.strictEqual(chapter24.state.flags.tiannanReturnMode, 'settlement', '章节 24_old_debt_and_name 应使用可达的返乡前置状态');
+    assert.strictEqual(
+        chapter24.summary,
+        '嘉元城与黄枫谷都还记得你。难的不是回来，而是回来后不能再把该认的都推给明天。',
+        '章节 24_old_debt_and_name 的 summary 应命中本次重写文案',
+    );
+    assert(chapter24.dialogueCount >= 2, '章节 24_old_debt_and_name 至少应有 2 段人物对白，避免整章只剩旁白总结');
+    assert(chapter24.speakers.includes('墨彩环'), '章节 24_old_debt_and_name 应包含墨彩环对白');
+    assert(chapter24.speakers.includes('黄枫谷执事'), '章节 24_old_debt_and_name 应包含黄枫谷执事对白');
+    assert(chapter24.speakers.includes('你'), '章节 24_old_debt_and_name 应包含“你”的对白');
 }
 
 function testChapter17BeatsAndFlags() {

@@ -1079,6 +1079,22 @@ function testLateGameGeneratedHintsContract() {
     ]);
 }
 
+function testEarlyChapterGeneratedHintsStayNeutral() {
+    const chapter0Hints = getGeneratedHintSnapshot(0, 'set_out_now');
+    assert.strictEqual(chapter0Hints.visibleCostLabel, '此举代价：会牵动后面的因果与去处');
+    assert.strictEqual(chapter0Hints.longTermHint, '这一步不会立刻发作，却会在后面的几段路上留下能被认出的保全余波。');
+
+    const chapter1Hints = getGeneratedHintSnapshot(1, 'keep_low_profile');
+    assert.strictEqual(chapter1Hints.visibleCostLabel, '此举代价：眼前果报会来得更迟');
+    assert.strictEqual(chapter1Hints.longTermHint, '这一步不会立刻发作，却会在后面的几段路上留下能被认出的试探余波。');
+
+    const chapter20Hints = getGeneratedHintSnapshot(20, 'go_star_sea', (state) => {
+        GameCore.setRealmScore(state, 7);
+    });
+    assert.strictEqual(chapter20Hints.visibleCostLabel, '此举代价：眼前脚步会慢半分');
+    assert.strictEqual(chapter20Hints.longTermHint, '这一步不会立刻发作，却会在后面的几段路上留下能被认出的藏锋余波。');
+}
+
 function testEndingChoiceVisibilityTracksStoryState() {
     const sharedDaoView = getChapterChoiceView('25_final_branch', (state) => {
         state.routeScores.orthodox = 8;
@@ -2775,6 +2791,7 @@ testChapter22ChoiceFlags();
 testInsertedReturnArcFlags();
 testChapter24ChoicesStayVisibleAndUseDebtHooks();
 testLateGameGeneratedHintsContract();
+testEarlyChapterGeneratedHintsStayNeutral();
 testEndingChoiceVisibilityTracksStoryState();
 testChapterEchoesStayConcrete();
 testReturnHomeCharacterChaptersUseLiveDialogue();

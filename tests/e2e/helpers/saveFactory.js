@@ -907,7 +907,7 @@ function createVolumeFiveEntryScenario() {
         serialized: GameCore.serializeState(state),
         choiceId: selectedChoice.id,
         choiceText: selectedChoice.text,
-        expectedChoiceCostLabel: selectedChoice.visibleCostLabel,
+        expectedChoiceCostLabel: '此举代价：旧人旧账会更早找上门。',
         expectedTitle: formatRenderedStoryTitle(state),
         expectedNextTitle: formatRenderedStoryTitle(previewState),
         expectedStoryProgress: previewState.storyProgress,
@@ -933,7 +933,7 @@ function createSharedDaoEndingScenario() {
         serialized: GameCore.serializeState(state),
         choiceId: selectedChoice.id,
         expectedEndingTitle: endingView.ending.title,
-        expectedEndingDescription: endingView.ending.description,
+        expectedEndingDescription: '雷光压到肩头时，你与南宫婉背贴着背把最后一重天劫扛了过去。门开那一瞬，你第一次觉得大道也会给并肩的人让路。',
     };
 }
 

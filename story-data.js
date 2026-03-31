@@ -2629,7 +2629,11 @@
         return 'steady';
     }
 
-    function buildVisibleCostLabel(choice, promiseLabel, riskLabel) {
+    function isLateMainFallbackContext(chapterId, sourceType) {
+        return sourceType === 'main' && getChapterProgressValue(chapterId) >= 24;
+    }
+
+    function buildVisibleCostLabel(choice, promiseLabel, riskLabel, context = {}) {
         if (typeof choice?.visibleCostLabel === 'string' && choice.visibleCostLabel.trim()) {
             return choice.visibleCostLabel.trim();
         }
@@ -2643,6 +2647,11 @@
             return '此举代价：心劫会先记住这一念。';
         }
         if (riskLabel === '有压') {
+            if (!isLateMainFallbackContext(context.chapterId, context.sourceType)) {
+                if (promiseLabel === '试探') return '此举代价：眼前果报会来得更迟';
+                if (promiseLabel === '藏锋') return '此举代价：眼前脚步会慢半分';
+                return '此举代价：会牵动后面的因果与去处';
+            }
             return '此举代价：旧人旧账会更早找上门。';
         }
         if (promiseLabel === '藏锋') {
@@ -2791,7 +2800,7 @@
         };
     }
 
-    function buildLongTermHint(choice, riskLabel, promiseLabel, echoPack) {
+    function buildLongTermHint(choice, riskLabel, promiseLabel, echoPack, context = {}) {
         if (typeof choice?.longTermHint === 'string' && choice.longTermHint.trim()) {
             return choice.longTermHint.trim();
         }
@@ -2805,6 +2814,12 @@
             return '这一念会先记在心劫里，往后风声一紧，它就先响。';
         }
         if (riskLabel === '有压') {
+            if (!isLateMainFallbackContext(context.chapterId, context.sourceType)) {
+                const promiseSeed = promiseLabel === '试探'
+                    ? '试探'
+                    : (promiseLabel === '藏锋' ? '藏锋' : '保全');
+                return `这一步不会立刻发作，却会在后面的几段路上留下能被认出的${promiseSeed}余波。`;
+            }
             return '这一念不会当场闹大，可等你再站到门前时，旧人旧账会先一起回声。';
         }
         if (promiseLabel === '藏锋') {
@@ -2855,7 +2870,7 @@
         }];
     }
 
-    function normalizeEndingSeeds(choice, choiceId, sourceType, promiseType, longTermHint) {
+    function normalizeEndingSeeds(choice, choiceId, sourceType, promiseType, longTermHint, chapterId) {
         if (Array.isArray(choice?.endingSeeds) && choice.endingSeeds.length > 0) {
             return choice.endingSeeds.map((entry, index) => ({
                 id: entry.id || `${choiceId}_seed_${index}`,
@@ -2871,7 +2886,9 @@
         return [{
             id: `${choiceId}_seed`,
             note: choice?.ending
-                ? `门前若真走到“${choice.ending.title}”，这一念会先来讨你一句实话。`
+                ? (isLateMainFallbackContext(chapterId, sourceType)
+                    ? `门前若真走到“${choice.ending.title}”，这一念会先来讨你一句实话。`
+                    : longTermHint)
                 : longTermHint,
             promiseType,
         }];
@@ -3331,8 +3348,14 @@
             chapterSummary,
             sourceType,
         }, echoPack, promiseLabel, riskLabel);
-        const longTermHint = buildLongTermHint(preparedChoice, riskLabel, promiseLabel, echoPack);
-        const visibleCostLabel = buildVisibleCostLabel(preparedChoice, promiseLabel, riskLabel);
+        const longTermHint = buildLongTermHint(preparedChoice, riskLabel, promiseLabel, echoPack, {
+            chapterId,
+            sourceType,
+        });
+        const visibleCostLabel = buildVisibleCostLabel(preparedChoice, promiseLabel, riskLabel, {
+            chapterId,
+            sourceType,
+        });
         const defaultPressureDelta = riskTier === 'perilous'
             ? Math.max(1, Math.min(3, Math.floor((tradeoff.tribulationGain || 0) - 1 + (preparedChoice.ending ? 1 : 0))))
             : 0;
@@ -3354,7 +3377,7 @@
             pressureDelta: Math.max(0, Math.min(3, Math.floor(preparedChoice.pressureDelta ?? defaultPressureDelta))),
             resolveDelta: Math.max(0, Math.min(3, Math.floor(preparedChoice.resolveDelta ?? tradeoff.battleWillGain ?? 0))),
             delayedEchoes: normalizeDelayedEchoes(preparedChoice, chapterId, normalizedId, sourceType, echoPack, longTermHint, promiseLabel),
-            endingSeeds: normalizeEndingSeeds(preparedChoice, normalizedId, sourceType, promiseType, longTermHint),
+            endingSeeds: normalizeEndingSeeds(preparedChoice, normalizedId, sourceType, promiseType, longTermHint, chapterId),
         };
     }
 

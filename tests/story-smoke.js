@@ -1095,6 +1095,49 @@ function testEarlyChapterGeneratedHintsStayNeutral() {
     assert.strictEqual(chapter20Hints.longTermHint, '这一步不会立刻发作，却会在后面的几段路上留下能被认出的藏锋余波。');
 }
 
+function testLateVolumeGeneratedHintsFollowVolumeMetadata() {
+    const chapter = StoryData.STORY_CHAPTERS.find((item) => item.id === '24_old_debt_and_name');
+    assert(chapter, '应存在章节 24_old_debt_and_name');
+
+    const originalId = chapter.id;
+    try {
+        chapter.id = 'volume_five_inserted_interlude';
+
+        const state = GameCore.createInitialState();
+        GameCore.setRealmScore(state, 10);
+        state.flags.daoLvPromise = true;
+        state.flags.enteredLihuayuanLineage = true;
+        state.npcRelations['墨彩环'] = 52;
+        state.npcRelations['李化元'] = 34;
+        GameCore.recalculateState(state, false);
+
+        const choice = chapter.choices(state).find((item) => item.id === 'settle_old_debts_openly');
+        assert(choice, '伪插章后仍应生成 settle_old_debts_openly');
+        assert.strictEqual(choice.visibleCostLabel, '此举代价：旧人旧账会更早找上门。');
+        assert.strictEqual(choice.longTermHint, '这一念不会当场闹大，可等你再站到门前时，旧人旧账会先一起回声。');
+    } finally {
+        chapter.id = originalId;
+    }
+}
+
+function testLateStringChapterGeneratedHintsStayLate() {
+    const oldDebtHints = getGeneratedHintSnapshot('24_old_debt_and_name', 'settle_old_debts_openly', (state) => {
+        state.flags.daoLvPromise = true;
+        state.flags.enteredLihuayuanLineage = true;
+        state.npcRelations['墨彩环'] = 52;
+        state.npcRelations['李化元'] = 34;
+    });
+    assert.strictEqual(oldDebtHints.visibleCostLabel, '此举代价：旧人旧账会更早找上门。');
+    assert.strictEqual(oldDebtHints.longTermHint, '后来再想起嘉元城与黄枫谷时，你先记住的不是谁曾亏待过你，而是你终于把自己那份也认了。');
+
+    const bondHints = getGeneratedHintSnapshot('24_bond_destination', 'choose_nangong_openly', (state) => {
+        state.flags.savedNangong = true;
+        state.npcRelations['南宫婉'] = 82;
+    });
+    assert.strictEqual(bondHints.visibleCostLabel, '此举代价：旧人旧账会更早找上门。');
+    assert.strictEqual(bondHints.longTermHint, '你终于不再把最重要的人推给“以后再说”。这会一路写进飞升前夜。');
+}
+
 function testEndingChoiceVisibilityTracksStoryState() {
     const sharedDaoView = getChapterChoiceView('25_final_branch', (state) => {
         state.routeScores.orthodox = 8;
@@ -2792,6 +2835,8 @@ testInsertedReturnArcFlags();
 testChapter24ChoicesStayVisibleAndUseDebtHooks();
 testLateGameGeneratedHintsContract();
 testEarlyChapterGeneratedHintsStayNeutral();
+testLateVolumeGeneratedHintsFollowVolumeMetadata();
+testLateStringChapterGeneratedHintsStayLate();
 testEndingChoiceVisibilityTracksStoryState();
 testChapterEchoesStayConcrete();
 testReturnHomeCharacterChaptersUseLiveDialogue();

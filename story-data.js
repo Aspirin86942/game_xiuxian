@@ -2629,8 +2629,9 @@
         return 'steady';
     }
 
-    function isLateMainFallbackContext(chapterId, sourceType) {
-        return sourceType === 'main' && getChapterProgressValue(chapterId) >= 24;
+    // 晚期 debt / 门前问心口径只属于第五卷主线，不能再跟着章节 id 前缀外溢。
+    function isLateMainFallbackContext(context = {}) {
+        return context.sourceType === 'main' && context.volumeId === 'volume_five_homecoming';
     }
 
     function buildVisibleCostLabel(choice, promiseLabel, riskLabel, context = {}) {
@@ -2647,7 +2648,7 @@
             return '此举代价：心劫会先记住这一念。';
         }
         if (riskLabel === '有压') {
-            if (!isLateMainFallbackContext(context.chapterId, context.sourceType)) {
+            if (!isLateMainFallbackContext(context)) {
                 if (promiseLabel === '试探') return '此举代价：眼前果报会来得更迟';
                 if (promiseLabel === '藏锋') return '此举代价：眼前脚步会慢半分';
                 return '此举代价：会牵动后面的因果与去处';
@@ -2814,7 +2815,7 @@
             return '这一念会先记在心劫里，往后风声一紧，它就先响。';
         }
         if (riskLabel === '有压') {
-            if (!isLateMainFallbackContext(context.chapterId, context.sourceType)) {
+            if (!isLateMainFallbackContext(context)) {
                 const promiseSeed = promiseLabel === '试探'
                     ? '试探'
                     : (promiseLabel === '藏锋' ? '藏锋' : '保全');
@@ -2870,7 +2871,7 @@
         }];
     }
 
-    function normalizeEndingSeeds(choice, choiceId, sourceType, promiseType, longTermHint, chapterId) {
+    function normalizeEndingSeeds(choice, choiceId, sourceType, promiseType, longTermHint, chapterId, volumeId = '') {
         if (Array.isArray(choice?.endingSeeds) && choice.endingSeeds.length > 0) {
             return choice.endingSeeds.map((entry, index) => ({
                 id: entry.id || `${choiceId}_seed_${index}`,
@@ -2886,7 +2887,7 @@
         return [{
             id: `${choiceId}_seed`,
             note: choice?.ending
-                ? (isLateMainFallbackContext(chapterId, sourceType)
+                ? (isLateMainFallbackContext({ chapterId, sourceType, volumeId })
                     ? `门前若真走到“${choice.ending.title}”，这一念会先来讨你一句实话。`
                     : longTermHint)
                 : longTermHint,
@@ -3333,6 +3334,7 @@
         const chapterId = context.chapterId ?? normalizedId;
         const chapterTitle = context.chapterTitle || '';
         const chapterSummary = context.chapterSummary || '';
+        const volumeId = context.volumeId || '';
         const echoPack = CHAPTER_ECHO_PACKS[chapterId]?.[normalizedId] || null;
         const promiseType = inferPromiseType({ ...preparedChoice, id: normalizedId });
         const riskTier = inferRiskTier({ ...preparedChoice, id: normalizedId }, tradeoff);
@@ -3351,10 +3353,12 @@
         const longTermHint = buildLongTermHint(preparedChoice, riskLabel, promiseLabel, echoPack, {
             chapterId,
             sourceType,
+            volumeId,
         });
         const visibleCostLabel = buildVisibleCostLabel(preparedChoice, promiseLabel, riskLabel, {
             chapterId,
             sourceType,
+            volumeId,
         });
         const defaultPressureDelta = riskTier === 'perilous'
             ? Math.max(1, Math.min(3, Math.floor((tradeoff.tribulationGain || 0) - 1 + (preparedChoice.ending ? 1 : 0))))
@@ -3377,7 +3381,7 @@
             pressureDelta: Math.max(0, Math.min(3, Math.floor(preparedChoice.pressureDelta ?? defaultPressureDelta))),
             resolveDelta: Math.max(0, Math.min(3, Math.floor(preparedChoice.resolveDelta ?? tradeoff.battleWillGain ?? 0))),
             delayedEchoes: normalizeDelayedEchoes(preparedChoice, chapterId, normalizedId, sourceType, echoPack, longTermHint, promiseLabel),
-            endingSeeds: normalizeEndingSeeds(preparedChoice, normalizedId, sourceType, promiseType, longTermHint, chapterId),
+            endingSeeds: normalizeEndingSeeds(preparedChoice, normalizedId, sourceType, promiseType, longTermHint, chapterId, volumeId),
         };
     }
 
@@ -6792,6 +6796,7 @@
                 sourceType: 'main',
                 chapterTitle: chapter.title,
                 chapterSummary: chapter.summary,
+                volumeId: chapter.volumeId,
             }));
         };
     });

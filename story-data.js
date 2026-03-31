@@ -6543,7 +6543,9 @@
                     : '你在百药园藏得多深、拿得多急，往后缺不缺药材与风声都要从这里算起。';
                 break;
             case 13:
-                text = '夜还没过三更，同门排位和话头已经先替禁地定了座次。你站到哪里，旁人便记到哪里。';
+                text = flags.madeGardenConnections
+                    ? '夜还没过三更，同门排位和话头已经先替禁地定了座次。你站到哪里，旁人便记到哪里。'
+                    : '灯火压低后，谁来找你同路、谁只在远处看你，禁地未开就已经把答案写了一半。';
                 break;
             case '13_volume_close':
                 text = '离谷前最后一盏灯压得很低，你背上的升仙令、门墙和旧债却一件也没轻。';
@@ -6667,7 +6669,13 @@
                             : '殿门后的风还带着盐气，你却先记住了是谁在最窄那一步伸手，谁在最窄那一步松手。';
                 break;
             case '23_star_sea_aftermath':
-                text = '虚天殿的盐气还挂在衣上，并肩与翻脸的人却已经各自记住了你回身的那一下。';
+                text = flags.honoredAllianceAfterXuTian
+                    ? '虚天殿的盐气还挂在衣上，并肩与翻脸的人却已经各自记住了你回身的那一下。'
+                    : flags.settledStarSeaReputationWithProfit
+                        ? '海风把名声吹得比人还快。你还没回头，旧人耳边先到的已经是“你这回把并肩折成了多少利”。'
+                        : flags.cutStarSeaTracksAfterXuTian
+                            ? '你把海上的痕迹压低了，可盐味还留在衣角。认得你的人只会更确定，你一到险处就先替自己留退路。'
+                            : '虚天过后，先留下来的不是宝影，而是并肩的人有没有被你真的带出那道门。';
                 break;
             case '23_mocaihuan_return':
                 text = flags.madeAmendsToMocaihuan
@@ -6697,10 +6705,22 @@
                             : '你才踏进天南几步，旧屋、门墙和故人的名字便一个接一个撞了上来，谁都没打算让你安静路过。';
                 break;
             case '24_old_debt_and_name':
-                text = '旧账摊开时，最先发紧的不是旁人的眼色，而是你自己握着账页的手。';
+                text = flags.volumeFiveOldDebtMode === 'settled'
+                    ? '旧账摊开时，最先发紧的不是旁人的眼色，而是你自己握着账页的手。'
+                    : flags.volumeFiveOldDebtMode === 'compensated'
+                        ? '灵石和补偿都摆上去了，可旧门前最重的仍是那句你愿不愿意亲口认下。'
+                        : flags.volumeFiveOldDebtMode === 'buried'
+                            ? '你把最难开口的那部分又压回去了，纸页合上时，沉默反倒比账更重。'
+                            : '旧账翻到最后，真正难看的不是纸上的数，而是你这些年究竟绕开了几次回头。';
                 break;
             case '24_bond_destination':
-                text = '旧人真站到面前后，你才知道“认人”不是想起谁，而是肯不肯把脚步慢下来等一句回话。';
+                text = flags.volumeFiveBondTarget === 'nangong'
+                    ? '旧人真站到面前后，你才知道“认人”不是想起谁，而是肯不肯把脚步慢下来等一句回话。'
+                    : flags.volumeFiveBondTarget === 'mocaihuan'
+                        ? '墨府门前那盏灯没有替你补回旧岁月，却逼着你第一次把“太晚了”三个字听完整。'
+                        : flags.volumeFiveBondTarget === 'distance'
+                            ? '你还是把话压住了。风从人身边过去时没有留痕，可这一回你知道它会一路吹到门前。'
+                            : '旧情到了卷末，不会再自己散。你肯不肯认，它都会先站在路中央等你。';
                 break;
             case 25:
                 text = flags.volumeFiveAscensionAttitude === 'stay'
@@ -6714,7 +6734,11 @@
                                 : '门前最后要认三样东西：你和谁还没断干净，你把多少旧账清到了明面上，以及你这一生到底更像正道、魔道，还是苟修。';
                 break;
             case '25_final_branch':
-                text = '门槛就在脚边，你若还把话往后拖，这阵风会先替你把那份迟疑吹回耳边。';
+                text = flags.volumeFiveBondTarget === 'nangong'
+                    ? '门槛已经在脚边，南宫婉这一笔也跟着站到了门前。你往前迈多快，她就会把这一步照得多亮。'
+                    : flags.volumeFiveBondTarget === 'mocaihuan'
+                        ? '门前最先响起来的不是天风，而是嘉元城旧灯和那句终究说晚了的话。'
+                        : '门槛就在脚边，你若还把话往后拖，这阵风会先替你把那份迟疑吹回耳边。';
                 break;
             default:
                 text = routeName === '正道'

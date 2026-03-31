@@ -201,6 +201,17 @@ function getChapterTexts(chapterId, configure) {
     };
 }
 
+function getEndingOutcome(chapterId, choiceId, configure) {
+    const { state, view } = getChapterChoiceView(chapterId, configure);
+    const selectedChoice = view.choices.find((item) => item.id === choiceId);
+    assert(selectedChoice, `章节 ${chapterId} 缺少选项 ${choiceId}`);
+    topUpCosts(state, selectedChoice);
+    const result = GameCore.chooseStoryOption(state, choiceId);
+    assert.strictEqual(result.ok, true, `章节 ${chapterId} 选择 ${choiceId} 失败: ${result.error || 'unknown'}`);
+    assert(state.ending, `章节 ${chapterId} 选择 ${choiceId} 后应进入结局`);
+    return { state, ending: state.ending };
+}
+
 function getVisibleSideQuestById(state, questId) {
     return GameCore.getVisibleSideQuests(state).find((item) => item.id === questId) || null;
 }
@@ -1135,7 +1146,7 @@ function testChapterEchoesStayConcrete() {
     assert(chapter23Texts.some((text) => text.includes('真正考验信义的')));
 
     const chapter23AftermathTexts = getChapterChoiceView('23_star_sea_aftermath', (state) => {
-        state.flags.cooperatedAtXuTian = true;
+        state.flags.honoredAllianceAfterXuTian = true;
         state.npcRelations['南宫婉'] = 65;
     }).view.story.beats.map((item) => item.text);
     assert(chapter23AftermathTexts.some((text) => text.includes('虚天殿的盐气还挂在衣上') || text.includes('各自记住了你回身的那一下')));
@@ -1557,69 +1568,110 @@ function testEndingEchoTextsStayReflective() {
     assert(mortalState.ending.description.includes('太晚') || mortalState.ending.description.includes('凡心'));
 }
 
-function testLateVolumeEchoesAndEndingDescriptionsExactMatch() {
-    const chapterEchoExpectations = [
-        {
-            chapterId: '12_tainan_market',
-            expectedText: '太南山散场后，摊位热气散得很快，你先记住的却是谁把消息当价码，谁把命当零头。',
-        },
-        {
-            chapterId: 13,
-            expectedText: '夜还没过三更，同门排位和话头已经先替禁地定了座次。你站到哪里，旁人便记到哪里。',
-        },
-        {
-            chapterId: '13_volume_close',
-            expectedText: '离谷前最后一盏灯压得很低，你背上的升仙令、门墙和旧债却一件也没轻。',
-        },
-        {
-            chapterId: '23_star_sea_aftermath',
-            expectedText: '虚天殿的盐气还挂在衣上，并肩与翻脸的人却已经各自记住了你回身的那一下。',
-        },
-        {
-            chapterId: '24_old_debt_and_name',
-            expectedText: '旧账摊开时，最先发紧的不是旁人的眼色，而是你自己握着账页的手。',
-        },
-        {
-            chapterId: '24_bond_destination',
-            expectedText: '旧人真站到面前后，你才知道“认人”不是想起谁，而是肯不肯把脚步慢下来等一句回话。',
-        },
-        {
-            chapterId: '25_final_branch',
-            expectedText: '门槛就在脚边，你若还把话往后拖，这阵风会先替你把那份迟疑吹回耳边。',
-        },
-    ];
+function testLateGameEchoesUseSceneHooks() {
+    const chapter13Connected = getChapterTexts(13, (state) => {
+        state.flags.madeGardenConnections = true;
+    }).echoBeat;
+    const chapter13Default = getChapterTexts(13, (state) => {
+        state.flags.madeGardenConnections = false;
+    }).echoBeat;
+    assert.strictEqual(chapter13Connected, '夜还没过三更，同门排位和话头已经先替禁地定了座次。你站到哪里，旁人便记到哪里。');
+    assert.strictEqual(chapter13Default, '灯火压低后，谁来找你同路、谁只在远处看你，禁地未开就已经把答案写了一半。');
+    assert.notStrictEqual(chapter13Connected, chapter13Default, 'case 13 应保留分支，不应退化成单一句子');
 
-    chapterEchoExpectations.forEach(({ chapterId, expectedText }) => {
-        const chapterTexts = getChapterChoiceView(chapterId).view.story.beats.map((item) => item.text);
-        assert(chapterTexts.includes(expectedText), `章节 ${chapterId} 应命中指定晚期 echo 文案`);
-    });
+    const chapter23Alliance = getChapterTexts('23_star_sea_aftermath', (state) => {
+        state.flags.honoredAllianceAfterXuTian = true;
+    }).echoBeat;
+    const chapter23Profit = getChapterTexts('23_star_sea_aftermath', (state) => {
+        state.flags.settledStarSeaReputationWithProfit = true;
+    }).echoBeat;
+    const chapter23CutTracks = getChapterTexts('23_star_sea_aftermath', (state) => {
+        state.flags.cutStarSeaTracksAfterXuTian = true;
+    }).echoBeat;
+    const chapter23Default = getChapterTexts('23_star_sea_aftermath').echoBeat;
+    assert.strictEqual(chapter23Alliance, '虚天殿的盐气还挂在衣上，并肩与翻脸的人却已经各自记住了你回身的那一下。');
+    assert.strictEqual(chapter23Profit, '海风把名声吹得比人还快。你还没回头，旧人耳边先到的已经是“你这回把并肩折成了多少利”。');
+    assert.strictEqual(chapter23CutTracks, '你把海上的痕迹压低了，可盐味还留在衣角。认得你的人只会更确定，你一到险处就先替自己留退路。');
+    assert.strictEqual(chapter23Default, '虚天过后，先留下来的不是宝影，而是并肩的人有没有被你真的带出那道门。');
+    assert.strictEqual(new Set([chapter23Alliance, chapter23Profit, chapter23CutTracks, chapter23Default]).size, 4, 'case 23_star_sea_aftermath 四层分支都应存在');
 
-    const sharedDaoState = getChapterChoiceView('25_final_branch', (state) => {
+    const chapter24Settled = getChapterTexts('24_old_debt_and_name', (state) => {
+        state.flags.volumeFiveOldDebtMode = 'settled';
+    }).echoBeat;
+    const chapter24Compensated = getChapterTexts('24_old_debt_and_name', (state) => {
+        state.flags.volumeFiveOldDebtMode = 'compensated';
+    }).echoBeat;
+    const chapter24Buried = getChapterTexts('24_old_debt_and_name', (state) => {
+        state.flags.volumeFiveOldDebtMode = 'buried';
+    }).echoBeat;
+    const chapter24Default = getChapterTexts('24_old_debt_and_name', (state) => {
+        delete state.flags.volumeFiveOldDebtMode;
+    }).echoBeat;
+    assert.strictEqual(chapter24Settled, '旧账摊开时，最先发紧的不是旁人的眼色，而是你自己握着账页的手。');
+    assert.strictEqual(chapter24Compensated, '灵石和补偿都摆上去了，可旧门前最重的仍是那句你愿不愿意亲口认下。');
+    assert.strictEqual(chapter24Buried, '你把最难开口的那部分又压回去了，纸页合上时，沉默反倒比账更重。');
+    assert.strictEqual(chapter24Default, '旧账翻到最后，真正难看的不是纸上的数，而是你这些年究竟绕开了几次回头。');
+    assert.strictEqual(new Set([chapter24Settled, chapter24Compensated, chapter24Buried, chapter24Default]).size, 4, 'case 24_old_debt_and_name 四层分支都应存在');
+
+    const chapter24BondNangong = getChapterTexts('24_bond_destination', (state) => {
+        state.flags.volumeFiveBondTarget = 'nangong';
+    }).echoBeat;
+    const chapter24BondMocaihuan = getChapterTexts('24_bond_destination', (state) => {
+        state.flags.volumeFiveBondTarget = 'mocaihuan';
+    }).echoBeat;
+    const chapter24BondDistance = getChapterTexts('24_bond_destination', (state) => {
+        state.flags.volumeFiveBondTarget = 'distance';
+    }).echoBeat;
+    const chapter24BondDefault = getChapterTexts('24_bond_destination', (state) => {
+        delete state.flags.volumeFiveBondTarget;
+    }).echoBeat;
+    assert.strictEqual(chapter24BondNangong, '旧人真站到面前后，你才知道“认人”不是想起谁，而是肯不肯把脚步慢下来等一句回话。');
+    assert.strictEqual(chapter24BondMocaihuan, '墨府门前那盏灯没有替你补回旧岁月，却逼着你第一次把“太晚了”三个字听完整。');
+    assert.strictEqual(chapter24BondDistance, '你还是把话压住了。风从人身边过去时没有留痕，可这一回你知道它会一路吹到门前。');
+    assert.strictEqual(chapter24BondDefault, '旧情到了卷末，不会再自己散。你肯不肯认，它都会先站在路中央等你。');
+    assert.strictEqual(new Set([chapter24BondNangong, chapter24BondMocaihuan, chapter24BondDistance, chapter24BondDefault]).size, 4, 'case 24_bond_destination 四层分支都应存在');
+
+    const chapter25FinalNangong = getChapterTexts('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'nangong';
+    }).echoBeat;
+    const chapter25FinalMocaihuan = getChapterTexts('25_final_branch', (state) => {
+        state.flags.volumeFiveBondTarget = 'mocaihuan';
+    }).echoBeat;
+    const chapter25FinalDefault = getChapterTexts('25_final_branch', (state) => {
+        delete state.flags.volumeFiveBondTarget;
+    }).echoBeat;
+    assert.strictEqual(chapter25FinalNangong, '门槛已经在脚边，南宫婉这一笔也跟着站到了门前。你往前迈多快，她就会把这一步照得多亮。');
+    assert.strictEqual(chapter25FinalMocaihuan, '门前最先响起来的不是天风，而是嘉元城旧灯和那句终究说晚了的话。');
+    assert.strictEqual(chapter25FinalDefault, '门槛就在脚边，你若还把话往后拖，这阵风会先替你把那份迟疑吹回耳边。');
+    assert.strictEqual(new Set([chapter25FinalNangong, chapter25FinalMocaihuan, chapter25FinalDefault]).size, 3, 'case 25_final_branch 三层分支都应存在');
+
+    const chapter12MarketEcho = getChapterTexts('12_tainan_market').echoBeat;
+    const chapter13VolumeCloseEcho = getChapterTexts('13_volume_close').echoBeat;
+    assert.strictEqual(chapter12MarketEcho, '太南山散场后，摊位热气散得很快，你先记住的却是谁把消息当价码，谁把命当零头。');
+    assert.strictEqual(chapter13VolumeCloseEcho, '离谷前最后一盏灯压得很低，你背上的升仙令、门墙和旧债却一件也没轻。');
+}
+
+function testLateGameEndingDescriptionsLandOnScenes() {
+    const sharedDao = getEndingOutcome('25_final_branch', 'dadao_tongguang', (state) => {
         state.flags.volumeFiveBondTarget = 'nangong';
         state.flags.volumeFiveAscensionAttitude = 'shared';
         state.npcRelations['南宫婉'] = 108;
-    }).state;
-    let result = GameCore.chooseStoryOption(sharedDaoState, 'dadao_tongguang');
-    assert.strictEqual(result.ok, true);
-    assert.strictEqual(sharedDaoState.ending.description, '雷光压到肩头时，你与南宫婉背贴着背把最后一重天劫扛了过去。门开那一瞬，你第一次觉得大道也会给并肩的人让路。');
+    });
+    assert.strictEqual(sharedDao.ending.description, '雷光压到肩头时，你与南宫婉背贴着背把最后一重天劫扛了过去。门开那一瞬，你第一次觉得大道也会给并肩的人让路。');
 
-    const mortalFarewellState = getChapterChoiceView('25_final_branch', (state) => {
+    const mortalFarewell = getEndingOutcome('25_final_branch', 'xianfan_shutu', (state) => {
         state.flags.volumeFiveBondTarget = 'mocaihuan';
         state.flags.oldDebtsCleared = true;
         state.npcRelations['墨彩环'] = 72;
-    }).state;
-    result = GameCore.chooseStoryOption(mortalFarewellState, 'xianfan_shutu');
-    assert.strictEqual(result.ok, true);
-    assert.strictEqual(mortalFarewellState.ending.description, '嘉元城灯火还在，墨彩环也站在旧门前。你把迟到太久的话说完，终究还是各自转身，只把那点最晚醒来的凡心带上了天路。');
+    });
+    assert.strictEqual(mortalFarewell.ending.description, '嘉元城灯火还在，墨彩环也站在旧门前。你把迟到太久的话说完，终究还是各自转身，只把那点最晚醒来的凡心带上了天路。');
 
-    const lonelyDaoState = getChapterChoiceView('25_final_branch', (state) => {
+    const lonelyDao = getEndingOutcome('25_final_branch', 'zhiying_xiangdao', (state) => {
         state.flags.volumeFiveBondTarget = 'distance';
         state.flags.volumeFiveAscensionAttitude = 'alone';
         state.npcRelations['南宫婉'] = 84;
-    }).state;
-    result = GameCore.chooseStoryOption(lonelyDaoState, 'zhiying_xiangdao');
-    assert.strictEqual(result.ok, true);
-    assert.strictEqual(lonelyDaoState.ending.description, '门开时你身边没有第二个人。风从袖口一直灌到心口，你才听清那些年总被你按下去的话，终究还是没人替你补上。');
+    });
+    assert.strictEqual(lonelyDao.ending.description, '门开时你身边没有第二个人。风从袖口一直灌到心口，你才听清那些年总被你按下去的话，终究还是没人替你补上。');
 }
 
 function testStringChapterLogsNoNaN() {
@@ -2734,7 +2786,8 @@ testEchoesAndSideStoriesIncludeNewSignals();
 testSideQuestStateLifecycleV1();
 testNpcDialogueUsesChapterEchoes();
 testEndingEchoTextsStayReflective();
-testLateVolumeEchoesAndEndingDescriptionsExactMatch();
+testLateGameEchoesUseSceneHooks();
+testLateGameEndingDescriptionsLandOnScenes();
 testStringChapterLogsNoNaN();
 testStoryPagingState();
 testMainStoryChoiceQueuesUnreadForNextChapter();

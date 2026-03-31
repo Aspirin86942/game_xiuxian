@@ -183,6 +183,7 @@ function getChapterTexts(chapterId, configure) {
     return {
         state,
         summary: view.chapter.summary,
+        echoBeat: view.story.beats[view.story.beats.length - 1]?.text || '',
         beats: view.story.beats.map((item) => item.text),
         speakers,
         dialogueCount: view.story.beats.filter((item) => item.speaker !== '旁白').length,
@@ -2547,10 +2548,57 @@ function testLateVolumeHooksAvoidMetaThesisLines() {
         '到了这里，真正要收拢的',
     ];
 
-    [12, '12_mortal_debt', 23, 24, 25, '25_final_branch'].forEach((chapterId) => {
-        const { summary, beats } = getChapterTexts(chapterId);
-        const sample = [summary, beats[beats.length - 1]].join('\n');
-        assertTextContainsNone(sample, banned, `章节 ${chapterId} 仍带有作者总结腔`);
+    const expectations = [
+        {
+            chapterId: 12,
+            summary: '越国边境风硬，回头路也硬。你还没走远，旧地的人与事却已经开始在背后追。',
+            hookField: 'echoBeat',
+            hookText: '官道拐向太南山时，你终于把最后一次回头忍住了。前路还没稳，旧地也没断，只是从这一步起，它再不会替你挡风。',
+        },
+        {
+            chapterId: '12_mortal_debt',
+            summary: '嘉元城门没变，变的是门里那些等不起的人。',
+            hookField: 'echoBeat',
+            hookText: '你走出嘉元城时没有比来时轻松多少，只是终于知道：这地方欠你的会疼，你欠这地方的也会疼。',
+        },
+        {
+            chapterId: 23,
+            summary: '虚天将开，海雾里每一句“同行”都像先写好的试探。',
+            hookField: 'echoBeat',
+            hookText: '殿门后的风还带着盐气，你却先记住了是谁在最窄那一步伸手，谁在最窄那一步松手。',
+        },
+        {
+            chapterId: 24,
+            summary: '天南风物仍旧，认你的人却已经不是当年那一批。',
+            hookField: 'echoBeat',
+            hookText: '你才踏进天南几步，旧屋、门墙和故人的名字便一个接一个撞了上来，谁都没打算让你安静路过。',
+        },
+        {
+            chapterId: 25,
+            summary: '天门未开，案上的旧物先把你这一生照亮了一半。',
+            hookField: 'beats',
+            hookText: '案上的旧物一件件摊开后，你才发现门前最响的不是天风，而是那些一路被你压到今天才肯一起出声的旧事。',
+        },
+        {
+            chapterId: '25_final_branch',
+            summary: '门前无人催你，倒是一路没说完的话先挤到了喉间。',
+            hookField: 'echoBeat',
+            hookText: '门缝里有风，你却先听见自己这些年最熟悉的那句拖延又一次追了上来：再晚一点，再往后一点。',
+        },
+    ];
+
+    expectations.forEach(({ chapterId, summary: expectedSummary, hookField, hookText: expectedHookText }) => {
+        const texts = getChapterTexts(chapterId);
+        const actualHookText = hookField === 'beats'
+            ? (texts.beats.find((item) => item === expectedHookText) || '')
+            : (texts[hookField] || '');
+        assert.strictEqual(texts.summary, expectedSummary, `章节 ${chapterId} summary 不匹配`);
+        if (hookField === 'beats') {
+            assert(texts.beats.includes(expectedHookText), `章节 ${chapterId} beats 未命中目标 hook`);
+        } else {
+            assert.strictEqual(actualHookText, expectedHookText, `章节 ${chapterId} ${hookField} 不匹配`);
+        }
+        assertTextContainsNone(actualHookText, banned, `章节 ${chapterId} 目标 hook 文案仍带有作者总结腔`);
     });
 }
 

@@ -668,7 +668,7 @@
 #### 改动内容
 
 - 清理晚期自动生成文案：`visibleCostLabel`、`longTermHint`、`endingSeeds.note`、blocked main hint。
-- 清理第四卷后半与第五卷的 `getChapterEchoes()`、关键 beats 与主终局描述。
+- 清理已纳入 Phase 2 合同的晚期 `getChapterEchoes()`、关键 beats 与主终局描述。
 - 补齐 smoke / E2E / 规则书对同一晚期词面合同的同步保护。
 
 #### 改动原因

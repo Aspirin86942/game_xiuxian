@@ -271,8 +271,8 @@ function createBlockedMainChapterScenario() {
 
     return {
         serialized: GameCore.serializeState(state),
-        expectedHint: '主线《太南小会》尚未开卷：需先修至筑基初期。升仙令这一线，火候到了自会续上。',
-        expectedGoal: '主线《太南小会》尚未开卷：需先修至筑基初期。升仙令这一线，火候到了自会续上。',
+        expectedHint: '主线《太南小会》尚未开卷：需先修至筑基初期。',
+        expectedGoal: '主线《太南小会》尚未开卷：需先修至筑基初期。',
     };
 }
 
@@ -907,9 +907,33 @@ function createVolumeFiveEntryScenario() {
         serialized: GameCore.serializeState(state),
         choiceId: selectedChoice.id,
         choiceText: selectedChoice.text,
+        expectedChoiceCostLabel: selectedChoice.visibleCostLabel,
         expectedTitle: formatRenderedStoryTitle(state),
         expectedNextTitle: formatRenderedStoryTitle(previewState),
         expectedStoryProgress: previewState.storyProgress,
+    };
+}
+
+function createSharedDaoEndingScenario() {
+    const state = createChoiceState('25_final_branch', (draft) => {
+        draft.ui.activeTab = 'story';
+        setRealmScore(draft, 12);
+        draft.routeScores.orthodox = 8;
+        draft.flags.volumeFiveBondTarget = 'nangong';
+        draft.flags.volumeFiveAscensionAttitude = 'shared';
+        draft.npcRelations['南宫婉'] = 108;
+    });
+    const view = GameCore.getStoryView(state);
+    const selectedChoice = view.choices.find((choice) => choice.id === 'dadao_tongguang');
+    const previewState = cloneState(state);
+    GameCore.chooseStoryOption(previewState, selectedChoice.id);
+    const endingView = GameCore.getStoryView(previewState);
+
+    return {
+        serialized: GameCore.serializeState(state),
+        choiceId: selectedChoice.id,
+        expectedEndingTitle: endingView.ending.title,
+        expectedEndingDescription: endingView.ending.description,
     };
 }
 
@@ -948,6 +972,7 @@ module.exports = {
     createVolumeFourEntryScenario,
     createVolumeFourExitScenario,
     createVolumeFiveEntryScenario,
+    createSharedDaoEndingScenario,
     createVolumeOneLedgerClosureScenario,
     createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,

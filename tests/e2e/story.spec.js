@@ -14,6 +14,7 @@ const {
     createVolumeFourEntryScenario,
     createVolumeFourExitScenario,
     createVolumeFiveEntryScenario,
+    createSharedDaoEndingScenario,
     createVolumeOneLedgerClosureScenario,
     createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,
@@ -354,6 +355,37 @@ test('第五卷入口摘要使用场景钩子而不是怀旧总论', async ({ pa
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator('#story-summary')).toHaveText('天南风物仍旧，认你的人却已经不是当年那一批。');
     await expect(page.locator('#story-summary')).not.toContainText('真正涌上来的不是怀旧');
+});
+
+test('主线待解锁时不再显示火候桥接句', async ({ page }) => {
+    const scenario = createBlockedMainChapterScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await expect(page.locator(selectors.story.title)).toHaveText('前路未启');
+    await expect(page.locator(selectors.story.line)).toHaveText(scenario.expectedHint);
+    await expect(page.locator(selectors.story.goal)).toHaveText(scenario.expectedGoal);
+    await expect(page.locator(selectors.story.line)).not.toContainText('火候');
+    await expect(page.locator('#story-summary')).not.toContainText('并未断');
+});
+
+test('第五卷入口默认代价文案保持世界内口径', async ({ page }) => {
+    const scenario = createVolumeFiveEntryScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    const choiceLocator = page.locator(selectors.story.choice(scenario.choiceId));
+    await expect(choiceLocator).toContainText(scenario.expectedChoiceCostLabel);
+    await expect(choiceLocator).not.toContainText('这一步会把');
+    await expect(choiceLocator).not.toContainText('重新照见');
+});
+
+test('门前问心进入大道同光后会展示场景化尾声', async ({ page }) => {
+    const scenario = createSharedDaoEndingScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await page.click(selectors.story.choice(scenario.choiceId));
+    await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedEndingTitle);
+    await expect(page.locator('#story-summary')).toHaveText(scenario.expectedEndingDescription);
+    await expect(page.locator('#story-summary')).not.toContainText('真正答案');
 });
 
 test('正式支线可在同行回响区接取并卡内结算', async ({ page }) => {

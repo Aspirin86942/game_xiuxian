@@ -292,6 +292,104 @@
         '大晋': { name: '大晋', description: '人界最后一大段路，谁都想在这里替自己定下一个答案。', npcs: [] },
     };
 
+    const LOCATION_COMMISSION_BOARD_META = {
+        '青牛镇': {
+            title: '青牛镇·委托榜',
+            description: '镇上凡事还靠口耳相传，肯出手的多半都是真的急事。',
+        },
+        '太南山': {
+            title: '太南山·委托榜',
+            description: '散修云集，委托也五花八门，能不能接得住全看你手上底气。',
+        },
+        default: {
+            title: '委托榜',
+            description: '此地暂无公开委托。',
+        },
+    };
+
+    const LOCATION_COMMISSIONS_V1 = [
+        {
+            id: 'qingniu_medicine_delivery',
+            locationName: '青牛镇',
+            title: '药材急递',
+            detail: '镇上药铺缺了几味常用药，托人快送。',
+            minRealmScore: 0,
+            rewardPreview: '灵石 x2',
+            priority: 40,
+            choices: [],
+        },
+        {
+            id: 'qingniu_rear_hill_noise',
+            locationName: '青牛镇',
+            title: '后山异响',
+            detail: '后山近来夜里总有怪声，村民不敢靠近。',
+            minRealmScore: 0,
+            rewardPreview: '灵石 x2',
+            priority: 30,
+            choices: [],
+        },
+        {
+            id: 'qingniu_lost_ox',
+            locationName: '青牛镇',
+            title: '走失耕牛',
+            detail: '一户人家的耕牛走失，盼人帮忙找回。',
+            minRealmScore: 0,
+            rewardPreview: '灵石 x1',
+            priority: 20,
+            choices: [],
+        },
+        {
+            id: 'qingniu_dawn_dew',
+            locationName: '青牛镇',
+            title: '晨露采集',
+            detail: '清晨露水带灵性，需及时采集送到药房。',
+            minRealmScore: 0,
+            rewardPreview: '灵石 x1',
+            priority: 10,
+            choices: [],
+        },
+        {
+            id: 'tainan_fake_cinnabar',
+            locationName: '太南山',
+            title: '伪丹朱排查',
+            detail: '集市出现假丹朱，需要人去核查源头。',
+            minRealmScore: 2,
+            rewardPreview: '灵石 x4',
+            priority: 40,
+            choices: [],
+        },
+        {
+            id: 'tainan_cave_scout',
+            locationName: '太南山',
+            title: '山洞探路',
+            detail: '有人在山洞中发现灵气波动，求探查。',
+            minRealmScore: 2,
+            rewardPreview: '灵石 x4',
+            priority: 30,
+            choices: [],
+        },
+        {
+            id: 'tainan_night_cargo',
+            locationName: '太南山',
+            title: '夜路护送',
+            detail: '夜里运送货物，担心遇袭，急需护送。',
+            minRealmScore: 2,
+            rewardPreview: '灵石 x3',
+            priority: 20,
+            choices: [],
+        },
+        {
+            id: 'tainan_material_purchase',
+            locationName: '太南山',
+            title: '材料代购',
+            detail: '有人托你代购几味材料，需跑一趟集市。',
+            minRealmScore: 2,
+            rewardPreview: '灵石 x2',
+            priority: 10,
+            choices: [],
+        },
+    ];
+
     const SIDE_QUESTS_V1 = [
         {
             id: 'old_medicine_ledger',
@@ -6816,6 +6914,8 @@
         NEGATIVE_ENCOUNTERS,
         CHAPTER_ECHO_PACKS,
         BRANCH_IMPACT_PACKS,
+        LOCATION_COMMISSION_BOARD_META,
+        LOCATION_COMMISSIONS_V1,
         SIDE_QUESTS_V1,
         VOLUME_ONE_CHAPTERS,
         VOLUME_ONE_LEGACY_CHAPTER_MAP,

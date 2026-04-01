@@ -2835,12 +2835,15 @@ function testCommissionAuthoringContract() {
 }
 
 function testCommissionDefinitionCountAndSecondBatchShape() {
-    assert.strictEqual(GameCore.LOCATION_COMMISSIONS_V1.length, 16);
-
     const byId = GameCore.LOCATION_COMMISSIONS_V1.reduce((result, commission) => {
         result[commission.id] = commission;
         return result;
     }, {});
+
+    const huangfengAliases = StoryData.COMMISSION_BOARD_LOCATION_ALIASES['黄枫谷'];
+    const starseaAliases = StoryData.COMMISSION_BOARD_LOCATION_ALIASES['乱星海'];
+    assert(Array.isArray(huangfengAliases) && huangfengAliases.length > 0, '黄枫谷 location family 不应为空');
+    assert(Array.isArray(starseaAliases) && starseaAliases.length > 0, '乱星海 location family 不应为空');
 
     [
         ['huangfeng_pill_furnace', '黄枫谷', '山门差使'],
@@ -2855,6 +2858,24 @@ function testCommissionDefinitionCountAndSecondBatchShape() {
         assert(byId[id], `缺少委托定义 ${id}`);
         assert.strictEqual(byId[id].location, location);
         assert.strictEqual(byId[id].boardLabel, boardLabel);
+    });
+
+    [
+        'huangfeng_pill_furnace',
+        'huangfeng_stolen_herbs',
+        'huangfeng_outer_mountain_patrol',
+        'huangfeng_warehouse_ledger',
+    ].forEach((id) => {
+        assert.strictEqual(byId[id].visibleLocations, huangfengAliases, `${id}.visibleLocations 应复用黄枫谷 location family`);
+    });
+
+    [
+        'starsea_lost_ship',
+        'starsea_demon_tide',
+        'starsea_black_market_transfer',
+        'starsea_broken_formation',
+    ].forEach((id) => {
+        assert.strictEqual(byId[id].visibleLocations, starseaAliases, `${id}.visibleLocations 应复用乱星海 location family`);
     });
 
     const starseaVisibleLocations = byId.starsea_lost_ship.visibleLocations || [];

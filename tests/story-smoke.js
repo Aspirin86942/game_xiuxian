@@ -2834,6 +2834,71 @@ function testCommissionAuthoringContract() {
     assert(defaultMeta.emptyDetail.includes('修为'));
 }
 
+function testCommissionDefinitionCountAndSecondBatchShape() {
+    assert.strictEqual(GameCore.LOCATION_COMMISSIONS_V1.length, 16);
+
+    const byId = GameCore.LOCATION_COMMISSIONS_V1.reduce((result, commission) => {
+        result[commission.id] = commission;
+        return result;
+    }, {});
+
+    [
+        ['huangfeng_pill_furnace', '黄枫谷', '山门差使'],
+        ['huangfeng_stolen_herbs', '黄枫谷', '山门差使'],
+        ['huangfeng_outer_mountain_patrol', '黄枫谷', '山门差使'],
+        ['huangfeng_warehouse_ledger', '黄枫谷', '山门差使'],
+        ['starsea_lost_ship', '乱星海', '海上委托'],
+        ['starsea_demon_tide', '乱星海', '海上委托'],
+        ['starsea_black_market_transfer', '乱星海', '海上委托'],
+        ['starsea_broken_formation', '乱星海', '海上委托'],
+    ].forEach(([id, location, boardLabel]) => {
+        assert(byId[id], `缺少委托定义 ${id}`);
+        assert.strictEqual(byId[id].location, location);
+        assert.strictEqual(byId[id].boardLabel, boardLabel);
+    });
+
+    const starseaVisibleLocations = byId.starsea_lost_ship.visibleLocations || [];
+    ['乱星海', '乱星海外海', '乱星海海路', '乱星海深处'].forEach((location) => {
+        assert(starseaVisibleLocations.includes(location), `starsea_lost_ship.visibleLocations 缺少 ${location}`);
+    });
+}
+
+function testHuangfengCommissionResolution() {
+    const state = createCommissionState('黄枫谷', 4);
+    const accepted = GameCore.acceptCommission(state, 'huangfeng_pill_furnace');
+    assert.strictEqual(accepted.ok, true);
+
+    const resolved = GameCore.chooseCommissionOption(state, 'huangfeng_pill_furnace', 'report_by_rule');
+    assert.strictEqual(resolved.ok, true);
+    assert.strictEqual(state.commissions.huangfeng_pill_furnace.state, 'completed');
+    assert.strictEqual(state.commissions.huangfeng_pill_furnace.lastResult.summary, '你按门规把废炉和残丹一并报了上去。');
+}
+
+function testStarSeaCommissionResolutionAcrossAliasLocation() {
+    const state = createCommissionState('乱星海外海', 8);
+    const accepted = GameCore.acceptCommission(state, 'starsea_lost_ship');
+    assert.strictEqual(accepted.ok, true);
+
+    const resolved = GameCore.chooseCommissionOption(state, 'starsea_lost_ship', 'withdraw_with_chart');
+    assert.strictEqual(resolved.ok, true);
+    assert.strictEqual(state.commissions.starsea_lost_ship.state, 'completed');
+    assert.strictEqual(state.commissions.starsea_lost_ship.lastResult.summary, '你先保住退路和海图，把这趟探船做成了一笔能交代的活。');
+}
+
+function testExpeditionRumorUsesStarSeaBatch() {
+    const state = createCommissionState('乱星海外海', 8);
+    const result = GameCore.resolveExpedition(state, () => 0.99);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.type, 'commission');
+    assert(
+        result.summary.includes('海雾失船')
+        || result.summary.includes('猎妖引潮')
+        || result.summary.includes('黑市转运')
+        || result.summary.includes('孤岛残阵'),
+        '乱星海委托风声应引用第二批委托标题',
+    );
+}
+
 function testCommissionFailureOutcome() {
     const state = createCommissionState('青牛镇', 0);
     const accepted = GameCore.acceptCommission(state, 'qingniu_rear_hill_noise');
@@ -3207,5 +3272,9 @@ testExpeditionResourceFallbackWhenNoRealClue();
 testCommissionFacadeIncludesLifecycleFields();
 testSecondBatchBoardMetaUsesLocationFamilies();
 testCommissionVisibleLocationsOverridesLocationFamilies();
+testCommissionDefinitionCountAndSecondBatchShape();
+testHuangfengCommissionResolution();
+testStarSeaCommissionResolutionAcrossAliasLocation();
+testExpeditionRumorUsesStarSeaBatch();
 
 console.log('story smoke passed');

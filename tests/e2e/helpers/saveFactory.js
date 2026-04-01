@@ -337,6 +337,54 @@ function createTainanCommissionScenario() {
     };
 }
 
+function createHuangfengCommissionScenario() {
+    const state = GameCore.createInitialState();
+    state.ui.activeTab = 'story';
+    state.currentLocation = '黄枫谷';
+    GameCore.setRealmScore(state, 4);
+    GameCore.syncCommissionAvailability(state);
+
+    const visible = GameCore.getVisibleCommissions(state);
+    const target = visible.find((entry) => entry.id === 'huangfeng_pill_furnace');
+    const previewState = cloneState(state);
+    GameCore.acceptCommission(previewState, 'huangfeng_pill_furnace');
+    GameCore.chooseCommissionOption(previewState, 'huangfeng_pill_furnace', 'report_by_rule');
+
+    return {
+        serialized: GameCore.serializeState(state),
+        commissionId: 'huangfeng_pill_furnace',
+        title: target.title,
+        boardLabel: '山门差使',
+        choiceId: 'report_by_rule',
+        choiceText: target.choices.find((choice) => choice.id === 'report_by_rule').text,
+        completedSummary: previewState.commissions.huangfeng_pill_furnace.lastResult.summary,
+    };
+}
+
+function createStarSeaCommissionScenario() {
+    const state = GameCore.createInitialState();
+    state.ui.activeTab = 'story';
+    state.currentLocation = '乱星海外海';
+    GameCore.setRealmScore(state, 8);
+    GameCore.syncCommissionAvailability(state);
+
+    const visible = GameCore.getVisibleCommissions(state);
+    const target = visible.find((entry) => entry.id === 'starsea_lost_ship');
+    const previewState = cloneState(state);
+    GameCore.acceptCommission(previewState, 'starsea_lost_ship');
+    GameCore.chooseCommissionOption(previewState, 'starsea_lost_ship', 'withdraw_with_chart');
+
+    return {
+        serialized: GameCore.serializeState(state),
+        commissionId: 'starsea_lost_ship',
+        title: target.title,
+        boardLabel: '海上委托',
+        choiceId: 'withdraw_with_chart',
+        choiceText: target.choices.find((choice) => choice.id === 'withdraw_with_chart').text,
+        completedSummary: previewState.commissions.starsea_lost_ship.lastResult.summary,
+    };
+}
+
 function createTribulationEndingScenario() {
     const { state, serialized } = createSerializedState((draft) => {
         draft.storyProgress = 14;
@@ -957,6 +1005,8 @@ module.exports = {
     createTribulationEndingScenario,
     createQingniuCommissionScenario,
     createTainanCommissionScenario,
+    createHuangfengCommissionScenario,
+    createStarSeaCommissionScenario,
     createResourceExpeditionScenario,
     createCombatScenario,
     createConsumableScenario,

@@ -18,6 +18,8 @@ const {
     createTribulationEndingScenario,
     createQingniuCommissionScenario,
     createTainanCommissionScenario,
+    createHuangfengCommissionScenario,
+    createStarSeaCommissionScenario,
 } = require('./helpers/saveFactory');
 
 const ADAPTED_VOLUME_LABELS = Object.freeze({
@@ -351,6 +353,60 @@ test('青牛镇坊间委托可接下并当场办妥', async ({ page }) => {
     const save = await readSave(page);
     expect(save.commissions.qingniu_medicine_delivery.state).toBe('completed');
     expect(save.commissions.qingniu_medicine_delivery.selectedChoiceId).toBe(scenario.choiceId);
+});
+
+test('黄枫谷山门差使可接下并办妥', async ({ page }) => {
+    const scenario = createHuangfengCommissionScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await page.click(selectors.tabs.story);
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.title);
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.boardLabel);
+    await expect(page.locator(selectors.journey.commissionStatus(scenario.commissionId))).toHaveText('可接委托');
+    await expect(page.locator(selectors.journey.commissionAccept(scenario.commissionId))).toHaveText('接下这笔委托');
+
+    await page.click(selectors.journey.commissionAccept(scenario.commissionId));
+    await expect(page.locator(selectors.journey.commissionStatus(scenario.commissionId))).toHaveText('已接手');
+
+    const choiceButton = page.locator(selectors.journey.commissionChoice(scenario.commissionId, scenario.choiceId));
+    await expect(choiceButton).toBeVisible();
+    await expect(choiceButton).toContainText(scenario.choiceText);
+    await page.click(selectors.journey.commissionChoice(scenario.commissionId, scenario.choiceId));
+
+    await expect(page.locator(selectors.journey.commissionStatus(scenario.commissionId))).toHaveText('已办妥');
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.completedSummary);
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText('这笔委托已收住');
+
+    const save = await readSave(page);
+    expect(save.commissions.huangfeng_pill_furnace.state).toBe('completed');
+    expect(save.commissions.huangfeng_pill_furnace.selectedChoiceId).toBe(scenario.choiceId);
+});
+
+test('乱星海外海会显示并结算海上委托', async ({ page }) => {
+    const scenario = createStarSeaCommissionScenario();
+    await openGame(page, { serializedSave: scenario.serialized });
+
+    await page.click(selectors.tabs.story);
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.title);
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.boardLabel);
+    await expect(page.locator(selectors.journey.commissionStatus(scenario.commissionId))).toHaveText('可接委托');
+    await expect(page.locator(selectors.journey.commissionAccept(scenario.commissionId))).toHaveText('接下这笔委托');
+
+    await page.click(selectors.journey.commissionAccept(scenario.commissionId));
+    await expect(page.locator(selectors.journey.commissionStatus(scenario.commissionId))).toHaveText('已接手');
+
+    const choiceButton = page.locator(selectors.journey.commissionChoice(scenario.commissionId, scenario.choiceId));
+    await expect(choiceButton).toBeVisible();
+    await expect(choiceButton).toContainText(scenario.choiceText);
+    await page.click(selectors.journey.commissionChoice(scenario.commissionId, scenario.choiceId));
+
+    await expect(page.locator(selectors.journey.commissionStatus(scenario.commissionId))).toHaveText('已办妥');
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.completedSummary);
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText('这笔委托已收住');
+
+    const save = await readSave(page);
+    expect(save.commissions.starsea_lost_ship.state).toBe('completed');
+    expect(save.commissions.starsea_lost_ship.selectedChoiceId).toBe(scenario.choiceId);
 });
 
 test('太南山达到门槛后会显示山市委托', async ({ page }) => {

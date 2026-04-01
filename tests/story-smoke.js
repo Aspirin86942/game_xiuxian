@@ -2786,6 +2786,38 @@ function testCommissionAuthoringContract() {
         assert(commission.choices.length > 0, `委托 ${commission.id} 需要至少一个选择`);
     });
 
+    const byId = GameCore.LOCATION_COMMISSIONS_V1.reduce((result, commission) => {
+        result[commission.id] = commission;
+        return result;
+    }, {});
+
+    assert.strictEqual(byId.qingniu_medicine_delivery.title, '山路送药');
+    assert.strictEqual(byId.qingniu_medicine_delivery.rewardPreview, '灵石 x4 · 灵草 x1');
+    assert.strictEqual(byId.qingniu_medicine_delivery.choices[0].id, 'take_short_path');
+    assert.strictEqual(byId.qingniu_medicine_delivery.choices[1].id, 'take_safe_path');
+
+    assert.strictEqual(byId.qingniu_rear_hill_noise.title, '后山异响');
+    assert.strictEqual(byId.qingniu_rear_hill_noise.choices[1].resultState, 'failed');
+
+    assert.strictEqual(byId.qingniu_lost_ox.title, '失牛与雾');
+    assert.strictEqual(byId.qingniu_lost_ox.rewardPreview, '灵石 x5 · 灵草 x2');
+
+    assert.strictEqual(byId.qingniu_dawn_dew.title, '采露换符');
+    assert.strictEqual(byId.qingniu_dawn_dew.choices[0].id, 'deliver_every_drop');
+    assert.strictEqual(byId.qingniu_dawn_dew.choices[1].id, 'keep_half_for_yourself');
+
+    assert.strictEqual(byId.tainan_fake_cinnabar.title, '摊前假丹砂');
+    assert.strictEqual(byId.tainan_fake_cinnabar.rewardPreview, '灵石 x9 · 灵草 x1');
+
+    assert.strictEqual(byId.tainan_cave_scout.title, '洞府探风');
+    assert.strictEqual(byId.tainan_cave_scout.choices[1].resultState, 'failed');
+
+    assert.strictEqual(byId.tainan_night_cargo.title, '夜路押货');
+    assert.strictEqual(byId.tainan_night_cargo.rewardPreview, '灵石 x7 · 解毒散 x1');
+
+    assert.strictEqual(byId.tainan_material_purchase.title, '代购灵材');
+    assert.strictEqual(byId.tainan_material_purchase.choices[1].resultState, 'failed');
+
     const qingniuMeta = GameCore.getCommissionBoardMeta({ currentLocation: '青牛镇' });
     assert.strictEqual(qingniuMeta.title, '坊间委托');
     assert.strictEqual(qingniuMeta.emptyTitle, '此地眼下暂无委托');

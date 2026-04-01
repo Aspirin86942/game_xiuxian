@@ -291,6 +291,10 @@
         }
 
         function syncCommissionAvailability(state) {
+            if (!state || typeof state !== 'object') {
+                return state;
+            }
+
             // 委托仅随当前地点与境界刷新，避免跨地点可见性污染。
             state.commissions = deps.normalizeCommissionRecords(state.commissions);
 
@@ -306,7 +310,14 @@
 
                 const locationVisible = isCommissionLocationVisible(state, definition);
                 const realmVisible = isCommissionRealmVisible(state, definition);
-                record.state = locationVisible && realmVisible ? 'available' : 'hidden';
+                if (locationVisible && realmVisible) {
+                    record.state = 'available';
+                    if (record.availableAtRealmScore === null) {
+                        record.availableAtRealmScore = deps.getRealmScore(state);
+                    }
+                } else {
+                    record.state = 'hidden';
+                }
             });
 
             return state;
@@ -329,9 +340,20 @@
                         state: runtime.state,
                         selectedChoiceId: runtime.selectedChoiceId,
                         lastResult: runtime.lastResult ? clone(runtime.lastResult) : null,
+                        __locationVisible: isCommissionLocationVisible(state, definition),
+                        __realmVisible: isCommissionRealmVisible(state, definition),
                     };
                 })
-                .filter((entry) => entry.state !== 'hidden')
+                .filter((entry) => {
+                    if (entry.state === 'active') {
+                        return true;
+                    }
+                    return entry.__locationVisible && entry.__realmVisible && entry.state !== 'hidden';
+                })
+                .map((entry) => {
+                    const { __locationVisible, __realmVisible, ...payload } = entry;
+                    return payload;
+                })
                 .sort((left, right) => {
                     const order = { active: 0, available: 1, completed: 2, failed: 3 };
                     return (order[left.state] - order[right.state]) || left.title.localeCompare(right.title, 'zh-CN');
@@ -363,6 +385,7 @@
 
             record.state = 'active';
             record.lastResult = null;
+            record.acceptedAtRealmScore = deps.getRealmScore(state);
             deps.pushLog(state, `接下委托：${definition.title}`, 'normal');
             return { ok: true, commission: getVisibleCommissions(state).find((entry) => entry.id === commissionId) || null };
         }
@@ -392,6 +415,7 @@
             record.state = choice.resultState === 'failed' ? 'failed' : 'completed';
             record.selectedChoiceId = choice.id;
             record.lastResult = createCommissionResult(record.state, choice);
+            record.resolvedAtRealmScore = deps.getRealmScore(state);
 
             deps.pushLog(state, `委托抉择：${choice.text}`, 'normal');
             deps.pushLog(
@@ -621,6 +645,15 @@
                 deps.pushLog(state, summary, 'normal');
                 return { ok: true, type: 'commission', summary, commissionId: commission.id };
             }
+
+            const sideStories = getAvailableSideStories(state);
+            if (sideStories.length > 0) {
+                const clue = sideStories[Math.floor(random() * sideStories.length)];
+                const summary = `你在 ${location.name} 听闻线索「${clue.title}」，可前往剧情与游历页继续查看。`;
+                deps.pushLog(state, summary, 'normal');
+                return { ok: true, type: 'clue', summary, clueTitle: clue.title };
+            }
+
             const fallbackGain = getExpeditionReward(state, 80, 2);
             deps.changeItem(state, 'lingshi', fallbackGain);
             const summary = `你在 ${location.name} 未寻得新线索，却顺手带回灵石 ${fallbackGain} 枚。`;

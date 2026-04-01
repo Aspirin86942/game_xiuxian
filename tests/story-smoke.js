@@ -2923,9 +2923,11 @@ function testInitialCommissionBoardUsesLocationAndRealm() {
 
 function testCommissionActiveLimitAndResolution() {
     const state = createCommissionState('青牛镇', 0);
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.availableAtRealmScore, GameCore.getRealmScore(state));
     const firstAccept = GameCore.acceptCommission(state, 'qingniu_medicine_delivery');
     assert.strictEqual(firstAccept.ok, true);
     assert.strictEqual(state.commissions.qingniu_medicine_delivery.state, 'active');
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.acceptedAtRealmScore, GameCore.getRealmScore(state));
 
     const secondAccept = GameCore.acceptCommission(state, 'qingniu_lost_ox');
     assert.strictEqual(secondAccept.ok, false);
@@ -2936,6 +2938,7 @@ function testCommissionActiveLimitAndResolution() {
     assert.strictEqual(state.commissions.qingniu_medicine_delivery.state, 'completed');
     assert.strictEqual(state.commissions.qingniu_medicine_delivery.selectedChoiceId, 'take_safe_path');
     assert.strictEqual(state.commissions.qingniu_medicine_delivery.lastResult.summary, '你绕开了最险的山坳，把人和药都安稳送到了。');
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.resolvedAtRealmScore, GameCore.getRealmScore(state));
 }
 
 function testCommissionFailurePathIsLocal() {
@@ -2962,6 +2965,39 @@ function testExpeditionRumorPointsToVisibleCommission() {
         || result.summary.includes('夜路押货')
         || result.summary.includes('代购灵材'),
         '风声事件应引用当前地点可见委托标题',
+    );
+}
+
+function testExpeditionClueFallsBackWhenNoVisibleCommission() {
+    const state = createCommissionState('七玄门', 0, (draft) => {
+        draft.storyProgress = 8;
+        draft.flags.protectedMoHouse = true;
+        draft.npcRelations['墨彩环'] = -1;
+    });
+    const result = GameCore.resolveExpedition(state, () => 0.99);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.type, 'clue');
+    assert(result.summary.includes('旧药账'));
+}
+
+function testCompletedCommissionStaysLocalToItsLocation() {
+    const state = createCommissionState('青牛镇', 0);
+    const accepted = GameCore.acceptCommission(state, 'qingniu_medicine_delivery');
+    assert.strictEqual(accepted.ok, true);
+    const resolved = GameCore.chooseCommissionOption(state, 'qingniu_medicine_delivery', 'take_safe_path');
+    assert.strictEqual(resolved.ok, true);
+
+    state.currentLocation = '太南山';
+    GameCore.setRealmScore(state, 2);
+    GameCore.syncCommissionAvailability(state);
+    const visible = GameCore.getVisibleCommissions(state);
+    assert.strictEqual(visible.some((entry) => entry.id === 'qingniu_medicine_delivery'), false);
+    assert(
+        visible.some((entry) => entry.id === 'tainan_fake_cinnabar')
+        && visible.some((entry) => entry.id === 'tainan_cave_scout')
+        && visible.some((entry) => entry.id === 'tainan_night_cargo')
+        && visible.some((entry) => entry.id === 'tainan_material_purchase'),
+        '太南山委托仍应可见',
     );
 }
 
@@ -3046,5 +3082,7 @@ testInitialCommissionBoardUsesLocationAndRealm();
 testCommissionActiveLimitAndResolution();
 testCommissionFailurePathIsLocal();
 testExpeditionRumorPointsToVisibleCommission();
+testExpeditionClueFallsBackWhenNoVisibleCommission();
+testCompletedCommissionStaysLocalToItsLocation();
 
 console.log('story smoke passed');

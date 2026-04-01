@@ -2812,10 +2812,10 @@ function testCommissionAuthoringContract() {
     assert.strictEqual(byId.tainan_cave_scout.title, '洞府探风');
     assert.strictEqual(byId.tainan_cave_scout.choices[1].resultState, 'failed');
 
-    assert.strictEqual(byId.tainan_night_cargo.title, '夜市押货');
+    assert.strictEqual(byId.tainan_night_cargo.title, '夜路押货');
     assert.strictEqual(byId.tainan_night_cargo.rewardPreview, '灵石 x7 · 解毒散 x1');
 
-    assert.strictEqual(byId.tainan_material_purchase.title, '代买灵材');
+    assert.strictEqual(byId.tainan_material_purchase.title, '代购灵材');
     assert.strictEqual(byId.tainan_material_purchase.choices[1].resultState, 'failed');
 
     const qingniuMeta = GameCore.getCommissionBoardMeta({ currentLocation: '青牛镇' });
@@ -2947,7 +2947,7 @@ function testCommissionFailurePathIsLocal() {
     assert.strictEqual(failResult.ok, true);
     assert.strictEqual(state.commissions.tainan_cave_scout.state, 'failed');
     assert.strictEqual(state.commissions.tainan_cave_scout.lastResult.outcome, 'failed');
-    assert.strictEqual(state.commissions.tainan_cave_scout.lastResult.summary, '你多探了一层，却踩中了旧阵残禁。');
+    assert.strictEqual(state.commissions.tainan_cave_scout.lastResult.summary, '你想再多探一层，结果踩塌了洞里的旧陷阵。');
 }
 
 function testExpeditionRumorPointsToVisibleCommission() {
@@ -2959,8 +2959,8 @@ function testExpeditionRumorPointsToVisibleCommission() {
     assert(
         result.summary.includes('摊前假丹砂')
         || result.summary.includes('洞府探风')
-        || result.summary.includes('夜市押货')
-        || result.summary.includes('代买灵材'),
+        || result.summary.includes('夜路押货')
+        || result.summary.includes('代购灵材'),
         '风声事件应引用当前地点可见委托标题',
     );
 }

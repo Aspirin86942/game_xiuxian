@@ -2812,10 +2812,10 @@ function testCommissionAuthoringContract() {
     assert.strictEqual(byId.tainan_cave_scout.title, '洞府探风');
     assert.strictEqual(byId.tainan_cave_scout.choices[1].resultState, 'failed');
 
-    assert.strictEqual(byId.tainan_night_cargo.title, '夜路押货');
+    assert.strictEqual(byId.tainan_night_cargo.title, '夜市押货');
     assert.strictEqual(byId.tainan_night_cargo.rewardPreview, '灵石 x7 · 解毒散 x1');
 
-    assert.strictEqual(byId.tainan_material_purchase.title, '代购灵材');
+    assert.strictEqual(byId.tainan_material_purchase.title, '代买灵材');
     assert.strictEqual(byId.tainan_material_purchase.choices[1].resultState, 'failed');
 
     const qingniuMeta = GameCore.getCommissionBoardMeta({ currentLocation: '青牛镇' });
@@ -2921,6 +2921,50 @@ function testInitialCommissionBoardUsesLocationAndRealm() {
     );
 }
 
+function testCommissionActiveLimitAndResolution() {
+    const state = createCommissionState('青牛镇', 0);
+    const firstAccept = GameCore.acceptCommission(state, 'qingniu_medicine_delivery');
+    assert.strictEqual(firstAccept.ok, true);
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.state, 'active');
+
+    const secondAccept = GameCore.acceptCommission(state, 'qingniu_lost_ox');
+    assert.strictEqual(secondAccept.ok, false);
+    assert.strictEqual(secondAccept.error, '另有委托在身，请先把手头这一笔收住。');
+
+    const resolveResult = GameCore.chooseCommissionOption(state, 'qingniu_medicine_delivery', 'take_safe_path');
+    assert.strictEqual(resolveResult.ok, true);
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.state, 'completed');
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.selectedChoiceId, 'take_safe_path');
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.lastResult.summary, '你绕开了最险的山坳，把人和药都安稳送到了。');
+}
+
+function testCommissionFailurePathIsLocal() {
+    const state = createCommissionState('太南山', 2);
+    const acceptResult = GameCore.acceptCommission(state, 'tainan_cave_scout');
+    assert.strictEqual(acceptResult.ok, true);
+
+    const failResult = GameCore.chooseCommissionOption(state, 'tainan_cave_scout', 'step_into_trap');
+    assert.strictEqual(failResult.ok, true);
+    assert.strictEqual(state.commissions.tainan_cave_scout.state, 'failed');
+    assert.strictEqual(state.commissions.tainan_cave_scout.lastResult.outcome, 'failed');
+    assert.strictEqual(state.commissions.tainan_cave_scout.lastResult.summary, '你多探了一层，却踩中了旧阵残禁。');
+}
+
+function testExpeditionRumorPointsToVisibleCommission() {
+    const state = createCommissionState('太南山', 2);
+    const result = GameCore.resolveExpedition(state, () => 0.99);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.type, 'commission');
+    assert(result.summary.includes('你在 太南山 听见一笔委托风声'));
+    assert(
+        result.summary.includes('摊前假丹砂')
+        || result.summary.includes('洞府探风')
+        || result.summary.includes('夜市押货')
+        || result.summary.includes('代买灵材'),
+        '风声事件应引用当前地点可见委托标题',
+    );
+}
+
 testStoryCursorSwitching();
 testAlchemyRecipeCraftingSuccess();
 testAlchemyRecipeInsufficientMaterialsDoesNotPolluteInventory();
@@ -2999,5 +3043,8 @@ testCommissionFailureOutcome();
 testCommissionHappyPath();
 testCommissionSaveMigrationV8();
 testInitialCommissionBoardUsesLocationAndRealm();
+testCommissionActiveLimitAndResolution();
+testCommissionFailurePathIsLocal();
+testExpeditionRumorPointsToVisibleCommission();
 
 console.log('story smoke passed');

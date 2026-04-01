@@ -157,6 +157,7 @@
         getLocationMeta: deps.getLocationMeta,
         getBlockedMainStoryHint: deps.getBlockedMainStoryHint,
         getAvailableSideStories: deps.getAvailableSideStories,
+        // 委托运行时交由 world 模块统一接管，避免 state 临时逻辑长期并存。
         getVisibleCommissions: deps.getVisibleCommissions,
         getNpcDialogue: deps.getNpcDialogue,
         getAvailableMainChapter: deps.getAvailableMainChapter,

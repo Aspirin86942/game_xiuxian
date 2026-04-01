@@ -22,7 +22,7 @@
 | 游历事件权重 | `battle=45 / resource=35 / risk=12 / clue=8` | 决定游历先抽到哪类反馈 | 调高 `clue` 会更常播报委托或旧事 | 调低 `clue` 会让地点委托存在感下降 | 高频播报会稀释资源/战斗反馈 | 需结合 smoke / e2e 一起评估 |
 | 风声回退顺序 | `commission -> clue -> resource` | 保证有正式委托时优先播报 | 改后置会削弱地点委托存在感 | 无更低空间 | 规则书与运行时表述不一致 | 当前固定，不建议单改 |
 | 单活跃限制 | 同时只允许 1 条 `active` 委托 | 控制状态复杂度与 UI 密度 | 放开会增加并行状态负担 | 无 | 存档与面板交互会一起变复杂 | 当前固定 |
-| 当前展示字段 | 正式委托为 `title + detail + category + state + rewardPreview + inline actions/results`；legacy 旧事线索仍为 `title + detail` | 保持正式委托与 fallback 旧事分层 | 继续加字段会挤压单屏 | 再减少字段会让正式委托失去可解释性 | 同一容器承载两套层级，字段过多会失衡 | 当前不建议再扩字段 |
+| 当前展示字段 | 正式委托卡在剧情页委托区显示 `title + detail + category + state + rewardPreview + inline actions/results`；legacy 旧事线索只保留为 `expedition / clue` fallback 口径，不在剧情页委托区同层混排 | 保持正式委托与 fallback 旧事分层 | 继续加字段会挤压单屏 | 再减少字段会让正式委托失去可解释性 | 若重新混回同层容器，会破坏当前委托区分层与 375x667 可用性 | 当前不建议再扩字段 |
 
 ## 3. 公式
 

@@ -8,6 +8,7 @@
             COMMISSION_BOARD_LOCATION_ALIASES,
             LOCATION_COMMISSION_BOARD_META,
             LOCATION_COMMISSIONS_V1,
+            LEGACY_SIDE_STORY_DEFINITIONS,
             MONSTERS,
             constants,
         } = deps.data;
@@ -18,16 +19,12 @@
             return flagNames.some((flagName) => Boolean(flags[flagName]));
         }
 
-        const LEGACY_SIDE_QUEST_LOOKUP = new Map(
-            (
-                globalScope.StoryData?.__LEGACY_SIDE_QUESTS_V1
-                || globalScope.__XIUXIAN_INTERNALS__?.data?.LEGACY_SIDE_QUESTS_V1
-                || []
-            ).map((quest) => [quest.id, quest]),
+        const LEGACY_SIDE_STORY_LOOKUP = new Map(
+            (LEGACY_SIDE_STORY_DEFINITIONS || []).map((quest) => [quest.id, quest]),
         );
 
-        function getLegacySideQuestDefinition(questId) {
-            return LEGACY_SIDE_QUEST_LOOKUP.get(questId) || null;
+        function getLegacySideStoryDefinition(questId) {
+            return LEGACY_SIDE_STORY_LOOKUP.get(questId) || null;
         }
 
         const COMMISSION_BOARD_ALIAS_LOOKUP = new Map();
@@ -45,6 +42,10 @@
         }
 
         function getCommissionVisibleLocations(definition) {
+            if (Array.isArray(definition?.visibleLocations) && definition.visibleLocations.length > 0) {
+                return definition.visibleLocations;
+            }
+
             const boardKey = resolveCommissionBoardKey(definition?.location);
             const visibleLocations = COMMISSION_BOARD_LOCATION_ALIASES?.[boardKey];
             if (Array.isArray(visibleLocations) && visibleLocations.length > 0) {
@@ -237,7 +238,7 @@
                 stories.push(npc ? { title, detail, npc } : { title, detail });
             };
             const pushQuestStory = (questId) => {
-                const quest = getLegacySideQuestDefinition(questId);
+                const quest = getLegacySideStoryDefinition(questId);
                 if (!quest) {
                     return;
                 }

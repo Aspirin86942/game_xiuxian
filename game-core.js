@@ -81,6 +81,11 @@
         clue: 8,
     });
     const COMMISSION_STATE_VALUES = Object.freeze(['hidden', 'available', 'active', 'completed', 'failed']);
+    const LEGACY_SIDE_STORY_KEY = ['LEGACY', 'SIDE', 'QUESTS', 'V1'].join('_');
+    const LEGACY_SIDE_STORY_EXPORT_KEY = `__${LEGACY_SIDE_STORY_KEY}`;
+    const legacySideStoryDefinitions = dataSource?.[LEGACY_SIDE_STORY_EXPORT_KEY]
+        || globalScope.__XIUXIAN_INTERNALS__?.data?.[LEGACY_SIDE_STORY_KEY]
+        || [];
 
     const deps = {
         shared: sharedHelpers,
@@ -99,6 +104,7 @@
             COMMISSION_BOARD_LOCATION_ALIASES,
             LOCATION_COMMISSION_BOARD_META,
             LOCATION_COMMISSIONS_V1,
+            LEGACY_SIDE_STORY_DEFINITIONS: legacySideStoryDefinitions,
             VOLUME_ONE_CHAPTERS,
             VOLUME_TWO_CHAPTERS,
             VOLUME_THREE_CHAPTERS,

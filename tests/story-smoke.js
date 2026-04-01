@@ -2931,6 +2931,74 @@ function testSecondBatchBoardMetaUsesLocationFamilies() {
     assert.strictEqual(starseaMeta.emptyTitle, '海路眼下暂无委托');
 }
 
+function testCommissionVisibleLocationsOverridesLocationFamilies() {
+    const createWorldModule = require('../src/core/world.js');
+    const commissionId = 'synthetic_visible_locations';
+
+    const fakeDeps = {
+        shared: {
+            clone: (value) => JSON.parse(JSON.stringify(value)),
+        },
+        data: {
+            ITEMS: {},
+            LOCATIONS: {},
+            NPCS: {},
+            MONSTERS: [],
+            COMMISSION_BOARD_LOCATION_ALIASES: {},
+            LOCATION_COMMISSION_BOARD_META: {
+                default: {
+                    title: '地点委托',
+                    emptyTitle: '此地眼下暂无委托',
+                    emptyDetail: '先换个地方走走，或再把修为往前推一层。',
+                },
+            },
+            LOCATION_COMMISSIONS_V1: [
+                {
+                    id: commissionId,
+                    title: '星海外海试炼',
+                    boardLabel: '海上委托',
+                    category: '探路',
+                    location: '乱星海',
+                    visibleLocations: ['乱星海外海'],
+                    minRealmScore: 0,
+                    maxRealmScore: 10,
+                    detail: '只为验证 visibleLocations 分支。',
+                    rewardPreview: '',
+                    priority: 0,
+                    choices: [{ id: 'take', text: '接下', resultSummary: '', resultDetail: '' }],
+                },
+            ],
+            LEGACY_SIDE_STORY_DEFINITIONS: [],
+            constants: {},
+        },
+        normalizeCommissionRecords: () => ({
+            [commissionId]: {
+                commissionId,
+                state: 'hidden',
+                availableAtRealmScore: null,
+                acceptedAtRealmScore: null,
+                resolvedAtRealmScore: null,
+                selectedChoiceId: null,
+                lastResult: null,
+            },
+        }),
+        getRealmScore: (state) => state.realmScore,
+    };
+
+    const world = createWorldModule(fakeDeps);
+    const state = {
+        currentLocation: '乱星海外海',
+        realmScore: 5,
+        commissions: {},
+        inventory: {},
+        flags: {},
+        npcRelations: {},
+        playerStats: { hp: 100, maxHp: 100, attack: 0, defense: 0 },
+    };
+
+    assert.deepStrictEqual(world.getVisibleCommissions(state).map((entry) => entry.id), [commissionId]);
+}
+
 function testCommissionActiveLimitAndResolution() {
     const state = createCommissionState('青牛镇', 0);
     assert.strictEqual(state.commissions.qingniu_medicine_delivery.availableAtRealmScore, GameCore.getRealmScore(state));
@@ -3138,5 +3206,6 @@ testCompletedCommissionStaysLocalToItsLocation();
 testExpeditionResourceFallbackWhenNoRealClue();
 testCommissionFacadeIncludesLifecycleFields();
 testSecondBatchBoardMetaUsesLocationFamilies();
+testCommissionVisibleLocationsOverridesLocationFamilies();
 
 console.log('story smoke passed');

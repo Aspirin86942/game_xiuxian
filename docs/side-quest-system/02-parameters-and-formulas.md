@@ -17,7 +17,8 @@
 | 地点数量 | 4 组：`青牛镇 / 太南山 / 黄枫谷 / 乱星海` | 决定正式委托的地域覆盖 | 继续扩点会抬高内容与回归成本 | 缩减会让中后段地点横截面变薄 | 面板空态、地点别名与测试需同步 | 仅在规则书和测试同步后调整 |
 | 每地点委托数 | 每组 4 条，共 16 条 | 保持地点委托密度可控 | 更多会挤压 375x667 单屏密度 | 更少会让地点气质不够稳定 | 列表过长会破坏单屏体验 | 建议先保持 4 条一组 |
 | 境界开放区间 | 青牛镇 `0~2`；太南山 `2~4`；黄枫谷 `4~6`；乱星海 `7~10` | 控制每组委托对应的成长段 | 放宽会让旧地点长期挤占新地点 | 收紧会导致地点断层 | 境界与地点气质错位 | 只能按地点组整体评估调整 |
-| 地点族可见性 | `visibleLocations` 优先，其次 `COMMISSION_BOARD_LOCATION_ALIASES[boardKey]`，最后回退 `location` | 让一条委托可在同一地点族内复用 | 扩大家族会增加跨地点可见范围 | 收缩会让别名地点看不到委托 | 黄枫谷/乱星海别名与面板元信息不一致 | 必须和地点族定义一起改 |
+| 地点可见性回退链 | `visibleLocations` 优先，其次 `COMMISSION_BOARD_LOCATION_ALIASES[location]`，最后回退 `[location]` | 让显式配置与地点别名复用遵循同一条可见性规则 | 扩大地点族会增加跨地点可见范围 | 收缩会让别名地点看不到委托 | 地点配置与面板元信息不一致时会出现可见性失配 | 必须和地点配置一起改 |
+| 黄枫谷可见配置 | 显式单点 `['黄枫谷']` | 保持黄枫谷委托只在山门本地显示 | 扩大会把山门差使误带到别处 | 收缩无额外变化 | 会把单点配置误写成地点族复用 | 当前固定，不建议单改 |
 | 乱星海地点族 | `乱星海 / 乱星海群岛 / 乱星海诸岛 / 乱星海外海 / 乱星海海路 / 乱星海深处` | 统一海上委托显示口径 | 更多别名会扩大显示覆盖 | 更少别名会让部分海域掉出面板 | 海图章节与委托榜可见性失配 | 仅按现有别名集合维护 |
 | 游历事件权重 | `battle=45 / resource=35 / risk=12 / clue=8` | 决定游历先抽到哪类反馈 | 调高 `clue` 会更常播报委托或旧事 | 调低 `clue` 会让地点委托存在感下降 | 高频播报会稀释资源/战斗反馈 | 需结合 smoke / e2e 一起评估 |
 | 风声回退顺序 | `commission -> clue -> resource` | 保证有正式委托时优先播报 | 改后置会削弱地点委托存在感 | 无更低空间 | 规则书与运行时表述不一致 | 当前固定，不建议单改 |
@@ -38,7 +39,7 @@ VisibleCommission = LocationFamilyGate AND RealmGate AND RuntimeStateGate
 
 - `LocationFamilyGate`：`currentLocation` 是否命中 `visibleLocations`、地点族别名或单点 `location`
 - `RealmGate`：`realmScore` 是否落在 `minRealmScore ~ maxRealmScore`
-- `RuntimeStateGate`：运行时记录尚未进入 `hidden` 之外的不可见异常态，且 `active` 可跨地点切换后继续显示
+- `RuntimeStateGate`：运行时记录处于可显示结果态，但地点可见性仍继续由 `LocationFamilyGate` 控制，不因切换地点豁免
 
 ### 3.2 当前 legacy 旧事 fallback 公式
 
@@ -75,14 +76,14 @@ RewardTier = BaseTierByStoryProgress + ModifierByRisk + ModifierByUniqueness
 - 线索去重正确率：同轮计算时是否因为标题碰撞误吞不同旧事线索。
 - 地点委托密度：单个地点组建议仍保持 4 条上下，否则正式任务 UI 很难保持 375x667 的单屏可用性。
 - 委托转化率：当前 `available -> active -> completed/failed` 的比例应可被追踪，而不是只知道“地点里曾经有委托”。
-- 地点族命中率：黄枫谷与乱星海的别名地点进入时，是否仍能看到同组委托与空态。
+- 地点配置命中率：黄枫谷进入山门本地时是否维持单点可见，乱星海各海域别名进入时是否仍能看到同组委托与空态。
 - 唯一奖励重复率：正式委托奖励不应因读档或重复结算被二次发放。
 
 ## 5. 联动参数
 
 - `currentLocation`：决定是否命中地点族与委托榜口径。
 - `realmScore`：决定委托是否进入可见区间。
-- `visibleLocations / COMMISSION_BOARD_LOCATION_ALIASES`：决定黄枫谷与乱星海等地点族的委托复用范围。
+- `visibleLocations / COMMISSION_BOARD_LOCATION_ALIASES`：决定显式单点地点与乱星海海上地点族的委托显示范围。
 - `routeScores`：决定正式委托 choice 的结算偏向。
 - `flags` 与 `npcRelations`：当前主要影响 legacy 旧事 fallback，而非正式地点委托主显示。
 - `inventory` 与物品系统：未来正式任务奖励进入背包后，持续语义应交给 `inventory-and-item-system`。
@@ -90,7 +91,7 @@ RewardTier = BaseTierByStoryProgress + ModifierByRisk + ModifierByUniqueness
 
 ## 6. 风险说明
 
-- 若地点族定义与委托 `visibleLocations` 不同步，黄枫谷或乱星海的别名地点会出现“人在此地却无委托榜”的失配。
+- 若地点配置与委托 `visibleLocations` 不同步，黄枫谷会失去应有的单点显示，乱星海各海域别名也可能出现“人在此地却无委托榜”的失配。
 - 若标题命名不稳，当前按标题去重的策略会误吞旧事线索。
 - 若未来任务奖励不按章节窗口分档，早期支线容易过肥，后期支线又会变成只剩情绪价值。
 - 若继续在同一容器里叠加更多元信息，却不拆出更强分组或折叠策略，会让 375x667 下的同行回响区变得过密。

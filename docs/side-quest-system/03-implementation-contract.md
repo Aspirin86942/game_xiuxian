@@ -14,15 +14,15 @@
 
 ## 2. 代码入口
 
-- `D:\Program_python\game_xiuxian\game-core.js`
-- `D:\Program_python\game_xiuxian\story-data.js`
-- `D:\Program_python\game_xiuxian\src\core\state.js`
-- `D:\Program_python\game_xiuxian\src\core\world.js`
-- `D:\Program_python\game_xiuxian\src\ui\renderers.js`
-- `D:\Program_python\game_xiuxian\src\ui\actions.js`
-- `D:\Program_python\game_xiuxian\tests\story-smoke.js`
-- `D:\Program_python\game_xiuxian\tests\ui-contract-smoke.js`
-- `D:\Program_python\game_xiuxian\tests\e2e\story.spec.js`
+- `game-core.js`
+- `story-data.js`
+- `src/core/state.js`
+- `src/core/world.js`
+- `src/ui/renderers.js`
+- `src/ui/actions.js`
+- `tests/story-smoke.js`
+- `tests/ui-contract-smoke.js`
+- `tests/e2e/story.spec.js`
 
 ## 3. 稳定数据契约
 
@@ -75,15 +75,15 @@
 - `selectedChoiceId`
 - `lastResult`
 
-### 3.2.1 地点族与可见性默认
+### 3.2.1 位置配置与可见性默认
 
 - 若委托定义显式声明 `visibleLocations`，运行时按该列表判定地点可见性。
 - 若委托定义未声明 `visibleLocations`，则先回退 `COMMISSION_BOARD_LOCATION_ALIASES[location]`。
 - 若该地点没有地点族配置，再回退为 `[location]`。
-- 当前规则书显式锁定的固定位置族至少包括：
-  - `黄枫谷 -> ['黄枫谷']`
-  - `乱星海 -> ['乱星海', '乱星海群岛', '乱星海诸岛', '乱星海外海', '乱星海海路', '乱星海深处']`
-- 其余地点按上述“地点族优先、单点兜底”的同一回退规则处理。
+- 当前规则书显式锁定的固定位置配置至少包括：
+  - `黄枫谷 -> ['黄枫谷']`，保持显式单点可见
+  - `乱星海 -> ['乱星海', '乱星海群岛', '乱星海诸岛', '乱星海外海', '乱星海海路', '乱星海深处']`，作为海上地点族复用
+- 其余地点按上述“显式列表优先、地点别名次之、单点兜底”的同一回退规则处理。
 
 ### 3.2.2 旧存档兼容
 
@@ -91,13 +91,13 @@
 - 导入 v7 存档时，不尝试把旧 `sideQuests` 逐条迁移成新委托结果。
 - Phase 2 继续沿用 `SAVE_VERSION = 8`，不通过 bump 版本来接入黄枫谷、乱星海等新增委托。
 - `normalizeCommissionRecords()` 必须按当前 `LOCATION_COMMISSIONS_V1` 自动补齐新增委托记录，旧存档缺少黄枫谷或乱星海条目时也不能漏建。
-- `mergeSave()` 应直接按 `LOCATION_COMMISSIONS_V1` 重建默认 `commissions`，再按当前 `currentLocation + realmScore` 同步可见性。
+- `mergeSave()` 应直接按 `LOCATION_COMMISSIONS_V1` 重建默认 `commissions`，再按 `visibleLocations -> COMMISSION_BOARD_LOCATION_ALIASES[location] -> [location]` 加上 `realmScore` 同步可见性。
 
 ## 4. 稳定流程契约
 
 ### 4.1 正常生命周期
 
-1. 先按 `visibleLocations -> COMMISSION_BOARD_LOCATION_ALIASES -> location` 的地点族回退，再叠加 `realmScore` 推导哪些委托进入 `available`。
+1. 先按 `visibleLocations -> COMMISSION_BOARD_LOCATION_ALIASES[location] -> [location]` 的回退链，再叠加 `realmScore` 推导哪些委托进入 `available`。
 2. 玩家接取后，委托进入 `active`。
 3. 玩家在卡内选择一个 choice 后，委托进入 `completed` 或 `failed`。
 4. 结算后写入 `selectedChoiceId / lastResult / resolvedAtRealmScore`。
@@ -123,7 +123,7 @@
 
 - 当前最小 UI 继续复用 `#side-story-list`，但玩家语义必须统一为地点委托。
 - 当前剧情页委托区只渲染正式地点委托或地点空态，不再混排 legacy 风闻卡。
-- 黄枫谷与乱星海等地点族切换到别名地点时，仍必须继续显示同组委托榜与空态文案。
+- 黄枫谷应保持山门本地单点显示；乱星海切换到海上别名地点时，仍必须继续显示同组委托榜与空态文案。
 - `side quest / task / available / active` 等内部术语可以保留在代码、规则书与测试变量中，但玩家界面必须统一映射为世界观词面。
 - 玩家可见层默认使用以下映射：
   - 系统总称 -> `地点委托`
@@ -152,28 +152,28 @@
 - 地点委托的数量和地点扩展顺序
 - `boardLabel` 与空态措辞的具体文案
 - 境界开放区间的具体数值
-- 黄枫谷、乱星海等地点族内的别名集合
+- 黄枫谷的显式单点可见配置与乱星海海上地点族的别名集合
 
 但以下项目本轮已锁定：
 
 - `commissions` 作为正式委托存档字段
 - Phase 2 不 bump `SAVE_VERSION`，新增委托依赖 `normalizeCommissionRecords()` 自动补齐
 - `hidden / available / active / completed / failed` 五态
-- `visibleLocations / COMMISSION_BOARD_LOCATION_ALIASES / location` 的地点族回退，加上 `realmScore` 作为可见性基础
+- `visibleLocations / COMMISSION_BOARD_LOCATION_ALIASES[location] / [location]` 的可见性回退链，加上 `realmScore` 作为可见性基础
 - 同一时间只允许 1 条 `active` 委托
 
 ## 8. 最低测试契约
 
 ### 8.1 文档校验
 
-- `python C:\Users\Aspir\.codex\skills\rulebook-author\scripts\validate_rulebook.py --root D:\Program_python\game_xiuxian\docs\side-quest-system`
-- `python C:\Users\Aspir\.codex\skills\rulebook-author\scripts\validate_rulebook_series.py --root D:\Program_python\game_xiuxian\docs --series-dir rulebook-series`
+- `python <rulebook-author>/scripts/validate_rulebook.py --root docs/side-quest-system`
+- `python <rulebook-author>/scripts/validate_rulebook_series.py --root docs --series-dir rulebook-series`
 
 ### 8.2 代码接入后必须补齐的断言
 
 - v7 导入后应重建 `commissions`，并移除旧 `sideQuests`。
 - 旧存档缺少新增委托记录时，`normalizeCommissionRecords()` 会自动补齐黄枫谷与乱星海的新条目。
-- 青牛镇、太南山、黄枫谷与乱星海应按地点族 + `realmScore` 正确显示可见委托。
+- 青牛镇、太南山应按单点配置显示委托；黄枫谷应按显式单点 `['黄枫谷']` 显示；乱星海应按海上地点族加 `realmScore` 正确显示可见委托。
 - 任意时刻只能存在 1 条 `active` 委托。
 - 游历风声应优先播报当前地点可接委托。
 - 剧情页委托区词面应统一为 `地点委托 / 可接委托 / 已接手 / 已办妥 / 已失手`。
@@ -189,7 +189,7 @@
 ### 9.1 A 级
 
 - 调整状态枚举语义
-- 调整 `currentLocation + realmScore` 可见性逻辑
+- 调整 `visibleLocations -> COMMISSION_BOARD_LOCATION_ALIASES[location] -> [location]` 加 `realmScore` 的可见性逻辑
 - 调整委托与主线的边界
 
 ### 9.2 B 级

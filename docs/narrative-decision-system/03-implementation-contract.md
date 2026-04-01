@@ -270,7 +270,7 @@
 
 - `branchImpact / 分支影响` 在玩家界面统一映射为 `因果回响`。
 - legacy 债务、旧案余波、旧情回流这类非正式主线回响，在玩家界面统一映射为 `旧事`；若是旧式线索态标签，统一映射为 `旧事线索`。
-- `commission / 地点委托` 在玩家界面统一映射为 `委托`，并可按地点化为 `坊间委托 / 山市委托 / 山门差使 / 海上委托` 等词面，不得回写成 `旧事`。
+- `commission / 地点委托` 在玩家界面统一映射为 `地点委托`，并可按地点细分为 `坊间委托 / 山市委托 / 山门差使 / 海上委托` 等词面，不得回写成 `旧事`。
 - 卷末章节若承担“卷内清账后的出口说明”，玩家界面统一使用 `此卷尽处`，不直接显示“卷末收束”。
 - 第五卷终局前的最后问心入口，玩家界面统一使用 `门前问心`，不直接显示“终局分流”。
 - 以上映射只约束玩家可见层；规则书内部字段名、实现命名与测试内部变量可以保留技术术语。
@@ -330,8 +330,8 @@
 
 ### 8.1 文档校验
 
-- `python C:\Users\Aspir\.codex\skills\rulebook-author\scripts\validate_rulebook.py --root D:\Program_python\game_xiuxian\docs\narrative-decision-system`
-- `python C:\Users\Aspir\.codex\skills\rulebook-author\scripts\validate_rulebook_series.py --root D:\Program_python\game_xiuxian\docs --series-dir rulebook-series`
+- `python <rulebook-author>/scripts/validate_rulebook.py --root docs/narrative-decision-system`
+- `python <rulebook-author>/scripts/validate_rulebook_series.py --root docs --series-dir rulebook-series`
 
 ### 8.2 代码接入后必须补齐的断言
 

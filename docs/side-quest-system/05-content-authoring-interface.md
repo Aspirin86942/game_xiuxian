@@ -109,8 +109,8 @@
 
 ## 7. 原著参考文本使用边界
 
-- 离线参考素材路径：
-  - `D:\Program_python\game_xiuxian\Fan Ren Xiu Xian Chuan [ Geng Xin Zhi  Di - Wang Yu.txt`
+- 离线参考素材：
+  - 本机自备的《凡人修仙传》离线全文文本，路径不写入规则书
 - 该文件只用于：
   - 校对人物关系骨架
   - 校对阶段性事件顺序

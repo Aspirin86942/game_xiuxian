@@ -19,13 +19,15 @@
         LEVEL_STORY_EVENTS,
         LOCATION_COMMISSION_BOARD_META,
         LOCATION_COMMISSIONS_V1,
-        SIDE_QUESTS_V1,
         VOLUME_ONE_CHAPTERS,
         VOLUME_TWO_CHAPTERS,
         VOLUME_THREE_CHAPTERS,
         VOLUME_FOUR_CHAPTERS,
         VOLUME_FIVE_CHAPTERS,
     } = dataSource;
+    const LEGACY_SIDE_QUESTS_V1 = dataSource.__LEGACY_SIDE_QUESTS_V1
+        || globalScope.__XIUXIAN_INTERNALS__?.data?.LEGACY_SIDE_QUESTS_V1
+        || [];
 
     function loadSharedHelpers() {
         if (typeof module !== 'undefined' && module.exports) {
@@ -99,7 +101,7 @@
             LEVEL_STORY_EVENTS,
             LOCATION_COMMISSION_BOARD_META,
             LOCATION_COMMISSIONS_V1,
-            SIDE_QUESTS_V1,
+            SIDE_QUESTS_V1: LEGACY_SIDE_QUESTS_V1,
             VOLUME_ONE_CHAPTERS,
             VOLUME_TWO_CHAPTERS,
             VOLUME_THREE_CHAPTERS,
@@ -200,7 +202,6 @@
         serializeState: deps.serializeState,
         LOCATION_COMMISSION_BOARD_META,
         LOCATION_COMMISSIONS_V1,
-        SIDE_QUESTS_V1,
     };
 
     if (typeof module !== 'undefined' && module.exports) {

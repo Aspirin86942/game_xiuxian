@@ -699,8 +699,10 @@
                     return;
                 }
 
-                const locationMatched = locationName === definition.locationName;
-                const realmMatched = !Number.isFinite(definition.minRealmScore) || realmScore >= definition.minRealmScore;
+                const locationMatched = locationName === definition.location;
+                const minMatched = !Number.isFinite(definition.minRealmScore) || realmScore >= definition.minRealmScore;
+                const maxMatched = !Number.isFinite(definition.maxRealmScore) || realmScore <= definition.maxRealmScore;
+                const realmMatched = minMatched && maxMatched;
                 if (locationMatched && realmMatched) {
                     record.state = 'available';
                     if (record.availableAtRealmScore === null) {
@@ -718,9 +720,12 @@
             return {
                 id: definition.id,
                 title: definition.title,
+                boardLabel: definition.boardLabel,
+                category: definition.category,
                 detail: definition.detail,
-                locationName: definition.locationName,
+                location: definition.location,
                 minRealmScore: definition.minRealmScore,
+                maxRealmScore: definition.maxRealmScore,
                 rewardPreview: definition.rewardPreview || '',
                 priority: definition.priority || 0,
                 choices: clone(definition.choices || []),
@@ -810,7 +815,7 @@
             const locationName = state?.currentLocation;
             return LOCATION_COMMISSION_BOARD_META?.[locationName]
                 || LOCATION_COMMISSION_BOARD_META?.default
-                || { title: '委托榜', description: '此地暂无公开委托。' };
+                || { title: '地点委托', emptyTitle: '此地眼下暂无委托', emptyDetail: '先换个地方走走，或再把修为往前推一层。' };
         }
 
         return {

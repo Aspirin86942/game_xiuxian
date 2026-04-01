@@ -2154,6 +2154,7 @@ function testAdaptedVolumeContractMetadata() {
 function testVolumeOneMetadataScaffold() {
     const firstVolumeChapters = StoryData.STORY_CHAPTERS.filter((chapter) => typeof chapter.id === 'number' && chapter.id >= 0 && chapter.id <= 11);
     assert.strictEqual(firstVolumeChapters.length, 12, '应保留旧 0~11 章以供兼容映射');
+    const legacySideQuests = StoryData.__LEGACY_SIDE_QUESTS_V1 || [];
     firstVolumeChapters.forEach((chapter) => {
         assert.strictEqual(chapter.volumeId, 'volume_one_qixuanmen', `章节 ${chapter.id} 缺少第一卷锚点`);
         assert(typeof chapter.volumeRole === 'string' && chapter.volumeRole.length > 0, `章节 ${chapter.id} 缺少卷内角色`);
@@ -2169,7 +2170,7 @@ function testVolumeOneMetadataScaffold() {
     });
 
     ['old_medicine_ledger', 'apothecary_boy_echo'].forEach((questId) => {
-        const quest = StoryData.SIDE_QUESTS_V1.find((entry) => entry.id === questId);
+        const quest = legacySideQuests.find((entry) => entry.id === questId);
         assert(quest, `支线 ${questId} 应存在`);
         assert.strictEqual(quest.volumeAnchor, 'volume_one_qixuanmen');
         assert(['volume_close', 'seed_forward', 'convert_to_main'].includes(quest.closureMode));
@@ -2764,6 +2765,43 @@ function createCommissionState(locationName, realmScore, configure) {
     return state;
 }
 
+function testCommissionAuthoringContract() {
+    assert.strictEqual(Array.isArray(GameCore.LOCATION_COMMISSIONS_V1), true);
+    GameCore.LOCATION_COMMISSIONS_V1.forEach((commission) => {
+        [
+            'id',
+            'title',
+            'boardLabel',
+            'category',
+            'location',
+            'minRealmScore',
+            'maxRealmScore',
+            'detail',
+            'rewardPreview',
+            'choices',
+        ].forEach((field) => {
+            assert(commission[field] !== undefined, `委托 ${commission.id || 'unknown'} 缺少字段 ${field}`);
+        });
+        assert(Array.isArray(commission.choices), `委托 ${commission.id} choices 应为数组`);
+        assert(commission.choices.length > 0, `委托 ${commission.id} 需要至少一个选择`);
+    });
+
+    const qingniuMeta = GameCore.getCommissionBoardMeta({ currentLocation: '青牛镇' });
+    assert.strictEqual(qingniuMeta.title, '坊间委托');
+    assert.strictEqual(qingniuMeta.emptyTitle, '此地眼下暂无委托');
+    assert(qingniuMeta.emptyDetail.includes('镇口告示板'));
+
+    const tainanMeta = GameCore.getCommissionBoardMeta({ currentLocation: '太南山' });
+    assert.strictEqual(tainanMeta.title, '山市委托');
+    assert.strictEqual(tainanMeta.emptyTitle, '此地眼下暂无委托');
+    assert(tainanMeta.emptyDetail.includes('摊风'));
+
+    const defaultMeta = GameCore.getCommissionBoardMeta({ currentLocation: '未知之地' });
+    assert.strictEqual(defaultMeta.title, '地点委托');
+    assert.strictEqual(defaultMeta.emptyTitle, '此地眼下暂无委托');
+    assert(defaultMeta.emptyDetail.includes('修为'));
+}
+
 function testCommissionSaveMigrationV8() {
     const legacyState = GameCore.createInitialState();
     legacyState.version = 7;
@@ -2895,6 +2933,7 @@ testVolumeOneLedgerClosureReadsNamesOnlyPath();
 testVolumeOneApothecaryClosureReadsTracePath();
 testVolumeOneApothecaryClosureReadsSealPath();
 testLateVolumeHooksAvoidMetaThesisLines();
+testCommissionAuthoringContract();
 testCommissionSaveMigrationV8();
 testInitialCommissionBoardUsesLocationAndRealm();
 

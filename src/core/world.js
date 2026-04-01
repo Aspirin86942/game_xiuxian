@@ -436,7 +436,6 @@
         }
 
         function getAvailableSideStories(state) {
-            syncSideQuestAvailability(state);
             const storyProgress = deps.getMainStoryProgressValue(state);
             const stories = [];
             const seenTitles = new Set();

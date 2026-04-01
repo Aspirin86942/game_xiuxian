@@ -295,64 +295,45 @@ function createShengxianlingChapterScenario() {
     };
 }
 
-function createVolumeOneLedgerClosureScenario() {
-    const state = createChoiceState(10, (draft) => {
-        GameCore.setRealmScore(draft, 3);
-        draft.flags.protectedMoHouse = true;
-        draft.flags.fulfilledMoWill = true;
-        draft.npcRelations['墨彩环'] = 36;
-    });
-    GameCore.getVisibleSideQuests(state);
-    GameCore.acceptSideQuest(state, 'old_medicine_ledger');
-    GameCore.chooseSideQuestOption(state, 'old_medicine_ledger', 'return_ledgers');
-    state.storyCursor = {
-        source: 'main',
-        storyId: null,
-        chapterId: null,
-        beatIndex: 0,
-        mode: 'idle',
-    };
-    GameCore.ensureStoryCursor(state);
+function createQingniuCommissionScenario() {
+    const state = GameCore.createInitialState();
+    state.ui.activeTab = 'story';
+    state.currentLocation = '青牛镇';
+    GameCore.setRealmScore(state, 0);
+    GameCore.syncCommissionAvailability(state);
+
+    const visible = GameCore.getVisibleCommissions(state);
+    const target = visible.find((entry) => entry.id === 'qingniu_medicine_delivery');
+    const previewState = cloneState(state);
+    GameCore.acceptCommission(previewState, 'qingniu_medicine_delivery');
+    GameCore.chooseCommissionOption(previewState, 'qingniu_medicine_delivery', 'take_safe_path');
 
     return {
         serialized: GameCore.serializeState(state),
-        questId: 'old_medicine_ledger',
-        expectedTitle: formatRenderedStoryTitle(state),
-        expectedKeywordGroups: [
-            ['墨府', '旧账'],
-            ['活人', '交回', '账页'],
-        ],
+        commissionId: 'qingniu_medicine_delivery',
+        title: target.title,
+        boardLabel: '坊间委托',
+        choiceId: 'take_safe_path',
+        choiceText: target.choices.find((choice) => choice.id === 'take_safe_path').text,
+        completedSummary: previewState.commissions.qingniu_medicine_delivery.lastResult.summary,
     };
 }
 
-function createVolumeOneApothecaryClosureScenario() {
-    const state = createChoiceState(10, (draft) => {
-        GameCore.setRealmScore(draft, 3);
-        draft.flags.hasQuhun = true;
-        draft.flags.keptQuhun = true;
-        draft.flags.quhunIdentityMystery = true;
-        draft.npcRelations['墨彩环'] = 34;
-    });
-    GameCore.getVisibleSideQuests(state);
-    GameCore.acceptSideQuest(state, 'apothecary_boy_echo');
-    GameCore.chooseSideQuestOption(state, 'apothecary_boy_echo', 'trace_the_voice');
-    state.storyCursor = {
-        source: 'main',
-        storyId: null,
-        chapterId: null,
-        beatIndex: 0,
-        mode: 'idle',
-    };
-    GameCore.ensureStoryCursor(state);
+function createTainanCommissionScenario() {
+    const state = GameCore.createInitialState();
+    state.ui.activeTab = 'story';
+    state.currentLocation = '太南山';
+    GameCore.setRealmScore(state, 2);
+    GameCore.syncCommissionAvailability(state);
+
+    const visible = GameCore.getVisibleCommissions(state);
+    const target = visible.find((entry) => entry.id === 'tainan_fake_cinnabar');
 
     return {
         serialized: GameCore.serializeState(state),
-        questId: 'apothecary_boy_echo',
-        expectedTitle: formatRenderedStoryTitle(state),
-        expectedKeywordGroups: [
-            ['药童', '旧案', '残影'],
-            ['记住', '追索', '带着'],
-        ],
+        commissionId: 'tainan_fake_cinnabar',
+        title: target.title,
+        boardLabel: '山市委托',
     };
 }
 
@@ -973,9 +954,9 @@ module.exports = {
     createVolumeFourExitScenario,
     createVolumeFiveEntryScenario,
     createSharedDaoEndingScenario,
-    createVolumeOneLedgerClosureScenario,
-    createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,
+    createQingniuCommissionScenario,
+    createTainanCommissionScenario,
     createResourceExpeditionScenario,
     createCombatScenario,
     createConsumableScenario,

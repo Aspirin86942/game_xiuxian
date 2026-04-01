@@ -25,7 +25,7 @@ test('新档支持修行/丹炉/剧情切换、模态开关，且不再存在独
     await expect(page.locator(selectors.pages.story)).toHaveClass(/active/);
     await expect(page.locator(selectors.story.title)).not.toHaveText('前路未启');
     await expect(page.locator(selectors.journey.npcs)).toBeVisible();
-    await expect(page.locator(selectors.journey.clues)).toBeVisible();
+    await expect(page.locator(selectors.journey.commissions)).toBeVisible();
 
     await page.click(selectors.tabs.inventory);
     await waitForModalShown(page, selectors.inventory.modal);

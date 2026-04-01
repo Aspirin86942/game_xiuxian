@@ -74,6 +74,8 @@ function testScriptOrder(indexHtml) {
 
 function testAnchorsAndStyles(indexHtml, styleCss) {
     assert(/<div class="status-overview">[\s\S]*<div class="status-summary" id="status-summary">/.test(indexHtml), 'status-summary 应位于 status-overview 内部');
+    assert(indexHtml.includes('<h2>地点委托</h2>'), '剧情页右侧面板标题应改为地点委托');
+    assert(!indexHtml.includes('<h2>同行回响</h2>'), '旧的同行回响标题应移除');
     [
         'summary-lingshi-display',
         'breakthrough-inline',

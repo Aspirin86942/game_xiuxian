@@ -15,9 +15,9 @@ const {
     createVolumeFourExitScenario,
     createVolumeFiveEntryScenario,
     createSharedDaoEndingScenario,
-    createVolumeOneLedgerClosureScenario,
-    createVolumeOneApothecaryClosureScenario,
     createTribulationEndingScenario,
+    createQingniuCommissionScenario,
+    createTainanCommissionScenario,
 } = require('./helpers/saveFactory');
 
 const ADAPTED_VOLUME_LABELS = Object.freeze({
@@ -50,68 +50,6 @@ function createQueuedStoryBadgeScenario() {
     };
 }
 
-function createAvailableSideQuestScenario() {
-    const state = GameCore.createInitialState();
-    state.ui.activeTab = 'story';
-    state.storyProgress = 8;
-    state.flags.protectedMoHouse = true;
-    GameCore.ensureStoryCursor(state);
-
-    const visibleQuest = GameCore.getVisibleSideQuests(state).find((quest) => quest.id === 'old_medicine_ledger');
-    const previewState = GameCore.mergeSave(JSON.parse(GameCore.serializeState(state)));
-    GameCore.acceptSideQuest(previewState, 'old_medicine_ledger');
-    GameCore.chooseSideQuestOption(previewState, 'old_medicine_ledger', 'return_ledgers');
-
-    return {
-        serialized: GameCore.serializeState(state),
-        questId: 'old_medicine_ledger',
-        title: visibleQuest.title,
-        choiceId: 'return_ledgers',
-        choiceText: visibleQuest.choices.find((choice) => choice.id === 'return_ledgers').text,
-        completedSummary: previewState.sideQuests.old_medicine_ledger.lastResult.summary,
-        expectedLingshi: previewState.inventory.lingshi,
-        expectedRelation: previewState.npcRelations['墨彩环'],
-    };
-}
-
-function createMissedSideQuestScenario() {
-    const state = GameCore.createInitialState();
-    state.ui.activeTab = 'story';
-    state.storyProgress = 8;
-    state.flags.protectedMoHouse = true;
-    GameCore.getVisibleSideQuests(state);
-    state.storyProgress = 11;
-    GameCore.getVisibleSideQuests(state);
-    GameCore.ensureStoryCursor(state);
-
-    return {
-        serialized: GameCore.serializeState(state),
-        questId: 'old_medicine_ledger',
-        title: '旧药账',
-        expectedSummary: state.sideQuests.old_medicine_ledger.lastResult.summary,
-        expectedDetail: state.sideQuests.old_medicine_ledger.lastResult.detail,
-    };
-}
-
-async function advanceStoryUntilKeywordGroupsMatch(page, keywordGroups, maxSteps = 6) {
-    for (let step = 0; step <= maxSteps; step += 1) {
-        const titleText = await page.locator(selectors.story.title).textContent();
-        const summaryText = await page.locator('#story-summary').textContent();
-        const lineText = await page.locator(selectors.story.line).textContent();
-        const pageText = [titleText, summaryText, lineText].filter(Boolean).join('\n');
-        const matched = keywordGroups.every((group) => group.some((keyword) => pageText.includes(keyword)));
-        if (matched) {
-            return;
-        }
-        const continueButton = page.locator(selectors.story.continueButton);
-        if (await continueButton.isDisabled()) {
-            break;
-        }
-        await continueButton.click();
-    }
-    throw new Error(`剧情页未能在 ${maxSteps} 次翻页内命中关键词组：${JSON.stringify(keywordGroups)}`);
-}
-
 test('剧情页支持继续、跳至抉择和完成分支选择', async ({ page }) => {
     const scenario = createStoryScenario();
     await openGame(page, { serializedSave: scenario.serialized });
@@ -121,7 +59,7 @@ test('剧情页支持继续、跳至抉择和完成分支选择', async ({ page 
     await expect(page.locator(selectors.story.pressure)).toContainText(scenario.initialPressureText);
     await expect(page.locator(selectors.story.pressure)).not.toContainText(/\d/);
     await expect(page.locator(selectors.journey.npcs)).toBeVisible();
-    await expect(page.locator(selectors.journey.clues)).toBeVisible();
+    await expect(page.locator(selectors.journey.commissions)).toBeVisible();
 
     await page.click(selectors.story.continueButton);
     if (scenario.continuedLine) {
@@ -388,76 +326,41 @@ test('门前问心进入大道同光后会展示场景化尾声', async ({ page 
     await expect(page.locator('#story-summary')).not.toContainText('真正答案');
 });
 
-test('正式支线可在同行回响区接取并卡内结算', async ({ page }) => {
-    const scenario = createAvailableSideQuestScenario();
+test('青牛镇坊间委托可接下并当场办妥', async ({ page }) => {
+    const scenario = createQingniuCommissionScenario();
     await openGame(page, { serializedSave: scenario.serialized });
 
     await page.click(selectors.tabs.story);
-    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.title);
-    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('可应旧事');
-    await expect(page.locator(selectors.journey.sideQuestAccept(scenario.questId))).toHaveText('应下这桩旧事');
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.title);
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.boardLabel);
+    await expect(page.locator(selectors.journey.commissionStatus(scenario.commissionId))).toHaveText('可接委托');
+    await expect(page.locator(selectors.journey.commissionAccept(scenario.commissionId))).toHaveText('接下这笔委托');
 
-    await page.click(selectors.journey.sideQuestAccept(scenario.questId));
-    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('进行中');
+    await page.click(selectors.journey.commissionAccept(scenario.commissionId));
+    await expect(page.locator(selectors.journey.commissionStatus(scenario.commissionId))).toHaveText('已接手');
 
-    const choiceButton = page.locator(selectors.journey.sideQuestChoice(scenario.questId, scenario.choiceId));
+    const choiceButton = page.locator(selectors.journey.commissionChoice(scenario.commissionId, scenario.choiceId));
     await expect(choiceButton).toBeVisible();
     await expect(choiceButton).toContainText(scenario.choiceText);
-    await page.click(selectors.journey.sideQuestChoice(scenario.questId, scenario.choiceId));
+    await page.click(selectors.journey.commissionChoice(scenario.commissionId, scenario.choiceId));
 
-    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('已了结');
-    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.completedSummary);
-    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText('这一桩已结算清楚');
+    await expect(page.locator(selectors.journey.commissionStatus(scenario.commissionId))).toHaveText('已办妥');
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.completedSummary);
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText('这笔委托已收住');
 
     const save = await readSave(page);
-    expect(save.sideQuests.old_medicine_ledger.state).toBe('completed');
-    expect(save.sideQuests.old_medicine_ledger.selectedChoiceId).toBe(scenario.choiceId);
-    expect(save.inventory.lingshi).toBe(scenario.expectedLingshi);
-    expect(save.npcRelations['墨彩环']).toBe(scenario.expectedRelation);
+    expect(save.commissions.qingniu_medicine_delivery.state).toBe('completed');
+    expect(save.commissions.qingniu_medicine_delivery.selectedChoiceId).toBe(scenario.choiceId);
 });
 
-test('错过窗口的正式支线会在同行回响区显示错过结果', async ({ page }) => {
-    const scenario = createMissedSideQuestScenario();
+test('太南山达到门槛后会显示山市委托', async ({ page }) => {
+    const scenario = createTainanCommissionScenario();
     await openGame(page, { serializedSave: scenario.serialized });
 
     await page.click(selectors.tabs.story);
-    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.title);
-    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).toHaveText('已错过');
-    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.expectedSummary);
-    await expect(page.locator(selectors.journey.sideQuestCard(scenario.questId))).toContainText(scenario.expectedDetail);
-    await expect(page.locator(selectors.journey.sideQuestAccept(scenario.questId))).toHaveCount(0);
-
-    const save = await readSave(page);
-    expect(save.sideQuests.old_medicine_ledger.state).toBe('missed');
-    expect(save.sideQuests.old_medicine_ledger.lastResult.outcome).toBe('missed');
-});
-
-test('旧药账完成后会在第一卷卷末主线出现收口解释', async ({ page }) => {
-    const scenario = createVolumeOneLedgerClosureScenario();
-    await openGame(page, { serializedSave: scenario.serialized });
-
-    await page.click(selectors.tabs.story);
-    await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
-    await advanceStoryUntilKeywordGroupsMatch(page, scenario.expectedKeywordGroups, 6);
-    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).not.toHaveText('进行中');
-
-    const save = await readSave(page);
-    expect(save.sideQuests.old_medicine_ledger.state).toBe('completed');
-    expect(save.sideQuests.old_medicine_ledger.selectedChoiceId).toBe('return_ledgers');
-});
-
-test('药童残影完成后会在第一卷卷末主线解释曲魂旧案', async ({ page }) => {
-    const scenario = createVolumeOneApothecaryClosureScenario();
-    await openGame(page, { serializedSave: scenario.serialized });
-
-    await page.click(selectors.tabs.story);
-    await expect(page.locator(selectors.story.title)).toHaveText(scenario.expectedTitle);
-    await advanceStoryUntilKeywordGroupsMatch(page, scenario.expectedKeywordGroups, 6);
-    await expect(page.locator(selectors.journey.sideQuestStatus(scenario.questId))).not.toHaveText('进行中');
-
-    const save = await readSave(page);
-    expect(save.sideQuests.apothecary_boy_echo.state).toBe('completed');
-    expect(save.sideQuests.apothecary_boy_echo.selectedChoiceId).toBe('trace_the_voice');
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.title);
+    await expect(page.locator(selectors.journey.commissionCard(scenario.commissionId))).toContainText(scenario.boardLabel);
+    await expect(page.locator(selectors.journey.commissionStatus(scenario.commissionId))).toHaveText('可接委托');
 });
 
 test('剧情新徽标在进入剧情页后清除，且剧情页内衔接下一章时不残留', async ({ page }) => {

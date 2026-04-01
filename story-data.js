@@ -673,7 +673,7 @@
             choices: [
                 {
                     id: 'trace_by_roster',
-                    text: '顺着轮值和出入牌把偷拿灵草的人查了出来',
+                    text: '按轮值和出入牌逐一查人',
                     resultState: 'completed',
                     effects: {
                         items: { lingshi: 11, lingcao: 2 },
@@ -685,7 +685,7 @@
                 },
                 {
                     id: 'hide_the_gap',
-                    text: '想把缺口先补平，结果新旧账一起缠上了你',
+                    text: '先替熟人补平缺口，不把事情闹大',
                     resultState: 'failed',
                     effects: {
                         routeScores: { demonic: 1 },
@@ -710,7 +710,7 @@
             choices: [
                 {
                     id: 'return_after_traces',
-                    text: '查清外山踪迹后便及时回谷，把该交的消息完整交回',
+                    text: '查清踪迹便回山复命，不再多追',
                     resultState: 'completed',
                     effects: {
                         items: { lingshi: 12, yaodan: 1 },
@@ -722,7 +722,7 @@
                 },
                 {
                     id: 'press_deeper_alone',
-                    text: '想独自把线索追到底，反而在外山白白折了一圈',
+                    text: '不等援手，独自再往深处逼一步',
                     resultState: 'failed',
                     effects: {
                         routeScores: { demonic: 1 },
@@ -747,7 +747,7 @@
             choices: [
                 {
                     id: 'audit_openly',
-                    text: '把库签、账册和交接单一并对清，缺口终于落到了实处',
+                    text: '按账册与库签重核一遍',
                     resultState: 'completed',
                     effects: {
                         items: { lingshi: 13, lingcao: 1 },
@@ -759,7 +759,7 @@
                 },
                 {
                     id: 'patch_before_handover',
-                    text: '先把账补圆，替交接的人把最难看的那一页翻了过去',
+                    text: '先把缺口补平，再把账交出去',
                     resultState: 'completed',
                     effects: {
                         items: { lingshi: 14 },
@@ -785,7 +785,7 @@
             choices: [
                 {
                     id: 'withdraw_with_chart',
-                    text: '先保住退路和海图，把这趟探船做成了一笔能交代的活',
+                    text: '先保海图与退路，把能交代的消息带回来',
                     resultState: 'completed',
                     effects: {
                         items: { lingshi: 16, yaodan: 1 },
@@ -797,7 +797,7 @@
                 },
                 {
                     id: 'push_into_fog',
-                    text: '一意压进海雾深处，最后连原本能带回的路标都丢了',
+                    text: '不退半步，继续压进海雾最深处',
                     resultState: 'failed',
                     effects: {
                         routeScores: { demonic: 1 },
@@ -822,7 +822,7 @@
             choices: [
                 {
                     id: 'take_clean_hunt',
-                    text: '只取了最稳的那份妖材，在潮头真正翻脸前便收了手',
+                    text: '只取最稳的一份材料，见好便收',
                     resultState: 'completed',
                     effects: {
                         items: { lingshi: 18, yaodan: 2 },
@@ -834,7 +834,7 @@
                 },
                 {
                     id: 'overstay_for_extra_core',
-                    text: '想趁乱多取一枚妖丹，结果差点被反卷回海心',
+                    text: '趁潮乱再多剖一枚妖丹',
                     resultState: 'failed',
                     effects: {
                         routeScores: { demonic: 1 },
@@ -859,7 +859,7 @@
             choices: [
                 {
                     id: 'deliver_sealed',
-                    text: '按时把封箱送到，海上的人也按海上的规矩付了钱',
+                    text: '按约封箱送达，不看不问',
                     resultState: 'completed',
                     effects: {
                         items: { lingshi: 17, lingcao: 2 },
@@ -871,7 +871,7 @@
                 },
                 {
                     id: 'inspect_manifest',
-                    text: '先验了货，再把能送的那部分送了出去',
+                    text: '半路开箱验货，再决定要不要继续送',
                     resultState: 'completed',
                     effects: {
                         items: { lingshi: 15, yaodan: 1 },
@@ -897,7 +897,7 @@
             choices: [
                 {
                     id: 'ally_with_retreat_marks',
-                    text: '先把退路标清，再与那几名散修把阵外与阵内的分寸说死',
+                    text: '先标退路，再与人暂结同盟',
                     resultState: 'completed',
                     effects: {
                         items: { lingshi: 15, jiedusan: 2 },
@@ -909,7 +909,7 @@
                 },
                 {
                     id: 'rush_core_eye',
-                    text: '抢先扑向阵眼，结果残阵翻卷，把整趟试阵都掀乱了',
+                    text: '抢先冲阵眼，把最值钱的那一份先夺到手',
                     resultState: 'failed',
                     effects: {
                         routeScores: { demonic: 1 },

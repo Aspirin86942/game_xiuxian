@@ -131,124 +131,89 @@
                 : '<div class="log-entry">行路簿上还未落字，先去把第一段缘起走出来。</div>';
         }
 
-        function getSideQuestStateMeta(state) {
+        function getCommissionStateMeta(state) {
             const metaMap = {
-                available: { label: '可应旧事', tone: 'available' },
-                active: { label: '进行中', tone: 'active' },
-                completed: { label: '已了结', tone: 'completed' },
+                available: { label: '可接委托', tone: 'available' },
+                active: { label: '已接手', tone: 'active' },
+                completed: { label: '已办妥', tone: 'completed' },
                 failed: { label: '已失手', tone: 'failed' },
-                missed: { label: '已错过', tone: 'missed' },
             };
-            return metaMap[state] || { label: '线索', tone: 'legacy' };
+            return metaMap[state] || { label: '未显形', tone: 'legacy' };
         }
 
-        function formatSideQuestCosts(ctx, costs) {
-            if (!costs || typeof costs !== 'object') {
-                return '';
-            }
+        function renderVisibleCommissionCard(ctx, commission, hasOtherActiveCommission) {
+            const stateMeta = getCommissionStateMeta(commission.state);
+            const boardMeta = commission.boardLabel ? `<span class="side-story-badge">${commission.boardLabel}</span>` : '';
+            const categoryMeta = commission.category ? `<span class="side-story-badge">${commission.category}</span>` : '';
+            const rewardLine = commission.rewardPreview ? `<div class="side-story-note"><strong>可得</strong><span>${commission.rewardPreview}</span></div>` : '';
 
-            return Object.entries(costs)
-                .filter(([, amount]) => amount > 0)
-                .map(([itemId, amount]) => {
-                    const itemName = ctx.ITEMS[itemId]?.name || itemId;
-                    return `需用 ${itemName} x${amount}`;
-                })
-                .join(' · ');
-        }
-
-        function renderVisibleSideQuestCard(ctx, quest, hasOtherActiveQuest) {
-            const stateMeta = getSideQuestStateMeta(quest.state);
-            const npcMeta = quest.npc ? `<span class="side-story-badge">${quest.npc}</span>` : '';
-            const categoryMeta = quest.category ? `<span class="side-story-badge">${quest.category}</span>` : '';
-            const rewardLine = quest.rewardPreview ? `<div class="side-story-note"><strong>可得</strong><span>${quest.rewardPreview}</span></div>` : '';
-
-            if (quest.state === 'available') {
-                const disabled = hasOtherActiveQuest ? 'disabled' : '';
-                const buttonText = hasOtherActiveQuest ? '另有旧事未了' : '应下这桩旧事';
+            if (commission.state === 'available') {
+                const disabled = hasOtherActiveCommission ? 'disabled' : '';
+                const buttonText = hasOtherActiveCommission ? '另有委托在身' : '接下这笔委托';
                 return `
-                    <article class="side-story-item side-story-item--quest" data-side-quest-id="${quest.id}" data-side-quest-state="${quest.state}">
+                    <article class="side-story-item side-story-item--quest" data-commission-id="${commission.id}" data-commission-state="${commission.state}">
                         <div class="side-story-head">
-                            <div><strong>${quest.title}</strong><p>${quest.detail}</p></div>
+                            <div><strong>${commission.title}</strong><p>${commission.detail}</p></div>
                             <span class="side-story-status side-story-status--${stateMeta.tone}">${stateMeta.label}</span>
                         </div>
-                        <div class="side-story-meta-row">${categoryMeta}${npcMeta}</div>
+                        <div class="side-story-meta-row">${boardMeta}${categoryMeta}</div>
                         ${rewardLine}
                         <div class="side-quest-actions">
-                            <button class="side-quest-btn" data-side-quest-action="accept" data-side-quest-target-id="${quest.id}" type="button" ${disabled}>${buttonText}</button>
+                            <button class="side-quest-btn" data-commission-action="accept" data-commission-target-id="${commission.id}" type="button" ${disabled}>${buttonText}</button>
                         </div>
                     </article>
                 `;
             }
 
-            if (quest.state === 'active') {
-                const choices = Array.isArray(quest.choices) ? quest.choices : [];
+            if (commission.state === 'active') {
                 return `
-                    <article class="side-story-item side-story-item--quest" data-side-quest-id="${quest.id}" data-side-quest-state="${quest.state}">
+                    <article class="side-story-item side-story-item--quest" data-commission-id="${commission.id}" data-commission-state="${commission.state}">
                         <div class="side-story-head">
-                            <div><strong>${quest.title}</strong><p>${quest.detail}</p></div>
+                            <div><strong>${commission.title}</strong><p>${commission.detail}</p></div>
                             <span class="side-story-status side-story-status--${stateMeta.tone}">${stateMeta.label}</span>
                         </div>
-                        <div class="side-story-meta-row">${categoryMeta}${npcMeta}</div>
+                        <div class="side-story-meta-row">${boardMeta}${categoryMeta}</div>
                         ${rewardLine}
                         <div class="side-quest-choices">
-                            ${choices.map((choice) => {
-                                const costText = formatSideQuestCosts(ctx, choice.costs);
-                                return `
-                                    <button class="side-quest-btn side-quest-btn--choice" data-side-quest-choice-id="${choice.id}" data-side-quest-target-id="${quest.id}" type="button">
-                                        <span class="side-quest-choice-title">${choice.text}</span>
-                                        ${costText ? `<span class="side-quest-choice-cost">${costText}</span>` : ''}
-                                    </button>
-                                `;
-                            }).join('')}
+                            ${(commission.choices || []).map((choice) => `
+                                <button class="side-quest-btn side-quest-btn--choice" data-commission-choice-id="${choice.id}" data-commission-target-id="${commission.id}" type="button">
+                                    <span class="side-quest-choice-title">${choice.text}</span>
+                                </button>
+                            `).join('')}
                         </div>
                     </article>
                 `;
             }
 
-            const result = quest.lastResult || {};
+            const result = commission.lastResult || {};
             const resultDetail = result.detail ? `<div class="side-story-note"><span>${result.detail}</span></div>` : '';
-            const settlementLine = quest.state === 'completed' ? '<div class="side-story-note"><strong>结果</strong><span>这一桩已结算清楚</span></div>' : '';
 
             return `
-                <article class="side-story-item side-story-item--quest" data-side-quest-id="${quest.id}" data-side-quest-state="${quest.state}">
+                <article class="side-story-item side-story-item--quest" data-commission-id="${commission.id}" data-commission-state="${commission.state}">
                     <div class="side-story-head">
-                        <div><strong>${quest.title}</strong><p>${result.summary || quest.detail}</p></div>
+                        <div><strong>${commission.title}</strong><p>${result.summary || commission.detail}</p></div>
                         <span class="side-story-status side-story-status--${stateMeta.tone}">${stateMeta.label}</span>
                     </div>
-                    <div class="side-story-meta-row">${categoryMeta}${npcMeta}</div>
-                    ${settlementLine}
+                    <div class="side-story-meta-row">${boardMeta}${categoryMeta}</div>
+                    <div class="side-story-note"><strong>结果</strong><span>这笔委托已收住</span></div>
                     ${resultDetail}
                 </article>
             `;
         }
 
-        function renderLegacySideStoryCard(item) {
-            const npcMeta = item.npc ? `<span class="side-story-badge">${item.npc}</span>` : '';
-            return `
-                <article class="side-story-item side-story-item--legacy">
-                    <div class="side-story-head">
-                        <div><strong>${item.title}</strong><p>${item.detail}</p></div>
-                        <span class="side-story-status side-story-status--legacy">旧事线索</span>
-                    </div>
-                    ${npcMeta ? `<div class="side-story-meta-row">${npcMeta}</div>` : ''}
-                </article>
-            `;
-        }
-
         function renderSideStoryList(ctx) {
-            const visibleQuests = ctx.GameCore.getVisibleSideQuests(ctx.gameState);
-            const visibleQuestTitles = new Set(visibleQuests.map((quest) => quest.title));
-            const activeQuestId = visibleQuests.find((quest) => quest.state === 'active')?.id || null;
-            const legacyStories = ctx.GameCore.getAvailableSideStories(ctx.gameState)
-                .filter((item) => !visibleQuestTitles.has(item.title));
-
-            const formalCards = visibleQuests.map((quest) => renderVisibleSideQuestCard(ctx, quest, Boolean(activeQuestId && activeQuestId !== quest.id)));
-            const legacyCards = legacyStories.map((item) => renderLegacySideStoryCard(item));
-            const cards = [...formalCards, ...legacyCards];
+            const visibleCommissions = ctx.GameCore.getVisibleCommissions(ctx.gameState);
+            const activeCommissionId = visibleCommissions.find((entry) => entry.state === 'active')?.id || null;
+            const boardMeta = ctx.GameCore.getCommissionBoardMeta(ctx.gameState);
+            const cards = visibleCommissions.map((commission) => renderVisibleCommissionCard(
+                ctx,
+                commission,
+                Boolean(activeCommissionId && activeCommissionId !== commission.id),
+            ));
 
             ctx.elements.sideStoryList.innerHTML = cards.length > 0
                 ? cards.join('')
-                : '<article class="side-story-item side-story-item--legacy"><strong>暂无旧事上门</strong><p>风声暂歇，先把脚下这段路走深一些。</p></article>';
+                : `<article class="side-story-item side-story-item--legacy"><strong>${boardMeta.emptyTitle}</strong><p>${boardMeta.emptyDetail}</p></article>`;
         }
 
         function renderStoryPage(ctx) {

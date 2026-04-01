@@ -714,7 +714,7 @@
                 state.storyProgress = choice.nextChapterId;
             }
 
-            deps.syncSideQuestAvailability(state);
+            deps.syncCommissionAvailability(state);
             state.storyCursor = {
                 source: 'main',
                 storyId: null,

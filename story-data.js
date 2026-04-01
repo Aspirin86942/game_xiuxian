@@ -292,7 +292,321 @@
         '大晋': { name: '大晋', description: '人界最后一大段路，谁都想在这里替自己定下一个答案。', npcs: [] },
     };
 
-    const SIDE_QUESTS_V1 = [
+    const LOCATION_COMMISSION_BOARD_META = {
+        '青牛镇': {
+            title: '坊间委托',
+            emptyTitle: '此地眼下暂无委托',
+            emptyDetail: '镇口告示板今天空着，先把气机和脚力都练稳一些。',
+        },
+        '太南山': {
+            title: '山市委托',
+            emptyTitle: '此地眼下暂无委托',
+            emptyDetail: '今日摊风不紧，没人把急差挂出来。先在山市里再听几圈风声。',
+        },
+        default: {
+            title: '地点委托',
+            emptyTitle: '此地眼下暂无委托',
+            emptyDetail: '先换个地方走走，或再把修为往前推一层。',
+        },
+    };
+
+    const LOCATION_COMMISSIONS_V1 = Object.freeze([
+        {
+            id: 'qingniu_medicine_delivery',
+            title: '山路送药',
+            boardLabel: '坊间委托',
+            category: '护送',
+            location: '青牛镇',
+            minRealmScore: 0,
+            maxRealmScore: 2,
+            detail: '镇东药铺托你把一包稳脉散送去山外草屋。近路天黑前能到，远路则更稳。',
+            rewardPreview: '灵石 x4 · 灵草 x1',
+            choices: [
+                {
+                    id: 'take_short_path',
+                    text: '赶在天黑前抄近路送到',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 4, lingcao: 1 },
+                        routeScores: { orthodox: 1 },
+                        flags: { qingniuMedicineDeliveredFast: true },
+                    },
+                    resultSummary: '你赶在暮色压下来前把药送进了草屋。',
+                    resultDetail: '镇里人记住的不是你走得快，而是你肯把一包热药送到咳血的人手边。',
+                },
+                {
+                    id: 'take_safe_path',
+                    text: '绕远走稳路，把药和人都护住',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 3, jiedusan: 1 },
+                        routeScores: { secluded: 1 },
+                        flags: { qingniuMedicineDeliveredSafe: true },
+                    },
+                    resultSummary: '你绕开了最险的山坳，把人和药都安稳送到了。',
+                    resultDetail: '这笔委托没有惊险名声，却让药铺和病家都欠了你一声踏实。',
+                },
+            ],
+        },
+        {
+            id: 'qingniu_rear_hill_noise',
+            title: '后山异响',
+            boardLabel: '坊间委托',
+            category: '探查',
+            location: '青牛镇',
+            minRealmScore: 0,
+            maxRealmScore: 2,
+            detail: '后山夜里总有怪声，村民不敢再上去拾柴。有人想请你看看到底是邪祟还是活人。',
+            rewardPreview: '灵石 x4 · 解毒散 x1',
+            choices: [
+                {
+                    id: 'check_tracks_first',
+                    text: '先沿脚印和药渣查根底',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 4, jiedusan: 1 },
+                        routeScores: { orthodox: 1 },
+                        flags: { qingniuRearHillInvestigated: true },
+                    },
+                    resultSummary: '你顺着脚印和药渣查到了夜采草药的散户。',
+                    resultDetail: '后山并无鬼物，只是穷人怕被官差拦下，才故意闹出些怪声。',
+                },
+                {
+                    id: 'strike_first',
+                    text: '先放灵光压人影，再问来路',
+                    resultState: 'failed',
+                    effects: {
+                        routeScores: { demonic: 1 },
+                        flags: { qingniuRearHillOverreacted: true },
+                    },
+                    resultSummary: '你先出手压散了人影，事后才知那不是邪祟。',
+                    resultDetail: '这笔委托没办妥，镇里只记得你先把人吓伤了。',
+                },
+            ],
+        },
+        {
+            id: 'qingniu_lost_ox',
+            title: '失牛与雾',
+            boardLabel: '坊间委托',
+            category: '寻物',
+            location: '青牛镇',
+            minRealmScore: 0,
+            maxRealmScore: 2,
+            detail: '镇外起了白雾，一户农家丢了耕牛，怀疑是山精拖走了。',
+            rewardPreview: '灵石 x5 · 灵草 x2',
+            choices: [
+                {
+                    id: 'follow_tracks_to_river',
+                    text: '顺着蹄印追到河滩，把牛牵回来',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 3, lingcao: 2 },
+                        routeScores: { orthodox: 1 },
+                        flags: { qingniuLostOxReturned: true },
+                    },
+                    resultSummary: '你一路追到河滩，把受惊的老黄牛牵了回来。',
+                    resultDetail: '农户把最值钱的那把草药也塞给了你，像是怕一句谢不够重。',
+                },
+                {
+                    id: 'leave_after_tracks',
+                    text: '指明去路便收手，不再继续追',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 5 },
+                        routeScores: { secluded: 1 },
+                        flags: { qingniuLostOxHalfSolved: true },
+                    },
+                    resultSummary: '你替农户指出了牛群去向，收了报酬便不再多管。',
+                    resultDetail: '这笔差使办得利落，却也只是把该你走的那一截走完了。',
+                },
+            ],
+        },
+        {
+            id: 'qingniu_dawn_dew',
+            title: '采露换符',
+            boardLabel: '坊间委托',
+            category: '采集',
+            location: '青牛镇',
+            minRealmScore: 0,
+            maxRealmScore: 2,
+            detail: '镇里老道想在清明前画一批护身符，托你去东坡采带灵气的晨露和嫩草。',
+            rewardPreview: '灵石 x4 · 解毒散 x1',
+            choices: [
+                {
+                    id: 'deliver_every_drop',
+                    text: '把晨露原封不动交回去',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 2, jiedusan: 1 },
+                        routeScores: { orthodox: 1 },
+                        flags: { qingniuDawnDewDelivered: true },
+                    },
+                    resultSummary: '你把晨露和嫩草一并交回，老道当场画成了一张稳心符。',
+                    resultDetail: '报酬不重，却给了你一包随身能用的药散。',
+                },
+                {
+                    id: 'keep_half_for_yourself',
+                    text: '留半份晨露自用，再把剩下的交回',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 4, lingcao: 1 },
+                        routeScores: { secluded: 1 },
+                        flags: { qingniuDawnDewDivided: true },
+                    },
+                    resultSummary: '你把最足灵气的那半份留在了袖里，交回去的也还够老道交差。',
+                    resultDetail: '这笔委托办成了，只是你比旁人多留了一点后手。',
+                },
+            ],
+        },
+        {
+            id: 'tainan_fake_cinnabar',
+            title: '摊前假丹砂',
+            boardLabel: '山市委托',
+            category: '买卖',
+            location: '太南山',
+            minRealmScore: 2,
+            maxRealmScore: 4,
+            detail: '山市摊主怀疑自己被人调包了丹砂，想托你在散场前把换货的人揪出来。',
+            rewardPreview: '灵石 x9 · 灵草 x1',
+            choices: [
+                {
+                    id: 'expose_swapper',
+                    text: '顺着价码和袋口痕迹把人揭出来',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 6, lingcao: 1 },
+                        routeScores: { orthodox: 1 },
+                        flags: { tainanFakeCinnabarExposed: true },
+                    },
+                    resultSummary: '你当着几家摊口把调包的人揪了出来。',
+                    resultDetail: '这笔委托赚得不算最多，但山市里多了几双肯正眼看你的眼睛。',
+                },
+                {
+                    id: 'resell_the_evidence',
+                    text: '拿着证据先去找调包的人谈价',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 9 },
+                        routeScores: { demonic: 1 },
+                        flags: { tainanFakeCinnabarSoldOut: true },
+                    },
+                    resultSummary: '你没把人揭出来，而是把证据先换成了灵石。',
+                    resultDetail: '山市的摊风没被你扶正，但你确实把最值钱的那一份先装进了袖里。',
+                },
+            ],
+        },
+        {
+            id: 'tainan_cave_scout',
+            title: '洞府探风',
+            boardLabel: '山市委托',
+            category: '探洞',
+            location: '太南山',
+            minRealmScore: 2,
+            maxRealmScore: 4,
+            detail: '有散修不敢自己下废弃洞府，出价请你先探一圈，看里面到底值不值得组队进去。',
+            rewardPreview: '灵石 x8 · 妖丹 x1',
+            choices: [
+                {
+                    id: 'mark_routes_and_report',
+                    text: '只探外层，标清退路后回来报',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 8, yaodan: 1 },
+                        routeScores: { secluded: 1 },
+                        flags: { tainanCaveRoutesMarked: true },
+                    },
+                    resultSummary: '你只把外层暗道和退路摸清，就带着情报回来了。',
+                    resultDetail: '这笔委托办得像样，靠的是你知道什么时候该收手。',
+                },
+                {
+                    id: 'step_into_trap',
+                    text: '想多探一层，把最值钱的东西先摸到手',
+                    resultState: 'failed',
+                    effects: {
+                        routeScores: { demonic: 1 },
+                        flags: { tainanCaveTrapTriggered: true },
+                    },
+                    resultSummary: '你想再多探一层，结果踩塌了洞里的旧陷阵。',
+                    resultDetail: '这笔委托没办成，反倒让山市里多了一句“此人手快，心也快”。',
+                },
+            ],
+        },
+        {
+            id: 'tainan_night_cargo',
+            title: '夜路押货',
+            boardLabel: '山市委托',
+            category: '护送',
+            location: '太南山',
+            minRealmScore: 2,
+            maxRealmScore: 4,
+            detail: '有人想趁夜把一批低阶灵材运出山市，怕半路被截，托你同行压阵。',
+            rewardPreview: '灵石 x7 · 解毒散 x1',
+            choices: [
+                {
+                    id: 'escort_openly',
+                    text: '明着随行，让沿路散修都看见',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 7, jiedusan: 1 },
+                        routeScores: { orthodox: 1 },
+                        flags: { tainanNightCargoEscorted: true },
+                    },
+                    resultSummary: '你一路明着护送，沿路的人见了也没再起心思。',
+                    resultDetail: '这趟夜路没见血，靠的是你把“别来惹事”写在了脸上。',
+                },
+                {
+                    id: 'take_private_cut',
+                    text: '改走偏路，顺手截下一小份货',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 8, lingcao: 1 },
+                        routeScores: { demonic: 1 },
+                        flags: { tainanNightCargoCutTaken: true },
+                    },
+                    resultSummary: '你把货送到了，也把最顺手的一小份留给了自己。',
+                    resultDetail: '委托人没有当场翻脸，但也记住了你这份“会算账”。',
+                },
+            ],
+        },
+        {
+            id: 'tainan_material_purchase',
+            title: '代购灵材',
+            boardLabel: '山市委托',
+            category: '买办',
+            location: '太南山',
+            minRealmScore: 2,
+            maxRealmScore: 4,
+            detail: '一名炼器散修腾不开身，托你替他在散市里把几样低阶灵材配齐。',
+            rewardPreview: '灵石 x6 · 灵草 x1',
+            choices: [
+                {
+                    id: 'haggle_fairly',
+                    text: '一笔笔压价，但不坏规矩',
+                    resultState: 'completed',
+                    effects: {
+                        items: { lingshi: 6, lingcao: 1 },
+                        routeScores: { orthodox: 1 },
+                        flags: { tainanMaterialPurchaseFair: true },
+                    },
+                    resultSummary: '你替人把价码压下来了，摊主和买家都还能说得过去。',
+                    resultDetail: '这笔委托没什么传奇气，可山市里最常流通的，偏偏就是这种稳差使。',
+                },
+                {
+                    id: 'swap_to_cheaper_batch',
+                    text: '把其中一味换成更便宜的次货',
+                    resultState: 'failed',
+                    effects: {
+                        routeScores: { demonic: 1 },
+                        flags: { tainanMaterialPurchaseCheated: true },
+                    },
+                    resultSummary: '你省下了灵石，却也让炼器散修很快察觉灵材不对。',
+                    resultDetail: '这笔委托算是失了手，至少短期内不会再有人放心把采买托给你。',
+                },
+            ],
+        },
+    ]);
+
+    const LEGACY_SIDE_QUESTS_V1 = [
         {
             id: 'old_medicine_ledger',
             title: '旧药账',
@@ -6816,7 +7130,8 @@
         NEGATIVE_ENCOUNTERS,
         CHAPTER_ECHO_PACKS,
         BRANCH_IMPACT_PACKS,
-        SIDE_QUESTS_V1,
+        LOCATION_COMMISSION_BOARD_META,
+        LOCATION_COMMISSIONS_V1,
         VOLUME_ONE_CHAPTERS,
         VOLUME_ONE_LEGACY_CHAPTER_MAP,
         VOLUME_ONE_SIDE_QUEST_SEEDS,
@@ -6834,6 +7149,18 @@
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = StoryData;
     }
+
+    Object.defineProperty(StoryData, '__LEGACY_SIDE_QUESTS_V1', {
+        value: LEGACY_SIDE_QUESTS_V1,
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    });
+
+    const registry = globalScope.__XIUXIAN_INTERNALS__ || {};
+    registry.data = registry.data || {};
+    registry.data.LEGACY_SIDE_QUESTS_V1 = LEGACY_SIDE_QUESTS_V1;
+    globalScope.__XIUXIAN_INTERNALS__ = registry;
 
     globalScope.StoryData = StoryData;
 })(typeof window !== 'undefined' ? window : globalThis);

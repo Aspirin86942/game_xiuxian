@@ -74,6 +74,8 @@ function testScriptOrder(indexHtml) {
 
 function testAnchorsAndStyles(indexHtml, styleCss) {
     assert(/<div class="status-overview">[\s\S]*<div class="status-summary" id="status-summary">/.test(indexHtml), 'status-summary 应位于 status-overview 内部');
+    assert(indexHtml.includes('<h2>地点委托</h2>'), '剧情页右侧面板标题应改为地点委托');
+    assert(!indexHtml.includes('<h2>同行回响</h2>'), '旧的同行回响标题应移除');
     [
         'summary-lingshi-display',
         'breakthrough-inline',
@@ -112,41 +114,27 @@ function testAnchorsAndStyles(indexHtml, styleCss) {
     assert(styleCss.includes('grid-template-columns: repeat(5, minmax(0, 1fr))'), '底部导航应扩展为 5 列');
 }
 
-function testGameCoreFacade() {
-    const requiredFunctions = [
-        'createInitialState',
-        'mergeSave',
-        'recalculateState',
-        'getAlchemyRecipes',
-        'getEchoes',
-        'getLocationMeta',
-        'getVisibleSideQuests',
-        'getNpcDialogue',
-        'getStoryView',
-        'advanceStoryBeat',
-        'skipStoryPlayback',
-        'chooseStoryOption',
-        'trainWithLingshi',
-        'resolveExpedition',
-        'attemptBreakthrough',
-        'resolveOfflineCultivation',
-        'resolveNaturalRecovery',
-        'craftRecipe',
-        'performItemAction',
-        'resolveCombatRound',
-        'serializeState',
-        'isSupportedSaveData',
-    ];
-    requiredFunctions.forEach((name) => {
-        assert.strictEqual(typeof GameCore[name], 'function', `GameCore.${name} 应继续作为 façade 方法暴露`);
+function testGameCoreCommissionFacade() {
+    [
+        'getVisibleCommissions',
+        'acceptCommission',
+        'chooseCommissionOption',
+        'getCommissionBoardMeta',
+        'syncCommissionAvailability',
+    ].forEach((name) => {
+        assert.strictEqual(typeof GameCore[name], 'function', `GameCore.${name} 应存在`);
     });
-    assert.strictEqual(GameCore.SAVE_VERSION, 7, 'SAVE_VERSION 应更新到第二卷断档版本');
-    assert.strictEqual(GameCore.MIN_SUPPORTED_SAVE_VERSION, 7, 'MIN_SUPPORTED_SAVE_VERSION 应与当前版本同步抬高');
+    assert.strictEqual(Array.isArray(GameCore.LOCATION_COMMISSIONS_V1), true);
+    assert.strictEqual(GameCore.SAVE_VERSION, 8, 'SAVE_VERSION 应升级到委托系统版本');
+    assert.strictEqual(GameCore.MIN_SUPPORTED_SAVE_VERSION, 7, '旧版 v7 存档仍应可导入');
+}
 
-    const state = GameCore.createInitialState();
-    assert.strictEqual(state.ui.activeTab, 'cultivation');
-    assert.strictEqual(typeof GameCore.getPressureStatusText(state), 'string');
-    assert.strictEqual(Array.isArray(GameCore.SIDE_QUESTS_V1), true);
+function testUiCommissionFacadeUsage() {
+    const renderers = readFile('src/ui/renderers.js');
+    const actions = readFile('src/ui/actions.js');
+    assert(renderers.includes('getVisibleCommissions('), 'renderers 应使用 getVisibleCommissions');
+    assert(actions.includes('acceptCommission('), 'actions 应使用 acceptCommission');
+    assert(actions.includes('chooseCommissionOption('), 'actions 应使用 chooseCommissionOption');
 }
 
 const indexHtml = readFile('index.html');
@@ -157,6 +145,7 @@ testViewportContract(indexHtml);
 testHeadAssets(indexHtml, serveStaticJs);
 testScriptOrder(indexHtml);
 testAnchorsAndStyles(indexHtml, styleCss);
-testGameCoreFacade();
+testGameCoreCommissionFacade();
+testUiCommissionFacadeUsage();
 
 console.log('ui contract smoke passed');

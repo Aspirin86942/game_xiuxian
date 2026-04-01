@@ -212,10 +212,6 @@ function getEndingOutcome(chapterId, choiceId, configure) {
     return { state, ending: state.ending };
 }
 
-function getVisibleSideQuestById(state, questId) {
-    return GameCore.getVisibleSideQuests(state).find((item) => item.id === questId) || null;
-}
-
 function withInsertedChoices(choiceMap, overrides) {
     return {
         ...choiceMap,
@@ -1498,63 +1494,6 @@ function testEchoesAndSideStoriesIncludeNewSignals() {
     assert(sideStories.includes('飞升前夜'));
 }
 
-function testSideQuestStateLifecycleV1() {
-    const mergedLegacyState = GameCore.mergeSave({
-        storyProgress: 8,
-        flags: {
-            protectedMoHouse: true,
-        },
-    });
-    assert.strictEqual(Object.keys(mergedLegacyState.sideQuests).length, StoryData.SIDE_QUESTS_V1.length);
-    assert.strictEqual(mergedLegacyState.sideQuests.old_medicine_ledger.state, 'available');
-
-    const availableState = GameCore.createInitialState();
-    availableState.storyProgress = 8;
-    availableState.flags.protectedMoHouse = true;
-    const availableQuest = getVisibleSideQuestById(availableState, 'old_medicine_ledger');
-    assert(availableQuest, '命中窗口后应能看到正式支线');
-    assert.strictEqual(availableQuest.state, 'available');
-    assert.strictEqual(availableState.sideQuests.old_medicine_ledger.state, 'available');
-
-    const acceptResult = GameCore.acceptSideQuest(availableState, 'old_medicine_ledger');
-    assert.strictEqual(acceptResult.ok, true);
-    assert.strictEqual(availableState.sideQuests.old_medicine_ledger.state, 'active');
-
-    const lingshiBefore = GameCore.getInventoryCount(availableState, 'lingshi');
-    const relationBefore = availableState.npcRelations['墨彩环'] || 0;
-    const completeResult = GameCore.chooseSideQuestOption(availableState, 'old_medicine_ledger', 'return_ledgers');
-    assert.strictEqual(completeResult.ok, true);
-    assert.strictEqual(availableState.sideQuests.old_medicine_ledger.state, 'completed');
-    assert.strictEqual(GameCore.getInventoryCount(availableState, 'lingshi'), lingshiBefore + 6);
-    assert.strictEqual(availableState.npcRelations['墨彩环'], relationBefore + 3);
-
-    const repeatedBefore = GameCore.getInventoryCount(availableState, 'lingshi');
-    const repeatedResult = GameCore.chooseSideQuestOption(availableState, 'old_medicine_ledger', 'return_ledgers');
-    assert.strictEqual(repeatedResult.ok, false);
-    assert.strictEqual(GameCore.getInventoryCount(availableState, 'lingshi'), repeatedBefore);
-
-    const missedState = GameCore.createInitialState();
-    missedState.storyProgress = 8;
-    missedState.flags.protectedMoHouse = true;
-    GameCore.getVisibleSideQuests(missedState);
-    missedState.storyProgress = 11;
-    GameCore.getVisibleSideQuests(missedState);
-    assert.strictEqual(missedState.sideQuests.old_medicine_ledger.state, 'missed');
-    assert.strictEqual(missedState.sideQuests.old_medicine_ledger.lastResult.outcome, 'missed');
-
-    const failedState = GameCore.createInitialState();
-    failedState.storyProgress = 16;
-    failedState.flags.reconnectedWithLiFeiyu = true;
-    const feiyuQuest = getVisibleSideQuestById(failedState, 'li_feiyu_wine');
-    assert(feiyuQuest);
-    assert.strictEqual(feiyuQuest.state, 'available');
-    assert.strictEqual(GameCore.acceptSideQuest(failedState, 'li_feiyu_wine').ok, true);
-    failedState.storyProgress = 19;
-    GameCore.getVisibleSideQuests(failedState);
-    assert.strictEqual(failedState.sideQuests.li_feiyu_wine.state, 'failed');
-    assert.strictEqual(failedState.sideQuests.li_feiyu_wine.lastResult.outcome, 'failed');
-}
-
 function testNpcDialogueUsesChapterEchoes() {
     const mocaihuanState = GameCore.createInitialState();
     mocaihuanState.flags.protectedMoHouse = true;
@@ -2215,6 +2154,7 @@ function testAdaptedVolumeContractMetadata() {
 function testVolumeOneMetadataScaffold() {
     const firstVolumeChapters = StoryData.STORY_CHAPTERS.filter((chapter) => typeof chapter.id === 'number' && chapter.id >= 0 && chapter.id <= 11);
     assert.strictEqual(firstVolumeChapters.length, 12, '应保留旧 0~11 章以供兼容映射');
+    const legacySideQuests = StoryData.__LEGACY_SIDE_QUESTS_V1 || [];
     firstVolumeChapters.forEach((chapter) => {
         assert.strictEqual(chapter.volumeId, 'volume_one_qixuanmen', `章节 ${chapter.id} 缺少第一卷锚点`);
         assert(typeof chapter.volumeRole === 'string' && chapter.volumeRole.length > 0, `章节 ${chapter.id} 缺少卷内角色`);
@@ -2230,7 +2170,7 @@ function testVolumeOneMetadataScaffold() {
     });
 
     ['old_medicine_ledger', 'apothecary_boy_echo'].forEach((questId) => {
-        const quest = StoryData.SIDE_QUESTS_V1.find((entry) => entry.id === questId);
+        const quest = legacySideQuests.find((entry) => entry.id === questId);
         assert(quest, `支线 ${questId} 应存在`);
         assert.strictEqual(quest.volumeAnchor, 'volume_one_qixuanmen');
         assert(['volume_close', 'seed_forward', 'convert_to_main'].includes(quest.closureMode));
@@ -2806,6 +2746,302 @@ function testLateVolumeHooksAvoidMetaThesisLines() {
     });
 }
 
+function createCommissionState(locationName, realmScore, configure) {
+    const state = GameCore.createInitialState();
+    state.currentLocation = locationName;
+    GameCore.setRealmScore(state, realmScore);
+    state.storyCursor = {
+        source: 'main',
+        storyId: null,
+        chapterId: null,
+        beatIndex: 0,
+        mode: 'idle',
+    };
+    if (configure) {
+        configure(state);
+    }
+    GameCore.recalculateState(state, false);
+    GameCore.syncCommissionAvailability(state);
+    return state;
+}
+
+function testCommissionAuthoringContract() {
+    assert.strictEqual(Array.isArray(GameCore.LOCATION_COMMISSIONS_V1), true);
+    GameCore.LOCATION_COMMISSIONS_V1.forEach((commission) => {
+        [
+            'id',
+            'title',
+            'boardLabel',
+            'category',
+            'location',
+            'minRealmScore',
+            'maxRealmScore',
+            'detail',
+            'rewardPreview',
+            'choices',
+        ].forEach((field) => {
+            assert(commission[field] !== undefined, `委托 ${commission.id || 'unknown'} 缺少字段 ${field}`);
+        });
+        assert(Array.isArray(commission.choices), `委托 ${commission.id} choices 应为数组`);
+        assert(commission.choices.length > 0, `委托 ${commission.id} 需要至少一个选择`);
+    });
+
+    const byId = GameCore.LOCATION_COMMISSIONS_V1.reduce((result, commission) => {
+        result[commission.id] = commission;
+        return result;
+    }, {});
+
+    assert.strictEqual(byId.qingniu_medicine_delivery.title, '山路送药');
+    assert.strictEqual(byId.qingniu_medicine_delivery.rewardPreview, '灵石 x4 · 灵草 x1');
+    assert.strictEqual(byId.qingniu_medicine_delivery.choices[0].id, 'take_short_path');
+    assert.strictEqual(byId.qingniu_medicine_delivery.choices[1].id, 'take_safe_path');
+
+    assert.strictEqual(byId.qingniu_rear_hill_noise.title, '后山异响');
+    assert.strictEqual(byId.qingniu_rear_hill_noise.choices[1].resultState, 'failed');
+
+    assert.strictEqual(byId.qingniu_lost_ox.title, '失牛与雾');
+    assert.strictEqual(byId.qingniu_lost_ox.rewardPreview, '灵石 x5 · 灵草 x2');
+
+    assert.strictEqual(byId.qingniu_dawn_dew.title, '采露换符');
+    assert.strictEqual(byId.qingniu_dawn_dew.choices[0].id, 'deliver_every_drop');
+    assert.strictEqual(byId.qingniu_dawn_dew.choices[1].id, 'keep_half_for_yourself');
+
+    assert.strictEqual(byId.tainan_fake_cinnabar.title, '摊前假丹砂');
+    assert.strictEqual(byId.tainan_fake_cinnabar.rewardPreview, '灵石 x9 · 灵草 x1');
+
+    assert.strictEqual(byId.tainan_cave_scout.title, '洞府探风');
+    assert.strictEqual(byId.tainan_cave_scout.choices[1].resultState, 'failed');
+
+    assert.strictEqual(byId.tainan_night_cargo.title, '夜路押货');
+    assert.strictEqual(byId.tainan_night_cargo.rewardPreview, '灵石 x7 · 解毒散 x1');
+
+    assert.strictEqual(byId.tainan_material_purchase.title, '代购灵材');
+    assert.strictEqual(byId.tainan_material_purchase.choices[1].resultState, 'failed');
+
+    const qingniuMeta = GameCore.getCommissionBoardMeta({ currentLocation: '青牛镇' });
+    assert.strictEqual(qingniuMeta.title, '坊间委托');
+    assert.strictEqual(qingniuMeta.emptyTitle, '此地眼下暂无委托');
+    assert(qingniuMeta.emptyDetail.includes('镇口告示板'));
+
+    const tainanMeta = GameCore.getCommissionBoardMeta({ currentLocation: '太南山' });
+    assert.strictEqual(tainanMeta.title, '山市委托');
+    assert.strictEqual(tainanMeta.emptyTitle, '此地眼下暂无委托');
+    assert(tainanMeta.emptyDetail.includes('摊风'));
+
+    const defaultMeta = GameCore.getCommissionBoardMeta({ currentLocation: '未知之地' });
+    assert.strictEqual(defaultMeta.title, '地点委托');
+    assert.strictEqual(defaultMeta.emptyTitle, '此地眼下暂无委托');
+    assert(defaultMeta.emptyDetail.includes('修为'));
+}
+
+function testCommissionFailureOutcome() {
+    const state = createCommissionState('青牛镇', 0);
+    const accepted = GameCore.acceptCommission(state, 'qingniu_rear_hill_noise');
+    assert.strictEqual(accepted.ok, true);
+    const resolved = GameCore.chooseCommissionOption(state, 'qingniu_rear_hill_noise', 'strike_first');
+    assert.strictEqual(resolved.ok, true);
+    assert.strictEqual(state.commissions.qingniu_rear_hill_noise.state, 'failed');
+    assert.strictEqual(state.commissions.qingniu_rear_hill_noise.lastResult.outcome, 'failed');
+}
+
+function testCommissionHappyPath() {
+    const state = createCommissionState('青牛镇', 0);
+    const beforeLingshi = state.inventory.lingshi || 0;
+    const beforeLingcao = state.inventory.lingcao || 0;
+    const accepted = GameCore.acceptCommission(state, 'qingniu_medicine_delivery');
+    assert.strictEqual(accepted.ok, true);
+
+    const resolved = GameCore.chooseCommissionOption(state, 'qingniu_medicine_delivery', 'take_short_path');
+    assert.strictEqual(resolved.ok, true);
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.state, 'completed');
+
+    const afterLingshi = state.inventory.lingshi || 0;
+    const afterLingcao = state.inventory.lingcao || 0;
+    assert(afterLingshi > beforeLingshi || afterLingcao > beforeLingcao, '应至少发放灵石或灵草奖励');
+
+    const retry = GameCore.chooseCommissionOption(state, 'qingniu_medicine_delivery', 'take_short_path');
+    assert.strictEqual(retry.ok, false);
+}
+
+function testCommissionSaveMigrationV8() {
+    const legacyState = GameCore.createInitialState();
+    legacyState.version = 7;
+    legacyState.currentLocation = '青牛镇';
+    legacyState.sideQuests = {
+        old_medicine_ledger: {
+            questId: 'old_medicine_ledger',
+            state: 'completed',
+            selectedChoiceId: 'return_ledgers',
+            lastResult: {
+                outcome: 'completed',
+                choiceId: 'return_ledgers',
+                summary: '旧药账已了结。',
+                detail: '旧系统遗留记录，应在 v8 导入时被丢弃。',
+            },
+        },
+    };
+
+    const migrated = GameCore.mergeSave(JSON.parse(JSON.stringify(legacyState)));
+    assert.strictEqual(migrated.version, 8);
+    assert.strictEqual(Array.isArray(GameCore.LOCATION_COMMISSIONS_V1), true);
+    assert.strictEqual(typeof migrated.commissions, 'object');
+    assert.strictEqual(migrated.sideQuests, undefined);
+    assert.strictEqual(
+        Object.keys(migrated.commissions).length,
+        GameCore.LOCATION_COMMISSIONS_V1.length,
+        'v8 存档应按新委托表重建 commissions',
+    );
+    assert.strictEqual(migrated.commissions.qingniu_medicine_delivery.state, 'available');
+    assert.strictEqual(migrated.commissions.tainan_fake_cinnabar.state, 'hidden');
+}
+
+function testInitialCommissionBoardUsesLocationAndRealm() {
+    const qingniuState = createCommissionState('青牛镇', 0);
+    const tainanLowState = createCommissionState('太南山', 1);
+    const tainanReadyState = createCommissionState('太南山', 2);
+
+    assert.deepStrictEqual(
+        GameCore.getVisibleCommissions(qingniuState).map((entry) => entry.id).sort(),
+        [
+            'qingniu_medicine_delivery',
+            'qingniu_rear_hill_noise',
+            'qingniu_lost_ox',
+            'qingniu_dawn_dew',
+        ].sort(),
+    );
+    assert.strictEqual(GameCore.getVisibleCommissions(tainanLowState).length, 0);
+    assert.deepStrictEqual(
+        GameCore.getVisibleCommissions(tainanReadyState).map((entry) => entry.id).sort(),
+        [
+            'tainan_fake_cinnabar',
+            'tainan_cave_scout',
+            'tainan_night_cargo',
+            'tainan_material_purchase',
+        ].sort(),
+    );
+}
+
+function testCommissionActiveLimitAndResolution() {
+    const state = createCommissionState('青牛镇', 0);
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.availableAtRealmScore, GameCore.getRealmScore(state));
+    const firstAccept = GameCore.acceptCommission(state, 'qingniu_medicine_delivery');
+    assert.strictEqual(firstAccept.ok, true);
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.state, 'active');
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.acceptedAtRealmScore, GameCore.getRealmScore(state));
+
+    const secondAccept = GameCore.acceptCommission(state, 'qingniu_lost_ox');
+    assert.strictEqual(secondAccept.ok, false);
+    assert.strictEqual(secondAccept.error, '另有委托在身，请先把手头这一笔收住。');
+
+    const resolveResult = GameCore.chooseCommissionOption(state, 'qingniu_medicine_delivery', 'take_safe_path');
+    assert.strictEqual(resolveResult.ok, true);
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.state, 'completed');
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.selectedChoiceId, 'take_safe_path');
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.lastResult.summary, '你绕开了最险的山坳，把人和药都安稳送到了。');
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.resolvedAtRealmScore, GameCore.getRealmScore(state));
+}
+
+function testCommissionFailurePathIsLocal() {
+    const state = createCommissionState('太南山', 2);
+    const acceptResult = GameCore.acceptCommission(state, 'tainan_cave_scout');
+    assert.strictEqual(acceptResult.ok, true);
+
+    const failResult = GameCore.chooseCommissionOption(state, 'tainan_cave_scout', 'step_into_trap');
+    assert.strictEqual(failResult.ok, true);
+    assert.strictEqual(state.commissions.tainan_cave_scout.state, 'failed');
+    assert.strictEqual(state.commissions.tainan_cave_scout.lastResult.outcome, 'failed');
+    assert.strictEqual(state.commissions.tainan_cave_scout.lastResult.summary, '你想再多探一层，结果踩塌了洞里的旧陷阵。');
+}
+
+function testExpeditionRumorPointsToVisibleCommission() {
+    const state = createCommissionState('太南山', 2);
+    const result = GameCore.resolveExpedition(state, () => 0.99);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.type, 'commission');
+    assert(result.summary.includes('你在 太南山 听见一笔委托风声'));
+    assert(
+        result.summary.includes('摊前假丹砂')
+        || result.summary.includes('洞府探风')
+        || result.summary.includes('夜路押货')
+        || result.summary.includes('代购灵材'),
+        '风声事件应引用当前地点可见委托标题',
+    );
+}
+
+function testExpeditionClueFallsBackWhenNoVisibleCommission() {
+    const state = createCommissionState('七玄门', 0, (draft) => {
+        draft.storyProgress = 8;
+        draft.flags.protectedMoHouse = true;
+        draft.npcRelations['墨彩环'] = -1;
+    });
+    const result = GameCore.resolveExpedition(state, () => 0.99);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.type, 'clue');
+    assert(result.summary.includes('旧药账'));
+}
+
+function testCompletedCommissionStaysLocalToItsLocation() {
+    const state = createCommissionState('青牛镇', 0);
+    const accepted = GameCore.acceptCommission(state, 'qingniu_medicine_delivery');
+    assert.strictEqual(accepted.ok, true);
+    const resolved = GameCore.chooseCommissionOption(state, 'qingniu_medicine_delivery', 'take_safe_path');
+    assert.strictEqual(resolved.ok, true);
+
+    state.currentLocation = '太南山';
+    GameCore.setRealmScore(state, 2);
+    GameCore.syncCommissionAvailability(state);
+    const visible = GameCore.getVisibleCommissions(state);
+    assert.strictEqual(visible.some((entry) => entry.id === 'qingniu_medicine_delivery'), false);
+    assert(
+        visible.some((entry) => entry.id === 'tainan_fake_cinnabar')
+        && visible.some((entry) => entry.id === 'tainan_cave_scout')
+        && visible.some((entry) => entry.id === 'tainan_night_cargo')
+        && visible.some((entry) => entry.id === 'tainan_material_purchase'),
+        '太南山委托仍应可见',
+    );
+}
+
+function testExpeditionResourceFallbackWhenNoRealClue() {
+    const state = createCommissionState('黄枫谷', 0);
+    const result = GameCore.resolveExpedition(state, () => 0.99);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.type, 'resource');
+    assert(result.summary.includes('灵石'));
+}
+
+function testCommissionFacadeIncludesLifecycleFields() {
+    const state = createCommissionState('青牛镇', 0);
+    const visible = GameCore.getVisibleCommissions(state);
+    const target = visible.find((entry) => entry.id === 'qingniu_medicine_delivery');
+    assert(target, '应返回青牛镇委托');
+    [
+        'minRealmScore',
+        'maxRealmScore',
+        'priority',
+        'availableAtRealmScore',
+        'acceptedAtRealmScore',
+        'resolvedAtRealmScore',
+    ].forEach((field) => {
+        assert(Object.prototype.hasOwnProperty.call(target, field), `委托门面缺少字段 ${field}`);
+    });
+    assert.strictEqual(target.availableAtRealmScore, GameCore.getRealmScore(state));
+    assert.strictEqual(target.acceptedAtRealmScore, null);
+    assert.strictEqual(target.resolvedAtRealmScore, null);
+
+    const accepted = GameCore.acceptCommission(state, 'qingniu_medicine_delivery');
+    assert.strictEqual(accepted.ok, true);
+    const afterAccept = GameCore.getVisibleCommissions(state).find((entry) => entry.id === 'qingniu_medicine_delivery');
+    assert(afterAccept);
+    assert.strictEqual(afterAccept.acceptedAtRealmScore, GameCore.getRealmScore(state));
+    assert.strictEqual(afterAccept.resolvedAtRealmScore, null);
+
+    const resolved = GameCore.chooseCommissionOption(state, 'qingniu_medicine_delivery', 'take_safe_path');
+    assert.strictEqual(resolved.ok, true);
+    const afterResolve = GameCore.getVisibleCommissions(state).find((entry) => entry.id === 'qingniu_medicine_delivery');
+    assert(afterResolve);
+    assert.strictEqual(afterResolve.resolvedAtRealmScore, GameCore.getRealmScore(state));
+}
+
 testStoryCursorSwitching();
 testAlchemyRecipeCraftingSuccess();
 testAlchemyRecipeInsufficientMaterialsDoesNotPolluteInventory();
@@ -2845,7 +3081,6 @@ testChapter19RouteChoices();
 testChapter21StarSeaFlags();
 testChapter23BranchChoices();
 testEchoesAndSideStoriesIncludeNewSignals();
-testSideQuestStateLifecycleV1();
 testNpcDialogueUsesChapterEchoes();
 testEndingEchoTextsStayReflective();
 testLateGameEchoesUseSceneHooks();
@@ -2880,5 +3115,17 @@ testVolumeOneLedgerClosureReadsNamesOnlyPath();
 testVolumeOneApothecaryClosureReadsTracePath();
 testVolumeOneApothecaryClosureReadsSealPath();
 testLateVolumeHooksAvoidMetaThesisLines();
+testCommissionAuthoringContract();
+testCommissionFailureOutcome();
+testCommissionHappyPath();
+testCommissionSaveMigrationV8();
+testInitialCommissionBoardUsesLocationAndRealm();
+testCommissionActiveLimitAndResolution();
+testCommissionFailurePathIsLocal();
+testExpeditionRumorPointsToVisibleCommission();
+testExpeditionClueFallsBackWhenNoVisibleCommission();
+testCompletedCommissionStaysLocalToItsLocation();
+testExpeditionResourceFallbackWhenNoRealClue();
+testCommissionFacadeIncludesLifecycleFields();
 
 console.log('story smoke passed');

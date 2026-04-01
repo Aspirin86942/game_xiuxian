@@ -5,6 +5,8 @@
             CONFIG,
             REALMS,
             LEVEL_STORY_EVENTS,
+            LOCATION_COMMISSION_BOARD_META,
+            LOCATION_COMMISSIONS_V1,
             SIDE_QUESTS_V1,
             constants,
         } = deps.data;
@@ -15,9 +17,11 @@
             STORY_CONSEQUENCE_LIMITS,
             PRESSURE_COLLAPSE_THRESHOLD,
             SIDE_QUEST_STATE_VALUES,
+            COMMISSION_STATE_VALUES,
         } = constants;
 
         const SIDE_QUEST_STATE_SET = new Set(SIDE_QUEST_STATE_VALUES);
+        const COMMISSION_STATE_SET = new Set(COMMISSION_STATE_VALUES);
 
         function createDefaultLevelStoryState() {
             const events = {};
@@ -134,6 +138,69 @@
                     resolvedAtProgress: normalizeProgressCheckpoint(rawEntry.resolvedAtProgress),
                     selectedChoiceId: typeof rawEntry.selectedChoiceId === 'string' ? rawEntry.selectedChoiceId : null,
                     lastResult: normalizeSideQuestLastResult(rawEntry.lastResult),
+                };
+            });
+
+            return defaults;
+        }
+
+        function createDefaultCommissionEntry(definition) {
+            return {
+                commissionId: definition.id,
+                state: 'hidden',
+                availableAtRealmScore: null,
+                acceptedAtRealmScore: null,
+                resolvedAtRealmScore: null,
+                selectedChoiceId: null,
+                lastResult: null,
+            };
+        }
+
+        function createDefaultCommissions() {
+            return (LOCATION_COMMISSIONS_V1 || []).reduce((result, definition) => {
+                result[definition.id] = createDefaultCommissionEntry(definition);
+                return result;
+            }, {});
+        }
+
+        function normalizeCommissionLastResult(rawValue) {
+            if (!rawValue || typeof rawValue !== 'object') {
+                return null;
+            }
+            return {
+                outcome: typeof rawValue.outcome === 'string' ? rawValue.outcome : '',
+                choiceId: typeof rawValue.choiceId === 'string' ? rawValue.choiceId : null,
+                summary: typeof rawValue.summary === 'string' ? rawValue.summary : '',
+                detail: typeof rawValue.detail === 'string' ? rawValue.detail : '',
+            };
+        }
+
+        function normalizeCommissionRecords(rawRecords) {
+            const defaults = createDefaultCommissions();
+            if (!rawRecords || typeof rawRecords !== 'object') {
+                return defaults;
+            }
+
+            (LOCATION_COMMISSIONS_V1 || []).forEach((definition) => {
+                const rawEntry = rawRecords[definition.id];
+                if (!rawEntry || typeof rawEntry !== 'object') {
+                    return;
+                }
+
+                defaults[definition.id] = {
+                    commissionId: definition.id,
+                    state: COMMISSION_STATE_SET.has(rawEntry.state) ? rawEntry.state : 'hidden',
+                    availableAtRealmScore: Number.isFinite(rawEntry.availableAtRealmScore)
+                        ? Math.max(0, Math.floor(rawEntry.availableAtRealmScore))
+                        : null,
+                    acceptedAtRealmScore: Number.isFinite(rawEntry.acceptedAtRealmScore)
+                        ? Math.max(0, Math.floor(rawEntry.acceptedAtRealmScore))
+                        : null,
+                    resolvedAtRealmScore: Number.isFinite(rawEntry.resolvedAtRealmScore)
+                        ? Math.max(0, Math.floor(rawEntry.resolvedAtRealmScore))
+                        : null,
+                    selectedChoiceId: typeof rawEntry.selectedChoiceId === 'string' ? rawEntry.selectedChoiceId : null,
+                    lastResult: normalizeCommissionLastResult(rawEntry.lastResult),
                 };
             });
 
@@ -433,7 +500,7 @@
                 decisionHistory: createDefaultDecisionHistory(),
                 pendingEchoes: createDefaultPendingEchoes(),
                 endingSeeds: createDefaultEndingSeeds(),
-                sideQuests: createDefaultSideQuests(),
+                commissions: createDefaultCommissions(),
                 storyCursor: {
                     source: 'main',
                     storyId: null,
@@ -465,6 +532,8 @@
                 unreadStory: true,
             };
             deps.recalculateState(state, true);
+            // 新档需与委托可见性规则一致，避免首次序列化后出现状态跳变。
+            deps.syncCommissionAvailability(state);
             return state;
         }
 
@@ -497,7 +566,10 @@
             nextState.decisionHistory = normalizeDecisionHistory(rawState.decisionHistory);
             nextState.pendingEchoes = normalizePendingEchoes(rawState.pendingEchoes);
             nextState.endingSeeds = normalizeEndingSeeds(rawState.endingSeeds);
-            nextState.sideQuests = normalizeSideQuestRecords(rawState.sideQuests);
+            // v7 存档中的 sideQuests 会被丢弃，委托改按新表重建，避免旧语义污染新合同。
+            nextState.commissions = Number.isFinite(rawState.version) && rawState.version >= SAVE_VERSION
+                ? normalizeCommissionRecords(rawState.commissions)
+                : createDefaultCommissions();
             nextState.logs = Array.isArray(rawState.logs) ? rawState.logs.slice(0, MAX_LOGS) : [];
             nextState.ending = rawState.ending || null;
             nextState.levelStoryState = normalizeLevelStoryState(rawState.levelStoryState);
@@ -513,9 +585,10 @@
                 ? Math.max(0, rawState.breakthroughBonus)
                 : 0;
             delete nextState.autoCultivate;
+            delete nextState.sideQuests;
             deps.recalculateState(nextState, false);
             nextState.cultivation = Math.max(0, Math.min(nextState.maxCultivation, nextState.cultivation));
-            deps.syncSideQuestAvailability(nextState);
+            deps.syncCommissionAvailability(nextState);
             return nextState;
         }
 
@@ -608,6 +681,146 @@
             return `失败压力已至${consequences.pressureTier}（${consequences.pressureTrend}）`;
         }
 
+        function syncCommissionAvailability(state) {
+            if (!state || typeof state !== 'object') {
+                return state;
+            }
+
+            // 委托榜只展示当前地点、且境界满足的委托，保证可见性与玩家位置一致。
+            state.commissions = normalizeCommissionRecords(state.commissions);
+            const locationName = state.currentLocation;
+            const realmScore = getRealmScore(state);
+
+            (LOCATION_COMMISSIONS_V1 || []).forEach((definition) => {
+                const record = state.commissions[definition.id];
+                if (!record) {
+                    return;
+                }
+
+                if (record.state === 'completed' || record.state === 'failed' || record.state === 'active') {
+                    return;
+                }
+
+                const locationMatched = locationName === definition.location;
+                const minMatched = !Number.isFinite(definition.minRealmScore) || realmScore >= definition.minRealmScore;
+                const maxMatched = !Number.isFinite(definition.maxRealmScore) || realmScore <= definition.maxRealmScore;
+                const realmMatched = minMatched && maxMatched;
+                if (locationMatched && realmMatched) {
+                    record.state = 'available';
+                    if (record.availableAtRealmScore === null) {
+                        record.availableAtRealmScore = realmScore;
+                    }
+                } else {
+                    record.state = 'hidden';
+                }
+            });
+
+            return state;
+        }
+
+        function buildCommissionView(definition, record) {
+            return {
+                id: definition.id,
+                title: definition.title,
+                boardLabel: definition.boardLabel,
+                category: definition.category,
+                detail: definition.detail,
+                location: definition.location,
+                minRealmScore: definition.minRealmScore,
+                maxRealmScore: definition.maxRealmScore,
+                rewardPreview: definition.rewardPreview || '',
+                priority: definition.priority || 0,
+                choices: clone(definition.choices || []),
+                state: record.state,
+                availableAtRealmScore: record.availableAtRealmScore,
+                acceptedAtRealmScore: record.acceptedAtRealmScore,
+                resolvedAtRealmScore: record.resolvedAtRealmScore,
+                selectedChoiceId: record.selectedChoiceId,
+                lastResult: record.lastResult ? clone(record.lastResult) : null,
+            };
+        }
+
+        function getVisibleCommissions(state) {
+            syncCommissionAvailability(state);
+            return (LOCATION_COMMISSIONS_V1 || [])
+                .map((definition) => {
+                    const record = state.commissions[definition.id];
+                    return buildCommissionView(definition, record);
+                })
+                .filter((entry) => entry.state !== 'hidden')
+                .sort((left, right) => (right.priority - left.priority)
+                    || left.title.localeCompare(right.title, 'zh-CN'));
+        }
+
+        function acceptCommission(state, commissionId) {
+            syncCommissionAvailability(state);
+            const definition = (LOCATION_COMMISSIONS_V1 || []).find((entry) => entry.id === commissionId);
+            if (!definition) {
+                return { ok: false, error: '委托不存在。' };
+            }
+
+            const record = state.commissions[commissionId];
+            if (!record || record.state !== 'available') {
+                return { ok: false, error: '当前无法接取此委托。' };
+            }
+
+            const activeCommission = Object.values(state.commissions)
+                .find((entry) => entry.state === 'active' && entry.commissionId !== commissionId);
+            if (activeCommission) {
+                return { ok: false, error: '已有在办委托，请先处理完毕。' };
+            }
+
+            record.state = 'active';
+            record.acceptedAtRealmScore = getRealmScore(state);
+            record.lastResult = null;
+            return { ok: true, commission: getVisibleCommissions(state).find((entry) => entry.id === commissionId) || null };
+        }
+
+        function chooseCommissionOption(state, commissionId, choiceId) {
+            syncCommissionAvailability(state);
+            const definition = (LOCATION_COMMISSIONS_V1 || []).find((entry) => entry.id === commissionId);
+            if (!definition) {
+                return { ok: false, error: '委托不存在。' };
+            }
+
+            const record = state.commissions[commissionId];
+            if (!record || record.state !== 'active') {
+                return { ok: false, error: '当前没有可结算的委托。' };
+            }
+
+            const choice = (definition.choices || []).find((entry) => entry.id === choiceId);
+            if (!choice) {
+                return { ok: false, error: '委托结算选项不存在。' };
+            }
+
+            if (choice.costs && deps.applyCosts && !deps.applyCosts(state, choice.costs)) {
+                return { ok: false, error: '资源不足，无法完成委托。' };
+            }
+            if (choice.effects && deps.applyEffects) {
+                deps.applyEffects(state, choice.effects);
+            }
+
+            const resolvedState = choice.resultState === 'failed' ? 'failed' : 'completed';
+            record.state = resolvedState;
+            record.selectedChoiceId = choice.id;
+            record.resolvedAtRealmScore = getRealmScore(state);
+            record.lastResult = {
+                outcome: resolvedState,
+                choiceId: choice.id,
+                summary: choice.resultSummary || `你已完成委托：${definition.title}。`,
+                detail: choice.resultDetail || '',
+            };
+            syncCommissionAvailability(state);
+            return { ok: true, commission: getVisibleCommissions(state).find((entry) => entry.id === commissionId) || null };
+        }
+
+        function getCommissionBoardMeta(state) {
+            const locationName = state?.currentLocation;
+            return LOCATION_COMMISSION_BOARD_META?.[locationName]
+                || LOCATION_COMMISSION_BOARD_META?.default
+                || { title: '地点委托', emptyTitle: '此地眼下暂无委托', emptyDetail: '先换个地方走走，或再把修为往前推一层。' };
+        }
+
         return {
             SAVE_VERSION,
             MIN_SUPPORTED_SAVE_VERSION,
@@ -638,18 +851,25 @@
             normalizeOfflineTrainingState,
             normalizeRecoveryState,
             normalizeSideQuestRecords,
+            normalizeCommissionRecords,
             getOfflineTrainingCapMs,
             getAverageAutoCultivationGain,
             formatOfflineDuration,
             clampConsequenceValue,
             getPressureTrendLabel,
             createDefaultSideQuests,
+            createDefaultCommissions,
             createDefaultDecisionHistory,
             createDefaultPendingEchoes,
             createDefaultEndingSeeds,
             createDefaultStoryConsequences,
             clone,
             PRESSURE_COLLAPSE_THRESHOLD,
+            syncCommissionAvailability,
+            getVisibleCommissions,
+            acceptCommission,
+            chooseCommissionOption,
+            getCommissionBoardMeta,
         };
     }
 

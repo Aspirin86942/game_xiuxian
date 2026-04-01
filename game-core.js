@@ -17,13 +17,17 @@
         VOLUME_DISPLAY_META,
         STORY_CHAPTERS,
         LEVEL_STORY_EVENTS,
-        SIDE_QUESTS_V1,
+        LOCATION_COMMISSION_BOARD_META,
+        LOCATION_COMMISSIONS_V1,
         VOLUME_ONE_CHAPTERS,
         VOLUME_TWO_CHAPTERS,
         VOLUME_THREE_CHAPTERS,
         VOLUME_FOUR_CHAPTERS,
         VOLUME_FIVE_CHAPTERS,
     } = dataSource;
+    const LEGACY_SIDE_QUESTS_V1 = dataSource.__LEGACY_SIDE_QUESTS_V1
+        || globalScope.__XIUXIAN_INTERNALS__?.data?.LEGACY_SIDE_QUESTS_V1
+        || [];
 
     function loadSharedHelpers() {
         if (typeof module !== 'undefined' && module.exports) {
@@ -50,7 +54,7 @@
         throw new Error('GameCore 内部模块未完整加载');
     }
 
-    const SAVE_VERSION = 7;
+    const SAVE_VERSION = 8;
     const MIN_SUPPORTED_SAVE_VERSION = 7;
     const MAX_LOGS = 120;
     const DECISION_HISTORY_LIMIT = 64;
@@ -79,6 +83,7 @@
         clue: 8,
     });
     const SIDE_QUEST_STATE_VALUES = Object.freeze(['locked', 'available', 'active', 'completed', 'failed', 'missed']);
+    const COMMISSION_STATE_VALUES = Object.freeze(['hidden', 'available', 'active', 'completed', 'failed']);
 
     const deps = {
         shared: sharedHelpers,
@@ -94,7 +99,9 @@
             VOLUME_DISPLAY_META,
             STORY_CHAPTERS,
             LEVEL_STORY_EVENTS,
-            SIDE_QUESTS_V1,
+            LOCATION_COMMISSION_BOARD_META,
+            LOCATION_COMMISSIONS_V1,
+            SIDE_QUESTS_V1: LEGACY_SIDE_QUESTS_V1,
             VOLUME_ONE_CHAPTERS,
             VOLUME_TWO_CHAPTERS,
             VOLUME_THREE_CHAPTERS,
@@ -113,6 +120,7 @@
                 PRESSURE_TIERS,
                 EXPEDITION_EVENT_WEIGHTS,
                 SIDE_QUEST_STATE_VALUES,
+                COMMISSION_STATE_VALUES,
             },
         },
     };
@@ -149,7 +157,8 @@
         getLocationMeta: deps.getLocationMeta,
         getBlockedMainStoryHint: deps.getBlockedMainStoryHint,
         getAvailableSideStories: deps.getAvailableSideStories,
-        getVisibleSideQuests: deps.getVisibleSideQuests,
+        // 委托运行时交由 world 模块统一接管，避免 state 临时逻辑长期并存。
+        getVisibleCommissions: deps.getVisibleCommissions,
         getNpcDialogue: deps.getNpcDialogue,
         getAvailableMainChapter: deps.getAvailableMainChapter,
         getAvailableLevelEvent: deps.getAvailableLevelEvent,
@@ -169,8 +178,10 @@
         skipStoryPlayback: deps.skipStoryPlayback,
         syncUnreadStoryState: deps.syncUnreadStoryState,
         chooseStoryOption: deps.chooseStoryOption,
-        acceptSideQuest: deps.acceptSideQuest,
-        chooseSideQuestOption: deps.chooseSideQuestOption,
+        acceptCommission: deps.acceptCommission,
+        chooseCommissionOption: deps.chooseCommissionOption,
+        getCommissionBoardMeta: deps.getCommissionBoardMeta,
+        syncCommissionAvailability: deps.syncCommissionAvailability,
         getTrainingPreview: deps.getTrainingPreview,
         trainWithLingshi: deps.trainWithLingshi,
         resolveExpedition: deps.resolveExpedition,
@@ -187,7 +198,8 @@
         resolveCombatRound: deps.resolveCombatRound,
         pushLog: deps.pushLog,
         serializeState: deps.serializeState,
-        SIDE_QUESTS_V1,
+        LOCATION_COMMISSION_BOARD_META,
+        LOCATION_COMMISSIONS_V1,
     };
 
     if (typeof module !== 'undefined' && module.exports) {

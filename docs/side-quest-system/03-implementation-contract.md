@@ -2,134 +2,148 @@
 
 ## 1. 目的
 
-本文件写给未来要按支线任务系统规则书改代码的人。
+本文件写给未来要按地点委托规则书改代码的人。
 
 重点是保护以下语义：
 
-- 任务窗口
-- 任务状态
-- 任务与主线卷结构的边界
-- 任务卷末去向
-- 任务奖励与后续读取点
+- 地点开放条件
+- 委托状态
+- 委托与主线的边界
+- 委托奖励与结果留痕
+- 存档迁移与 UI 词面
 
 ## 2. 代码入口
 
 - `D:\Program_python\game_xiuxian\game-core.js`
-- `D:\Program_python\game_xiuxian\game.js`
 - `D:\Program_python\game_xiuxian\story-data.js`
+- `D:\Program_python\game_xiuxian\src\core\state.js`
+- `D:\Program_python\game_xiuxian\src\core\world.js`
+- `D:\Program_python\game_xiuxian\src\ui\renderers.js`
+- `D:\Program_python\game_xiuxian\src\ui\actions.js`
 - `D:\Program_python\game_xiuxian\tests\story-smoke.js`
+- `D:\Program_python\game_xiuxian\tests\ui-contract-smoke.js`
 - `D:\Program_python\game_xiuxian\tests\e2e\story.spec.js`
 
 ## 3. 稳定数据契约
 
-未来正式任务系统至少需要能稳定表达以下语义；字段名可以调整，但语义不能静默消失：
+未来地点委托系统至少需要能稳定表达以下语义；字段名可以调整，但语义不能静默消失：
 
 - `id`
 - `title`
+- `boardLabel`
 - `category`
-- `volumeAnchor`
-- `triggerCondition`
-- `acceptCondition`
-- `failCondition`
-- `successCondition`
-- `rewards`
-- `branchEffects`
-- `closureMode`
-- `followupHook`
+- `location`
+- `minRealmScore`
+- `maxRealmScore`
+- `detail`
+- `rewardPreview`
+- `choices`
 
-### 3.1 新增稳定字段
+### 3.1 当前状态枚举
 
-- `volumeAnchor`
-  - 表示这条任务服务哪一卷。
-  - 第一卷固定使用 `volume_one_qixuanmen`。
-- `closureMode`
-  - 允许值固定为：
-    - `volume_close`
-    - `seed_forward`
-    - `convert_to_main`
-- `followupHook`
-  - 表示卷末或后续章节如何读取它。
-  - 允许是主线章节锚点、关系读取点或跨卷低权重种子。
+运行时状态枚举当前固定为：
 
-### 3.2 当前状态枚举
-
-运行时状态枚举继续保持：
-
-- `locked`
+- `hidden`
 - `available`
 - `active`
 - `completed`
 - `failed`
-- `missed`
 
-`closureMode` 不替代运行时状态，它只规定卷末如何解释一条支线。
+`hidden` 表示定义存在，但当前地点或境界不满足。
+
+## 3.2 地点委托稳定字段
+
+每条地点委托至少包含：
+
+- `id`
+- `title`
+- `boardLabel`
+- `category`
+- `location`
+- `minRealmScore`
+- `maxRealmScore`
+- `detail`
+- `rewardPreview`
+- `choices`
+
+运行时 `state.commissions[commissionId]` 至少包含：
+
+- `commissionId`
+- `state`
+- `selectedChoiceId`
+- `lastResult`
+
+### 3.2.1 旧存档兼容
+
+- v7 存档中的 `sideQuests` 视为已退休字段。
+- 导入 v7 存档时，不尝试把旧 `sideQuests` 逐条迁移成新委托结果。
+- `mergeSave()` 应直接按 `LOCATION_COMMISSIONS_V1` 重建默认 `commissions`，再按当前 `currentLocation + realmScore` 同步可见性。
 
 ## 4. 稳定流程契约
 
 ### 4.1 正常生命周期
 
-1. 先依据 `storyProgress`、`flags`、`npcRelations` 等条件推导线索。
-2. 命中窗口后，任务进入 `available`。
-3. 玩家接取后，任务进入 `active`。
-4. 玩家达成成功条件时，任务进入 `completed`。
-5. 命中失败条件或过期条件时，进入 `failed` 或 `missed`。
+1. 先按 `currentLocation + realmScore` 推导哪些委托进入 `available`。
+2. 玩家接取后，委托进入 `active`。
+3. 玩家在卡内选择一个 choice 后，委托进入 `completed` 或 `failed`。
+4. 结算后写入 `selectedChoiceId / lastResult / resolvedAtRealmScore`。
+5. 已结算委托只在对应地点、对应境界区间内继续作为结果留痕显示。
 
-### 4.2 卷末生命周期
+### 4.2 游历风声顺序
 
-进入卷末前，任务还必须通过一次卷结构解释：
+`resolveExpedition()` 的正式顺序当前固定为：
 
-- `volume_close`
-  - 卷末前必须已经进入 `completed / failed / missed`。
-- `seed_forward`
-  - 卷末前必须已经进入 `completed / failed / missed`，但允许同时登记低权重读取点。
-- `convert_to_main`
-  - 卷末前必须被主线高潮、尾声或卷末清账章节解释掉，不再以独立任务尾巴悬挂。
+1. 先尝试播报当前地点可见委托。
+2. 若无可播报委托，再尝试返回 legacy 风闻。
+3. 若连 legacy 风闻也没有，再回退到资源收益。
 
-### 4.3 第一卷默认
+### 4.3 单活跃限制
 
-改编第一卷《七玄门风云》固定遵守：
+当前 v1 固定遵守：
 
-1. 第一卷支线不允许跨卷保持 `active`。
-2. 第一卷支线进入卷末时，不允许继续以 `available` 形式可见悬挂。
-3. 旧 `8 墨府旧事` 默认走 `volume_close`，旧 `9 曲魂初现` 默认走 `convert_to_main`。
-4. 第一卷卷末最多只允许保留少量 `seed_forward` 读取点。
+1. 任意时刻只允许 1 条委托处于 `active`。
+2. 其他 `available` 卡可以继续显示，但接取按钮必须禁用。
+3. 完成或失败后，才能再接下一笔委托。
 
 ## 5. 稳定 UI 契约
 
-- 当前最小 UI 仍允许 formal quest 与 legacy 线索共存。
-- 但卷末不能出现“主线已离卷，第一卷支线仍大面积挂在同行回响区”的情况。
-- 支线若被 `convert_to_main`，卷末应优先由主线章节解释其结果，而不是再让任务卡保持中心地位。
+- 当前最小 UI 继续复用 `#side-story-list`，但玩家语义必须统一为地点委托。
+- 当前剧情页委托区只渲染正式地点委托或地点空态，不再混排 legacy 风闻卡。
 - `side quest / task / available / active` 等内部术语可以保留在代码、规则书与测试变量中，但玩家界面必须统一映射为世界观词面。
 - 玩家可见层默认使用以下映射：
-  - `side quest / 支线任务` -> `旧事`
-  - legacy clue -> `旧事线索`
-  - `available` -> `可应旧事`
-  - 接取动作 -> `应下这桩旧事`
-  - 因其他任务阻断 -> `另有旧事未了`
-- 若当前没有可接条目，空态文案也应保持世界内口径，例如“暂无旧事上门”，不直接使用“暂无可接支线”。
+  - 系统总称 -> `地点委托`
+  - `available` -> `可接委托`
+  - `active` -> `已接手`
+  - `completed` -> `已办妥`
+  - `failed` -> `已失手`
+  - 接取动作 -> `接下这笔委托`
+  - 因其他任务阻断 -> `另有委托在身`
+- 若当前没有可接条目，空态文案必须来自 `LOCATION_COMMISSION_BOARD_META`，不直接写“暂无可接支线”。
 
 ## 6. 禁止项
 
-1. 不能让支线在关键卷末窗口继续抢断主线。
-2. 不能让 `closureMode` 只是文档字段，不影响实现与测试。
-3. 不能让任务失败与错过完全没有差异。
-4. 不能把一整条旧账挂到下卷，再说“以后会补”。
-5. 不能让唯一奖励在兼容映射或重复读档时重复发放。
-6. 不能直接把不适配当前项目口径的原著桥段搬进任务正文。
-7. 不能把“支线任务 / 任务状态 / 可接任务”这类内部说明词直接作为玩家界面主文案。
+1. 不能让地点委托结果决定主线章节是否能收束完整。
+2. 不能把旧 `sideQuests` 的逐条进度迁移成新 `commissions` 结果。
+3. 不能让委托在切换地点后继续跨地点污染显示。
+4. 不能让唯一奖励在兼容映射或重复读档时重复发放。
+5. 不能直接把不适配当前项目口径的原著桥段搬进委托正文。
+6. 不能把“支线任务 / 任务状态 / 可接任务”这类内部说明词直接作为玩家界面主文案。
+7. 不能把固定地点委托改造成无限重复刷取而不更新规则书与测试。
 
 ## 7. 可改项
 
-- 任务分类命名
+- 委托分类命名
 - 奖励档位和数值
-- 冲突优先级细节
-- `followupHook` 的具体命名
+- 地点委托的数量和地点扩展顺序
+- `boardLabel` 与空态措辞的具体文案
+- 境界开放区间的具体数值
 
 但以下项目本轮已锁定：
 
-- 第一卷支线必须绑定 `volume_one_qixuanmen`
-- 第一卷卷末不允许未结算任务跨卷
-- 第一卷旧账型支线默认优先 `convert_to_main` 或 `volume_close`
+- `commissions` 作为正式委托存档字段
+- `hidden / available / active / completed / failed` 五态
+- `currentLocation + realmScore` 作为可见性基础
+- 同一时间只允许 1 条 `active` 委托
 
 ## 8. 最低测试契约
 
@@ -140,10 +154,11 @@
 
 ### 8.2 代码接入后必须补齐的断言
 
-- 第一卷支线都带有 `volumeAnchor / closureMode / followupHook` 元数据。
-- 第一卷卷末前，支线不会以 `available / active` 继续挂到下一卷。
-- `convert_to_main` 任务在卷末可被主线解释，而不是双重展示。
-- 旧存档读入后不会重复结算第一卷支线奖励。
+- v7 导入后应重建 `commissions`，并移除旧 `sideQuests`。
+- 青牛镇与太南山应按 `currentLocation + realmScore` 正确显示可见委托。
+- 任意时刻只能存在 1 条 `active` 委托。
+- 游历风声应优先播报当前地点可接委托。
+- 剧情页委托区词面应统一为 `地点委托 / 可接委托 / 已接手 / 已办妥 / 已失手`。
 
 ### 8.3 自动化命令
 
@@ -155,24 +170,25 @@
 
 ### 9.1 A 级
 
-- 调整 `closureMode` 语义
-- 调整主线/支线优先级
-- 调整第一卷卷末回收规则
+- 调整状态枚举语义
+- 调整 `currentLocation + realmScore` 可见性逻辑
+- 调整委托与主线的边界
 
 ### 9.2 B 级
 
-- 调整任务分类
+- 调整委托分类
 - 调整奖励档位
-- 调整 `followupHook` 命名
+- 调整地点空态与委托榜文案
+- 新增地点委托地点组
 
 ### 9.3 C 级
 
-- 新增任务原型
-- 新增卷锚点
-- 新增任务读取点
+- 新增单条委托原型
+- 调整单条委托 choices
+- 调整单条委托的奖励预览或结果摘要
 
 ## 10. 设计验收
 
-- 玩家能否解释这条支线为什么会出现、为何值得接、为何会错过。
-- 支线是否真的补了卷主题，而不是额外制造拖尾。
-- 卷末时，玩家是否还能清楚分辨“这卷已解决什么、只留下什么种子”。
+- 玩家能否解释这笔委托为什么会出现在这个地点、这个境界段。
+- 委托是否真的补了地点横截面，而不是额外制造主线拖尾。
+- 玩家做完后，是否能清楚分辨“这笔委托留下了什么轻量痕迹”。

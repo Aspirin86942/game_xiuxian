@@ -206,45 +206,45 @@
             });
 
             ctx.elements.sideStoryList.addEventListener('click', (event) => {
-                const actionButton = event.target.closest('[data-side-quest-action], [data-side-quest-choice-id]');
+                const actionButton = event.target.closest('[data-commission-action], [data-commission-choice-id]');
                 if (!actionButton) {
                     return;
                 }
 
-                const questId = actionButton.dataset.sideQuestTargetId
-                    || actionButton.closest('[data-side-quest-id]')?.dataset.sideQuestId;
-                if (!questId) {
+                const commissionId = actionButton.dataset.commissionTargetId
+                    || actionButton.closest('[data-commission-id]')?.dataset.commissionId;
+                if (!commissionId) {
                     return;
                 }
 
-                if (actionButton.dataset.sideQuestAction === 'accept') {
-                    const result = ctx.GameCore.acceptSideQuest(ctx.gameState, questId);
+                if (actionButton.dataset.commissionAction === 'accept') {
+                    const result = ctx.GameCore.acceptCommission(ctx.gameState, commissionId);
                     if (!result.ok) {
-                        window.alert(result.error || '当前无法应下这桩旧事。');
+                        window.alert(result.error || '当前无法接下这笔委托。');
                         deps.playSound(ctx, 'fail');
                         return;
                     }
 
-                    deps.showFloatingText(ctx, '应下旧事', 'breakthrough');
+                    deps.showFloatingText(ctx, '接下委托', 'breakthrough');
                     deps.playSound(ctx, 'story');
                     deps.render(ctx);
                     deps.saveGame(ctx);
                     return;
                 }
 
-                const choiceId = actionButton.dataset.sideQuestChoiceId;
+                const choiceId = actionButton.dataset.commissionChoiceId;
                 if (!choiceId) {
                     return;
                 }
 
-                const result = ctx.GameCore.chooseSideQuestOption(ctx.gameState, questId, choiceId);
+                const result = ctx.GameCore.chooseCommissionOption(ctx.gameState, commissionId, choiceId);
                 if (!result.ok) {
-                    window.alert(result.error || '当前无法了结这桩旧事。');
+                    window.alert(result.error || '当前无法了结这笔委托。');
                     deps.playSound(ctx, 'fail');
                     return;
                 }
 
-                deps.showFloatingText(ctx, '旧事已了', 'gain');
+                deps.showFloatingText(ctx, '委托办妥', 'gain');
                 deps.playSound(ctx, 'click');
                 deps.render(ctx);
                 deps.saveGame(ctx);

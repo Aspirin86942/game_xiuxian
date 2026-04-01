@@ -292,6 +292,13 @@
         '大晋': { name: '大晋', description: '人界最后一大段路，谁都想在这里替自己定下一个答案。', npcs: [] },
     };
 
+    const COMMISSION_BOARD_LOCATION_ALIASES = Object.freeze({
+        '青牛镇': ['青牛镇'],
+        '太南山': ['太南山'],
+        '黄枫谷': ['黄枫谷'],
+        '乱星海': ['乱星海', '乱星海群岛', '乱星海诸岛', '乱星海外海', '乱星海海路', '乱星海深处'],
+    });
+
     const LOCATION_COMMISSION_BOARD_META = {
         '青牛镇': {
             title: '坊间委托',
@@ -302,6 +309,16 @@
             title: '山市委托',
             emptyTitle: '此地眼下暂无委托',
             emptyDetail: '今日摊风不紧，没人把急差挂出来。先在山市里再听几圈风声。',
+        },
+        '黄枫谷': {
+            title: '山门差使',
+            emptyTitle: '门中眼下暂无差使',
+            emptyDetail: '执事牌上暂时没有新的差使，先把门中规矩和自身火候都稳住。',
+        },
+        '乱星海': {
+            title: '海上委托',
+            emptyTitle: '海路眼下暂无委托',
+            emptyDetail: '海雾暂时没把新风声推到你船边，先把人手、药散和退路备齐。',
         },
         default: {
             title: '地点委托',
@@ -7130,6 +7147,7 @@
         NEGATIVE_ENCOUNTERS,
         CHAPTER_ECHO_PACKS,
         BRANCH_IMPACT_PACKS,
+        COMMISSION_BOARD_LOCATION_ALIASES,
         LOCATION_COMMISSION_BOARD_META,
         LOCATION_COMMISSIONS_V1,
         VOLUME_ONE_CHAPTERS,

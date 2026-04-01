@@ -17,6 +17,7 @@
         VOLUME_DISPLAY_META,
         STORY_CHAPTERS,
         LEVEL_STORY_EVENTS,
+        COMMISSION_BOARD_LOCATION_ALIASES,
         LOCATION_COMMISSION_BOARD_META,
         LOCATION_COMMISSIONS_V1,
         VOLUME_ONE_CHAPTERS,
@@ -25,9 +26,6 @@
         VOLUME_FOUR_CHAPTERS,
         VOLUME_FIVE_CHAPTERS,
     } = dataSource;
-    const LEGACY_SIDE_QUESTS_V1 = dataSource.__LEGACY_SIDE_QUESTS_V1
-        || globalScope.__XIUXIAN_INTERNALS__?.data?.LEGACY_SIDE_QUESTS_V1
-        || [];
 
     function loadSharedHelpers() {
         if (typeof module !== 'undefined' && module.exports) {
@@ -82,7 +80,6 @@
         risk: 12,
         clue: 8,
     });
-    const SIDE_QUEST_STATE_VALUES = Object.freeze(['locked', 'available', 'active', 'completed', 'failed', 'missed']);
     const COMMISSION_STATE_VALUES = Object.freeze(['hidden', 'available', 'active', 'completed', 'failed']);
 
     const deps = {
@@ -99,9 +96,9 @@
             VOLUME_DISPLAY_META,
             STORY_CHAPTERS,
             LEVEL_STORY_EVENTS,
+            COMMISSION_BOARD_LOCATION_ALIASES,
             LOCATION_COMMISSION_BOARD_META,
             LOCATION_COMMISSIONS_V1,
-            SIDE_QUESTS_V1: LEGACY_SIDE_QUESTS_V1,
             VOLUME_ONE_CHAPTERS,
             VOLUME_TWO_CHAPTERS,
             VOLUME_THREE_CHAPTERS,
@@ -119,7 +116,6 @@
                 STORY_CONSEQUENCE_LIMITS,
                 PRESSURE_TIERS,
                 EXPEDITION_EVENT_WEIGHTS,
-                SIDE_QUEST_STATE_VALUES,
                 COMMISSION_STATE_VALUES,
             },
         },

@@ -137,6 +137,29 @@ function testUiCommissionFacadeUsage() {
     assert(actions.includes('chooseCommissionOption('), 'actions 应使用 chooseCommissionOption');
 }
 
+function testCommissionRuntimeOwnership() {
+    const gameCore = readFile('game-core.js');
+    assert(!gameCore.includes('LEGACY_SIDE_QUESTS_V1'), 'game-core.js 不应再包含 LEGACY_SIDE_QUESTS_V1');
+
+    const stateRuntime = readFile('src/core/state.js');
+    [
+        'function syncCommissionAvailability(',
+        'function acceptCommission(',
+        'function chooseCommissionOption(',
+    ].forEach((token) => {
+        assert(!stateRuntime.includes(token), `src/core/state.js 不应再包含 ${token}`);
+    });
+
+    const worldRuntime = readFile('src/core/world.js');
+    [
+        'function getVisibleSideQuests(',
+        'function acceptSideQuest(',
+        'function chooseSideQuestOption(',
+    ].forEach((token) => {
+        assert(!worldRuntime.includes(token), `src/core/world.js 不应再包含 ${token}`);
+    });
+}
+
 const indexHtml = readFile('index.html');
 const styleCss = readFile('style.css');
 const serveStaticJs = readFile('tests/serve-static.js');
@@ -147,5 +170,6 @@ testScriptOrder(indexHtml);
 testAnchorsAndStyles(indexHtml, styleCss);
 testGameCoreCommissionFacade();
 testUiCommissionFacadeUsage();
+testCommissionRuntimeOwnership();
 
 console.log('ui contract smoke passed');

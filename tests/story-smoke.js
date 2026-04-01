@@ -2921,6 +2921,16 @@ function testInitialCommissionBoardUsesLocationAndRealm() {
     );
 }
 
+function testSecondBatchBoardMetaUsesLocationFamilies() {
+    const huangfengMeta = GameCore.getCommissionBoardMeta({ currentLocation: '黄枫谷' });
+    assert.strictEqual(huangfengMeta.title, '山门差使');
+    assert.strictEqual(huangfengMeta.emptyTitle, '门中眼下暂无差使');
+
+    const starseaMeta = GameCore.getCommissionBoardMeta({ currentLocation: '乱星海外海' });
+    assert.strictEqual(starseaMeta.title, '海上委托');
+    assert.strictEqual(starseaMeta.emptyTitle, '海路眼下暂无委托');
+}
+
 function testCommissionActiveLimitAndResolution() {
     const state = createCommissionState('青牛镇', 0);
     assert.strictEqual(state.commissions.qingniu_medicine_delivery.availableAtRealmScore, GameCore.getRealmScore(state));
@@ -3127,5 +3137,6 @@ testExpeditionClueFallsBackWhenNoVisibleCommission();
 testCompletedCommissionStaysLocalToItsLocation();
 testExpeditionResourceFallbackWhenNoRealClue();
 testCommissionFacadeIncludesLifecycleFields();
+testSecondBatchBoardMetaUsesLocationFamilies();
 
 console.log('story smoke passed');

@@ -5,13 +5,12 @@
             ITEMS,
             LOCATIONS,
             NPCS,
-            SIDE_QUESTS_V1,
+            COMMISSION_BOARD_LOCATION_ALIASES,
             LOCATION_COMMISSION_BOARD_META,
             LOCATION_COMMISSIONS_V1,
             MONSTERS,
             constants,
         } = deps.data;
-        const SIDE_QUEST_LOOKUP = new Map((SIDE_QUESTS_V1 || []).map((quest) => [quest.id, quest]));
         const COMMISSION_LOOKUP = new Map((LOCATION_COMMISSIONS_V1 || []).map((entry) => [entry.id, entry]));
 
         function hasAnyStateFlag(state, flagNames) {
@@ -19,71 +18,42 @@
             return flagNames.some((flagName) => Boolean(flags[flagName]));
         }
 
-        function evaluateRelationThresholds(state, thresholds, comparator) {
-            if (!thresholds || typeof thresholds !== 'object') {
-                return true;
-            }
-            return Object.entries(thresholds).every(([npcName, threshold]) => comparator((state.npcRelations[npcName] || 0), threshold));
+        const LEGACY_SIDE_QUEST_LOOKUP = new Map(
+            (
+                globalScope.StoryData?.__LEGACY_SIDE_QUESTS_V1
+                || globalScope.__XIUXIAN_INTERNALS__?.data?.LEGACY_SIDE_QUESTS_V1
+                || []
+            ).map((quest) => [quest.id, quest]),
+        );
+
+        function getLegacySideQuestDefinition(questId) {
+            return LEGACY_SIDE_QUEST_LOOKUP.get(questId) || null;
         }
 
-        function evaluateSideQuestCondition(state, condition) {
-            if (!condition || typeof condition !== 'object') {
-                return true;
-            }
+        const COMMISSION_BOARD_ALIAS_LOOKUP = new Map();
+        Object.entries(COMMISSION_BOARD_LOCATION_ALIASES || {}).forEach(([boardKey, aliases]) => {
+            (aliases || []).forEach((locationName) => {
+                COMMISSION_BOARD_ALIAS_LOOKUP.set(locationName, boardKey);
+            });
+        });
 
-            if (Array.isArray(condition.anyOf) && condition.anyOf.length > 0) {
-                const matched = condition.anyOf.some((entry) => evaluateSideQuestCondition(state, entry));
-                if (!matched) {
-                    return false;
-                }
+        function resolveCommissionBoardKey(locationName) {
+            if (typeof locationName !== 'string' || locationName.length === 0) {
+                return 'default';
             }
-
-            if (Array.isArray(condition.allOf) && condition.allOf.length > 0) {
-                const matched = condition.allOf.every((entry) => evaluateSideQuestCondition(state, entry));
-                if (!matched) {
-                    return false;
-                }
-            }
-
-            if (condition.not && evaluateSideQuestCondition(state, condition.not)) {
-                return false;
-            }
-
-            if (Array.isArray(condition.flagsAny) && condition.flagsAny.length > 0 && !hasAnyStateFlag(state, condition.flagsAny)) {
-                return false;
-            }
-
-            if (Array.isArray(condition.flagsNone) && condition.flagsNone.some((flagName) => Boolean(state.flags[flagName]))) {
-                return false;
-            }
-
-            if (condition.flagsAll && typeof condition.flagsAll === 'object') {
-                const allFlagsMatched = Object.entries(condition.flagsAll).every(([flagName, expectedValue]) => state.flags[flagName] === expectedValue);
-                if (!allFlagsMatched) {
-                    return false;
-                }
-            }
-
-            if (!evaluateRelationThresholds(state, condition.relationsMin, (current, threshold) => current >= threshold)) {
-                return false;
-            }
-
-            if (!evaluateRelationThresholds(state, condition.relationsMax, (current, threshold) => current <= threshold)) {
-                return false;
-            }
-
-            if (condition.requiredItems && typeof condition.requiredItems === 'object') {
-                const enoughItems = Object.entries(condition.requiredItems).every(([itemId, amount]) => deps.getInventoryCount(state, itemId) >= amount);
-                if (!enoughItems) {
-                    return false;
-                }
-            }
-
-            return true;
+            return COMMISSION_BOARD_ALIAS_LOOKUP.get(locationName) || locationName;
         }
 
-        function getSideQuestDefinition(questId) {
-            return SIDE_QUEST_LOOKUP.get(questId) || null;
+        function getCommissionVisibleLocations(definition) {
+            const boardKey = resolveCommissionBoardKey(definition?.location);
+            const visibleLocations = COMMISSION_BOARD_LOCATION_ALIASES?.[boardKey];
+            if (Array.isArray(visibleLocations) && visibleLocations.length > 0) {
+                return visibleLocations;
+            }
+            if (typeof definition?.location === 'string' && definition.location.length > 0) {
+                return [definition.location];
+            }
+            return [];
         }
 
         function getCommissionDefinition(commissionId) {
@@ -91,25 +61,13 @@
         }
 
         function isCommissionLocationVisible(state, definition) {
-            return state.currentLocation === definition.location;
+            const visibleLocations = getCommissionVisibleLocations(definition);
+            return visibleLocations.includes(state.currentLocation);
         }
 
         function isCommissionRealmVisible(state, definition) {
             const realmScore = deps.getRealmScore(state);
             return realmScore >= definition.minRealmScore && realmScore <= definition.maxRealmScore;
-        }
-
-        function hasQuestConditionRules(condition) {
-            return Boolean(condition && typeof condition === 'object' && Object.keys(condition).length > 0);
-        }
-
-        function createSideQuestResult(outcome, quest, overrides = {}) {
-            return {
-                outcome,
-                choiceId: overrides.choiceId || null,
-                summary: overrides.summary || '',
-                detail: overrides.detail || '',
-            };
         }
 
         function createCommissionResult(outcome, choice) {
@@ -119,175 +77,6 @@
                 summary: choice?.resultSummary || '',
                 detail: choice?.resultDetail || '',
             };
-        }
-
-        function syncSideQuestAvailability(state) {
-            if (!state || typeof state !== 'object') {
-                return state;
-            }
-
-            state.sideQuests = deps.normalizeSideQuestRecords(state.sideQuests);
-            const storyProgress = deps.getMainStoryProgressValue(state);
-
-            SIDE_QUESTS_V1.forEach((definition) => {
-                const record = state.sideQuests[definition.id];
-                if (!record) {
-                    return;
-                }
-
-                const previousState = record.state;
-                if (previousState === 'completed' || previousState === 'failed' || previousState === 'missed') {
-                    return;
-                }
-
-                const withinWindow = storyProgress >= definition.availableFromProgress
-                    && storyProgress <= definition.availableToProgress;
-                const triggerMatched = evaluateSideQuestCondition(state, definition.triggerCondition);
-                const acceptMatched = evaluateSideQuestCondition(state, definition.acceptCondition);
-                const explicitFail = hasQuestConditionRules(definition.failCondition)
-                    && evaluateSideQuestCondition(state, definition.failCondition);
-
-                record.deadlineProgress = Number.isFinite(definition.availableToProgress)
-                    ? definition.availableToProgress
-                    : record.deadlineProgress;
-
-                if (previousState === 'active') {
-                    if (explicitFail || storyProgress > definition.availableToProgress) {
-                        record.state = 'failed';
-                        record.resolvedAtProgress = storyProgress;
-                        record.lastResult = createSideQuestResult('failed', definition, {
-                            summary: `${definition.title}已失手。`,
-                            detail: explicitFail ? '这一桩在中途失了手，局面已不再容你从容收尾。' : '主线脚步已经迈过这道门槛，你终究没能及时把这笔事收住。',
-                        });
-                    }
-                    return;
-                }
-
-                if (storyProgress > definition.availableToProgress) {
-                    const shouldMiss = record.availableAtProgress !== null || (triggerMatched && acceptMatched);
-                    if (shouldMiss) {
-                        record.state = 'missed';
-                        record.resolvedAtProgress = storyProgress;
-                        record.lastResult = createSideQuestResult('missed', definition, {
-                            summary: `${definition.title}已错过。`,
-                            detail: '你没有在这段时机里把它接住，于是这笔旧账便自己从手边滑了过去。',
-                        });
-                    }
-                    return;
-                }
-
-                if (withinWindow && triggerMatched && acceptMatched) {
-                    record.state = 'available';
-                    if (record.availableAtProgress === null) {
-                        record.availableAtProgress = storyProgress;
-                    }
-                    return;
-                }
-
-                record.state = 'locked';
-            });
-
-            return state;
-        }
-
-        function getVisibleSideQuests(state) {
-            syncSideQuestAvailability(state);
-            return SIDE_QUESTS_V1
-                .map((definition) => {
-                    const runtime = state.sideQuests[definition.id];
-                    return {
-                        id: definition.id,
-                        title: definition.title,
-                        detail: definition.detail,
-                        category: definition.category,
-                        npc: definition.npc || null,
-                        priority: definition.priority || 0,
-                        exclusiveGroup: definition.exclusiveGroup || null,
-                        availableFromProgress: definition.availableFromProgress,
-                        availableToProgress: definition.availableToProgress,
-                        rewardPreview: definition.rewardPreview || '',
-                        choices: clone(definition.choices || []),
-                        state: runtime.state,
-                        availableAtProgress: runtime.availableAtProgress,
-                        acceptedAtProgress: runtime.acceptedAtProgress,
-                        deadlineProgress: runtime.deadlineProgress,
-                        resolvedAtProgress: runtime.resolvedAtProgress,
-                        selectedChoiceId: runtime.selectedChoiceId,
-                        lastResult: runtime.lastResult ? clone(runtime.lastResult) : null,
-                    };
-                })
-                .filter((entry) => entry.state !== 'locked')
-                .sort((left, right) => (right.priority - left.priority)
-                    || (left.availableFromProgress - right.availableFromProgress)
-                    || left.title.localeCompare(right.title, 'zh-CN'));
-        }
-
-        function acceptSideQuest(state, questId) {
-            syncSideQuestAvailability(state);
-            const definition = getSideQuestDefinition(questId);
-            if (!definition) {
-                return { ok: false, error: '旧事不存在。' };
-            }
-
-            const record = state.sideQuests[questId];
-            if (!record || record.state !== 'available') {
-                return { ok: false, error: '当前无法应下这桩旧事。' };
-            }
-
-            const activeQuest = Object.values(state.sideQuests).find((entry) => entry.state === 'active' && entry.questId !== questId);
-            if (activeQuest) {
-                return { ok: false, error: '另有旧事未了，请先把眼前这笔事收住。' };
-            }
-
-            record.state = 'active';
-            if (record.availableAtProgress === null) {
-                record.availableAtProgress = deps.getMainStoryProgressValue(state);
-            }
-            record.acceptedAtProgress = deps.getMainStoryProgressValue(state);
-            record.deadlineProgress = definition.availableToProgress;
-            record.lastResult = null;
-            deps.pushLog(state, `应下旧事：${definition.title}`, 'normal');
-            return { ok: true, quest: getVisibleSideQuests(state).find((entry) => entry.id === questId) || null };
-        }
-
-        function chooseSideQuestOption(state, questId, choiceId) {
-            syncSideQuestAvailability(state);
-            const definition = getSideQuestDefinition(questId);
-            if (!definition) {
-                return { ok: false, error: '旧事不存在。' };
-            }
-
-            const record = state.sideQuests[questId];
-            if (!record || record.state !== 'active') {
-                return { ok: false, error: '当前没有可了结的旧事抉择。' };
-            }
-
-            const choice = (definition.choices || []).find((item) => item.id === choiceId);
-            if (!choice) {
-                return { ok: false, error: '旧事抉择不存在。' };
-            }
-
-            if (!deps.applyCosts(state, choice.costs)) {
-                return { ok: false, error: '资源不足，付不起这笔旧事的代价。' };
-            }
-
-            const totalEffects = deps.mergeEffectPayload(definition.rewards, choice.effects);
-            deps.applyEffects(state, totalEffects);
-            deps.pushLog(state, `旧事抉择：${choice.text}`, 'normal');
-
-            const branchMeta = definition.branchEffects?.[choice.id] || null;
-            record.state = 'completed';
-            record.selectedChoiceId = choice.id;
-            record.resolvedAtProgress = deps.getMainStoryProgressValue(state);
-            record.lastResult = createSideQuestResult('completed', definition, {
-                choiceId: choice.id,
-                summary: choice.resultSummary || `你已了结旧事：${definition.title}。`,
-                detail: branchMeta?.detail || '',
-            });
-            deps.pushLog(state, `了结旧事：${definition.title}`, 'good');
-
-            syncSideQuestAvailability(state);
-            return { ok: true, quest: getVisibleSideQuests(state).find((entry) => entry.id === questId) || null };
         }
 
         function syncCommissionAvailability(state) {
@@ -368,7 +157,8 @@
 
         function getCommissionBoardMeta(state) {
             const locationName = state?.currentLocation;
-            return LOCATION_COMMISSION_BOARD_META?.[locationName]
+            const boardKey = resolveCommissionBoardKey(locationName);
+            return LOCATION_COMMISSION_BOARD_META?.[boardKey]
                 || LOCATION_COMMISSION_BOARD_META?.default
                 || { title: '地点委托', emptyTitle: '此地眼下暂无委托', emptyDetail: '先换个地方走走，或再把修为往前推一层。' };
         }
@@ -447,7 +237,7 @@
                 stories.push(npc ? { title, detail, npc } : { title, detail });
             };
             const pushQuestStory = (questId) => {
-                const quest = getSideQuestDefinition(questId);
+                const quest = getLegacySideQuestDefinition(questId);
                 if (!quest) {
                     return;
                 }
@@ -674,9 +464,6 @@
         }
 
         return {
-            getVisibleSideQuests,
-            acceptSideQuest,
-            chooseSideQuestOption,
             getAvailableSideStories,
             getLocationMeta,
             getNpcDialogue,
@@ -684,13 +471,11 @@
             canAutoCultivate,
             beginCombat,
             resolveCombatRound,
-            syncSideQuestAvailability,
             getVisibleCommissions,
             acceptCommission,
             chooseCommissionOption,
             getCommissionBoardMeta,
             syncCommissionAvailability,
-            SIDE_QUESTS_V1,
             LOCATION_COMMISSIONS_V1,
         };
     }

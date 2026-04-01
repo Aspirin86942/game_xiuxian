@@ -2844,6 +2844,25 @@ function testCommissionFailureOutcome() {
     assert.strictEqual(state.commissions.qingniu_rear_hill_noise.lastResult.outcome, 'failed');
 }
 
+function testCommissionHappyPath() {
+    const state = createCommissionState('青牛镇', 0);
+    const beforeLingshi = state.inventory.lingshi || 0;
+    const beforeLingcao = state.inventory.lingcao || 0;
+    const accepted = GameCore.acceptCommission(state, 'qingniu_medicine_delivery');
+    assert.strictEqual(accepted.ok, true);
+
+    const resolved = GameCore.chooseCommissionOption(state, 'qingniu_medicine_delivery', 'take_short_path');
+    assert.strictEqual(resolved.ok, true);
+    assert.strictEqual(state.commissions.qingniu_medicine_delivery.state, 'completed');
+
+    const afterLingshi = state.inventory.lingshi || 0;
+    const afterLingcao = state.inventory.lingcao || 0;
+    assert(afterLingshi > beforeLingshi || afterLingcao > beforeLingcao, '应至少发放灵石或灵草奖励');
+
+    const retry = GameCore.chooseCommissionOption(state, 'qingniu_medicine_delivery', 'take_short_path');
+    assert.strictEqual(retry.ok, false);
+}
+
 function testCommissionSaveMigrationV8() {
     const legacyState = GameCore.createInitialState();
     legacyState.version = 7;
@@ -2977,6 +2996,7 @@ testVolumeOneApothecaryClosureReadsSealPath();
 testLateVolumeHooksAvoidMetaThesisLines();
 testCommissionAuthoringContract();
 testCommissionFailureOutcome();
+testCommissionHappyPath();
 testCommissionSaveMigrationV8();
 testInitialCommissionBoardUsesLocationAndRealm();
 

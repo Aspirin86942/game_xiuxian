@@ -8,7 +8,7 @@
 
 - `tests/story-smoke.js`
 - 已验证在特定 `storyProgress` 与旗标组合下，`getAvailableSideStories(state)` 能返回 `旧药账`、`灵矿幸存者`、`残图余波`、`飞升前夜` 等标题。
-- 已验证旧存档缺少 `sideQuests` 时会自动回填。
+- 已验证 `sideQuests` 作为退休字段不会再被回填；旧 v8 存档若缺少新增 `commissions` 记录，会在导入 / 规范化流程中由 `normalizeCommissionRecords()` 自动补齐。
 - 已验证 16 条地点委托定义完整接入，且黄枫谷 / 乱星海的 `visibleLocations` 复用各自地点族别名。
 - 已验证 `available -> active -> completed/failed`、单活跃限制、奖励不可重复结算。
 - `tests/e2e/story.spec.js`

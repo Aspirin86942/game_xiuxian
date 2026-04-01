@@ -75,10 +75,20 @@
 - `selectedChoiceId`
 - `lastResult`
 
-### 3.2.1 旧存档兼容
+### 3.2.1 地点族与可见性默认
+
+- 若委托定义显式声明 `visibleLocations`，运行时按该列表判定地点可见性。
+- 若委托定义未声明 `visibleLocations`，默认回退为 `[location]`，不额外猜测别名。
+- 当前固定位置族只锁定以下两组：
+  - `黄枫谷 -> ['黄枫谷']`
+  - `乱星海 -> ['乱星海', '乱星海群岛', '乱星海诸岛', '乱星海外海', '乱星海海路', '乱星海深处']`
+- 除上述显式位置族外，其余地点本轮继续按单点 `location` 处理。
+
+### 3.2.2 旧存档兼容
 
 - v7 存档中的 `sideQuests` 视为已退休字段。
 - 导入 v7 存档时，不尝试把旧 `sideQuests` 逐条迁移成新委托结果。
+- Phase 2 继续沿用 `SAVE_VERSION = 8`，不通过 bump 版本来接入黄枫谷、乱星海等新增委托。
 - `normalizeCommissionRecords()` 必须按当前 `LOCATION_COMMISSIONS_V1` 自动补齐新增委托记录，旧存档缺少黄枫谷或乱星海条目时也不能漏建。
 - `mergeSave()` 应直接按 `LOCATION_COMMISSIONS_V1` 重建默认 `commissions`，再按当前 `currentLocation + realmScore` 同步可见性。
 
@@ -146,6 +156,7 @@
 但以下项目本轮已锁定：
 
 - `commissions` 作为正式委托存档字段
+- Phase 2 不 bump `SAVE_VERSION`，新增委托依赖 `normalizeCommissionRecords()` 自动补齐
 - `hidden / available / active / completed / failed` 五态
 - `visibleLocations / COMMISSION_BOARD_LOCATION_ALIASES / location` 的地点族回退，加上 `realmScore` 作为可见性基础
 - 同一时间只允许 1 条 `active` 委托

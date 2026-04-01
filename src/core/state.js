@@ -532,6 +532,8 @@
                 unreadStory: true,
             };
             deps.recalculateState(state, true);
+            // 新档需与委托可见性规则一致，避免首次序列化后出现状态跳变。
+            deps.syncCommissionAvailability(state);
             return state;
         }
 
@@ -798,11 +800,12 @@
                 deps.applyEffects(state, choice.effects);
             }
 
-            record.state = 'completed';
+            const resolvedState = choice.resultState === 'failed' ? 'failed' : 'completed';
+            record.state = resolvedState;
             record.selectedChoiceId = choice.id;
             record.resolvedAtRealmScore = getRealmScore(state);
             record.lastResult = {
-                outcome: 'completed',
+                outcome: resolvedState,
                 choiceId: choice.id,
                 summary: choice.resultSummary || `你已完成委托：${definition.title}。`,
                 detail: choice.resultDetail || '',

@@ -218,7 +218,7 @@
                 }
 
                 if (actionButton.dataset.sideQuestAction === 'accept') {
-                    const result = ctx.GameCore.acceptSideQuest(ctx.gameState, questId);
+                    const result = ctx.GameCore.acceptCommission(ctx.gameState, questId);
                     if (!result.ok) {
                         window.alert(result.error || '当前无法应下这桩旧事。');
                         deps.playSound(ctx, 'fail');
@@ -237,7 +237,7 @@
                     return;
                 }
 
-                const result = ctx.GameCore.chooseSideQuestOption(ctx.gameState, questId, choiceId);
+                const result = ctx.GameCore.chooseCommissionOption(ctx.gameState, questId, choiceId);
                 if (!result.ok) {
                     window.alert(result.error || '当前无法了结这桩旧事。');
                     deps.playSound(ctx, 'fail');

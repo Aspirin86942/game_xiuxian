@@ -2834,6 +2834,16 @@ function testCommissionAuthoringContract() {
     assert(defaultMeta.emptyDetail.includes('修为'));
 }
 
+function testCommissionFailureOutcome() {
+    const state = createCommissionState('青牛镇', 0);
+    const accepted = GameCore.acceptCommission(state, 'qingniu_rear_hill_noise');
+    assert.strictEqual(accepted.ok, true);
+    const resolved = GameCore.chooseCommissionOption(state, 'qingniu_rear_hill_noise', 'strike_first');
+    assert.strictEqual(resolved.ok, true);
+    assert.strictEqual(state.commissions.qingniu_rear_hill_noise.state, 'failed');
+    assert.strictEqual(state.commissions.qingniu_rear_hill_noise.lastResult.outcome, 'failed');
+}
+
 function testCommissionSaveMigrationV8() {
     const legacyState = GameCore.createInitialState();
     legacyState.version = 7;
@@ -2966,6 +2976,7 @@ testVolumeOneApothecaryClosureReadsTracePath();
 testVolumeOneApothecaryClosureReadsSealPath();
 testLateVolumeHooksAvoidMetaThesisLines();
 testCommissionAuthoringContract();
+testCommissionFailureOutcome();
 testCommissionSaveMigrationV8();
 testInitialCommissionBoardUsesLocationAndRealm();
 

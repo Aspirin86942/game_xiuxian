@@ -127,6 +127,14 @@ function testGameCoreCommissionFacade() {
     assert.strictEqual(GameCore.MIN_SUPPORTED_SAVE_VERSION, 7, '旧版 v7 存档仍应可导入');
 }
 
+function testUiCommissionFacadeUsage() {
+    const renderers = readFile('src/ui/renderers.js');
+    const actions = readFile('src/ui/actions.js');
+    assert(renderers.includes('getVisibleCommissions('), 'renderers 应使用 getVisibleCommissions');
+    assert(actions.includes('acceptCommission('), 'actions 应使用 acceptCommission');
+    assert(actions.includes('chooseCommissionOption('), 'actions 应使用 chooseCommissionOption');
+}
+
 const indexHtml = readFile('index.html');
 const styleCss = readFile('style.css');
 const serveStaticJs = readFile('tests/serve-static.js');
@@ -136,5 +144,6 @@ testHeadAssets(indexHtml, serveStaticJs);
 testScriptOrder(indexHtml);
 testAnchorsAndStyles(indexHtml, styleCss);
 testGameCoreCommissionFacade();
+testUiCommissionFacadeUsage();
 
 console.log('ui contract smoke passed');

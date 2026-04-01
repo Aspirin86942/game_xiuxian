@@ -236,7 +236,7 @@
         }
 
         function renderSideStoryList(ctx) {
-            const visibleQuests = ctx.GameCore.getVisibleSideQuests(ctx.gameState);
+            const visibleQuests = ctx.GameCore.getVisibleCommissions(ctx.gameState);
             const visibleQuestTitles = new Set(visibleQuests.map((quest) => quest.title));
             const activeQuestId = visibleQuests.find((quest) => quest.state === 'active')?.id || null;
             const legacyStories = ctx.GameCore.getAvailableSideStories(ctx.gameState)

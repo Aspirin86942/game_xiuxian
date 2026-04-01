@@ -17,9 +17,9 @@
 
 当前实施入口仍在以下文件：
 
-- `D:\Program_python\game_xiuxian\story-data.js`
-- `D:\Program_python\game_xiuxian\game-core.js`
-- `D:\Program_python\game_xiuxian\game.js`
+- `story-data.js`
+- `game-core.js`
+- `game.js`
 
 说明：
 

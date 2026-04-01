@@ -3009,6 +3009,39 @@ function testExpeditionResourceFallbackWhenNoRealClue() {
     assert(result.summary.includes('灵石'));
 }
 
+function testCommissionFacadeIncludesLifecycleFields() {
+    const state = createCommissionState('青牛镇', 0);
+    const visible = GameCore.getVisibleCommissions(state);
+    const target = visible.find((entry) => entry.id === 'qingniu_medicine_delivery');
+    assert(target, '应返回青牛镇委托');
+    [
+        'minRealmScore',
+        'maxRealmScore',
+        'priority',
+        'availableAtRealmScore',
+        'acceptedAtRealmScore',
+        'resolvedAtRealmScore',
+    ].forEach((field) => {
+        assert(Object.prototype.hasOwnProperty.call(target, field), `委托门面缺少字段 ${field}`);
+    });
+    assert.strictEqual(target.availableAtRealmScore, GameCore.getRealmScore(state));
+    assert.strictEqual(target.acceptedAtRealmScore, null);
+    assert.strictEqual(target.resolvedAtRealmScore, null);
+
+    const accepted = GameCore.acceptCommission(state, 'qingniu_medicine_delivery');
+    assert.strictEqual(accepted.ok, true);
+    const afterAccept = GameCore.getVisibleCommissions(state).find((entry) => entry.id === 'qingniu_medicine_delivery');
+    assert(afterAccept);
+    assert.strictEqual(afterAccept.acceptedAtRealmScore, GameCore.getRealmScore(state));
+    assert.strictEqual(afterAccept.resolvedAtRealmScore, null);
+
+    const resolved = GameCore.chooseCommissionOption(state, 'qingniu_medicine_delivery', 'take_safe_path');
+    assert.strictEqual(resolved.ok, true);
+    const afterResolve = GameCore.getVisibleCommissions(state).find((entry) => entry.id === 'qingniu_medicine_delivery');
+    assert(afterResolve);
+    assert.strictEqual(afterResolve.resolvedAtRealmScore, GameCore.getRealmScore(state));
+}
+
 testStoryCursorSwitching();
 testAlchemyRecipeCraftingSuccess();
 testAlchemyRecipeInsufficientMaterialsDoesNotPolluteInventory();
@@ -3093,5 +3126,6 @@ testExpeditionRumorPointsToVisibleCommission();
 testExpeditionClueFallsBackWhenNoVisibleCommission();
 testCompletedCommissionStaysLocalToItsLocation();
 testExpeditionResourceFallbackWhenNoRealClue();
+testCommissionFacadeIncludesLifecycleFields();
 
 console.log('story smoke passed');

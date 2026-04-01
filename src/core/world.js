@@ -335,9 +335,15 @@
                         category: definition.category,
                         location: definition.location,
                         detail: definition.detail,
+                        minRealmScore: definition.minRealmScore,
+                        maxRealmScore: definition.maxRealmScore,
                         rewardPreview: definition.rewardPreview || '',
+                        priority: definition.priority || 0,
                         choices: clone(definition.choices || []),
                         state: runtime.state,
+                        availableAtRealmScore: runtime.availableAtRealmScore,
+                        acceptedAtRealmScore: runtime.acceptedAtRealmScore,
+                        resolvedAtRealmScore: runtime.resolvedAtRealmScore,
                         selectedChoiceId: runtime.selectedChoiceId,
                         lastResult: runtime.lastResult ? clone(runtime.lastResult) : null,
                         __locationVisible: isCommissionLocationVisible(state, definition),
@@ -361,8 +367,10 @@
         }
 
         function getCommissionBoardMeta(state) {
-            return LOCATION_COMMISSION_BOARD_META[state.currentLocation]
-                || LOCATION_COMMISSION_BOARD_META.default;
+            const locationName = state?.currentLocation;
+            return LOCATION_COMMISSION_BOARD_META?.[locationName]
+                || LOCATION_COMMISSION_BOARD_META?.default
+                || { title: '地点委托', emptyTitle: '此地眼下暂无委托', emptyDetail: '先换个地方走走，或再把修为往前推一层。' };
         }
 
         function acceptCommission(state, commissionId) {

@@ -647,8 +647,9 @@
             }
 
             const sideStories = getAvailableSideStories(state);
-            if (sideStories.length > 0) {
-                const clue = sideStories[Math.floor(random() * sideStories.length)];
+            const realStories = sideStories.filter((story) => story && story.title && story.title !== '暂无旧事上门');
+            if (realStories.length > 0) {
+                const clue = realStories[Math.floor(random() * realStories.length)];
                 const summary = `你在 ${location.name} 听闻线索「${clue.title}」，可前往剧情与游历页继续查看。`;
                 deps.pushLog(state, summary, 'normal');
                 return { ok: true, type: 'clue', summary, clueTitle: clue.title };

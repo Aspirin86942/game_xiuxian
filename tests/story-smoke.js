@@ -3001,6 +3001,14 @@ function testCompletedCommissionStaysLocalToItsLocation() {
     );
 }
 
+function testExpeditionResourceFallbackWhenNoRealClue() {
+    const state = createCommissionState('黄枫谷', 0);
+    const result = GameCore.resolveExpedition(state, () => 0.99);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.type, 'resource');
+    assert(result.summary.includes('灵石'));
+}
+
 testStoryCursorSwitching();
 testAlchemyRecipeCraftingSuccess();
 testAlchemyRecipeInsufficientMaterialsDoesNotPolluteInventory();
@@ -3084,5 +3092,6 @@ testCommissionFailurePathIsLocal();
 testExpeditionRumorPointsToVisibleCommission();
 testExpeditionClueFallsBackWhenNoVisibleCommission();
 testCompletedCommissionStaysLocalToItsLocation();
+testExpeditionResourceFallbackWhenNoRealClue();
 
 console.log('story smoke passed');

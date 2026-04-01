@@ -2,38 +2,47 @@
 
 ## 1. 说明
 
-本文件记录支线任务系统当前可验证阈值、未来推荐参数、触发公式、观测指标与联动风险。
+本文件记录地点委托系统当前可验证阈值、运行时参数、触发公式、观测指标与联动风险。
 
 说明：
 
-- `当前值` 只写当前代码中已经能从 `getAvailableSideStories(state)` 或现有 UI 观察到的事实。
-- `未来推荐` 表示正式任务系统落地时建议采用的稳定契约，不代表当前已经实现。
-- 本册不直接决定原著剧情顺序，只定义“如何把骨架转成任务系统”的参数口径。
+- `当前值` 只写当前代码中已经能从 `LOCATION_COMMISSIONS_V1`、`COMMISSION_BOARD_LOCATION_ALIASES`、`resolveExpedition()` 或现有 UI 观察到的事实。
+- 本册优先覆盖正式地点委托；legacy 旧事线索仅作为 `clue` fallback 的辅助口径保留。
+- 本册不再把 `storyProgress` 窗口与 `missed` 结果态当成当前正式委托主契约。
 
 ## 2. 核心阈值
 
 | 参数名 | 当前值 | 作用 | 调大后的影响 | 调小后的影响 | 风险 | 允许调整范围 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 线索去重键 | `title` | 防止同一轮推导里重复出现同名线索 | 更细粒度去重会保留更多相近线索 | 更粗粒度去重会误吞不同任务 | 标题命名一旦不稳定，历史线索容易互相覆盖 | 仅建议在正式任务 ID 稳定后调整 |
-| 墨府旧账窗口 | `storyProgress >= 8` | 七玄门/墨府旧案开始显性化 | 更晚触发会削弱旧账存在感 | 更早触发会抢在主线认知之前剧透 | 主线情绪节奏被打乱 | 建议维持在 8~10 |
-| 曲魂旧案窗口 | `storyProgress >= 9` 且需曲魂相关旗标 | 将“曲魂问题”从主线后果延长为旁支线索 | 更晚会让旧案断裂 | 更早会与主线揭示重叠 | 世界观揭示顺序混乱 | 建议维持在 9~11 |
-| 禁地余波窗口 | `storyProgress >= 14` | 把血色禁地选择沉淀为长期名声线索 | 更晚会弱化禁地重量 | 更早会压住禁地当章反馈 | 早期信息过载 | 建议维持在 14~16 |
-| 灵矿余波窗口 | `storyProgress >= 19` 且需灵矿相关旗标 | 让任务后果从当章生死局延长到幸存者叙事 | 更晚会削弱“你被人记住”的感觉 | 更早会挤占主线逃离段 | 主线与支线争夺注意力 | 建议维持在 19~21 |
-| 星海合作窗口 | `storyProgress >= 21` | 提前建立乱星海的人情/利益支线空间 | 更晚会让星海显得只剩主线 | 更早会削弱天南收束感 | 区域转换层次混乱 | 建议维持在 21~22 |
-| 残图余波窗口 | `storyProgress >= 22` 且需残图相关旗标 | 把虚天残图从一次争图变成长期风险源 | 更晚会削弱风险延迟到账感 | 更早会把残图影响说得过满 | 玩家会感觉被反复重复同一件事 | 建议维持在 22~24 |
-| 占位线索开关 | `true` | 当没有线索时仍保持线索区存在感 | 永久展示会增加噪声 | 关闭后界面容易留白 | 玩家误以为系统坏了或没有支线设计 | 建议保持开启 |
-| 当前展示字段 | legacy 线索为 `title + detail`；正式支线为 `title + detail + category + state + rewardPreview + inline actions/results` | 让同行回响区同时承担退化线索层与 v1 正式支线层 | 继续加字段会挤压 375x667 的单屏空间 | 再减少字段会让正式支线失去可解释性 | 当前容器共用一列卡片，字段过多会破坏单屏体验 | v1 之后若继续扩写，需先补专门任务页或更强分组 |
-| v1 可接取窗口下界 | `availableFromProgress` | 定义任务何时可从 `locked` 进入 `available` | 更晚会让支线显得总在事后补票 | 更早会剧透主线余波 | 主线与支线边界失真 | 必须显式逐任务定义 |
-| v1 可接取窗口上界 | `availableToProgress` | 定义任务何时还能被接取 | 更晚会让旧账失重且难以错过 | 更早会让玩家来不及处理 | 错过判定随意漂移 | 必须显式逐任务定义 |
-| v1 错过判定 | `storyProgress > availableToProgress` 且未接取 | 把“没接”与“接了但没做完”区分开 | 放宽会削弱窗口压力 | 收紧会让支线显得苛刻 | `missed` 与 `failed` 语义混淆 | v1 固定使用该规则 |
-| v1 失败判定 | 已接取，且命中显式 `failCondition` 或超过窗口仍未结算 | 定义任务从 `active` 转入 `failed` | 放宽会让失败几乎不发生 | 收紧会让轻量支线太惩罚 | 与 `missed` 混写后无法稳定测试 | v1 只允许少量任务使用 |
-| v1 deadline 口径 | 仅 `storyProgress` 窗口 | 避免引入真实时间或复杂倒计时 | 改成时间会大幅增加存档和 UI 复杂度 | 无 | 若偷偷混入时间逻辑，会破坏兼容和可测性 | v1 固定不用时间 |
+| 地点数量 | 4 组：`青牛镇 / 太南山 / 黄枫谷 / 乱星海` | 决定正式委托的地域覆盖 | 继续扩点会抬高内容与回归成本 | 缩减会让中后段地点横截面变薄 | 面板空态、地点别名与测试需同步 | 仅在规则书和测试同步后调整 |
+| 每地点委托数 | 每组 4 条，共 16 条 | 保持地点委托密度可控 | 更多会挤压 375x667 单屏密度 | 更少会让地点气质不够稳定 | 列表过长会破坏单屏体验 | 建议先保持 4 条一组 |
+| 境界开放区间 | 青牛镇 `0~2`；太南山 `2~4`；黄枫谷 `4~6`；乱星海 `7~10` | 控制每组委托对应的成长段 | 放宽会让旧地点长期挤占新地点 | 收紧会导致地点断层 | 境界与地点气质错位 | 只能按地点组整体评估调整 |
+| 地点族可见性 | `visibleLocations` 优先，其次 `COMMISSION_BOARD_LOCATION_ALIASES[boardKey]`，最后回退 `location` | 让一条委托可在同一地点族内复用 | 扩大家族会增加跨地点可见范围 | 收缩会让别名地点看不到委托 | 黄枫谷/乱星海别名与面板元信息不一致 | 必须和地点族定义一起改 |
+| 乱星海地点族 | `乱星海 / 乱星海群岛 / 乱星海诸岛 / 乱星海外海 / 乱星海海路 / 乱星海深处` | 统一海上委托显示口径 | 更多别名会扩大显示覆盖 | 更少别名会让部分海域掉出面板 | 海图章节与委托榜可见性失配 | 仅按现有别名集合维护 |
+| 游历事件权重 | `battle=45 / resource=35 / risk=12 / clue=8` | 决定游历先抽到哪类反馈 | 调高 `clue` 会更常播报委托或旧事 | 调低 `clue` 会让地点委托存在感下降 | 高频播报会稀释资源/战斗反馈 | 需结合 smoke / e2e 一起评估 |
+| 风声回退顺序 | `commission -> clue -> resource` | 保证有正式委托时优先播报 | 改后置会削弱地点委托存在感 | 无更低空间 | 规则书与运行时表述不一致 | 当前固定，不建议单改 |
+| 单活跃限制 | 同时只允许 1 条 `active` 委托 | 控制状态复杂度与 UI 密度 | 放开会增加并行状态负担 | 无 | 存档与面板交互会一起变复杂 | 当前固定 |
+| 当前展示字段 | 正式委托为 `title + detail + category + state + rewardPreview + inline actions/results`；legacy 旧事线索仍为 `title + detail` | 保持正式委托与 fallback 旧事分层 | 继续加字段会挤压单屏 | 再减少字段会让正式委托失去可解释性 | 同一容器承载两套层级，字段过多会失衡 | 当前不建议再扩字段 |
 
 ## 3. 公式
 
-### 3.1 当前线索可见公式
+### 3.1 当前正式委托可见公式
 
-当前可见逻辑可以抽象为：
+当前正式委托可见逻辑可以抽象为：
+
+```text
+VisibleCommission = LocationFamilyGate AND RealmGate AND RuntimeStateGate
+```
+
+其中：
+
+- `LocationFamilyGate`：`currentLocation` 是否命中 `visibleLocations`、地点族别名或单点 `location`
+- `RealmGate`：`realmScore` 是否落在 `minRealmScore ~ maxRealmScore`
+- `RuntimeStateGate`：运行时记录尚未进入 `hidden` 之外的不可见异常态，且 `active` 可跨地点切换后继续显示
+
+### 3.2 当前 legacy 旧事 fallback 公式
+
+legacy 旧事线索当前只承担 `clue` fallback，可抽象为：
 
 ```text
 VisibleClue = ProgressGate AND OptionalFlagGate AND OptionalRelationGate AND NotDuplicateByTitle
@@ -41,53 +50,10 @@ VisibleClue = ProgressGate AND OptionalFlagGate AND OptionalRelationGate AND Not
 
 其中：
 
-- `ProgressGate`：`storyProgress` 是否达到章节窗口
+- `ProgressGate`：`storyProgress` 是否达到旧事窗口
 - `OptionalFlagGate`：是否命中特定 `flags`
 - `OptionalRelationGate`：是否命中特定 `npcRelations`
 - `NotDuplicateByTitle`：同名线索只保留一条
-
-### 3.2 未来正式任务推荐公式
-
-未来正式任务系统建议遵守：
-
-```text
-QuestStateTransition =
-  locked
-  -> available      (triggerCondition satisfied)
-  -> active         (player accepts OR implicit activation rule)
-  -> completed      (successCondition satisfied)
-  -> failed/missed  (failCondition or deadlineCondition satisfied)
-```
-
-### 3.3 v1 窗口与失败公式
-
-v1 的正式任务必须落到可直接编码的窗口语义：
-
-```text
-available = triggerCondition satisfied
-            AND storyProgress >= availableFromProgress
-            AND storyProgress <= availableToProgress
-            AND state is locked
-
-missed = state is locked or available
-         AND storyProgress > availableToProgress
-
-failed = state is active
-         AND (
-           explicit failCondition satisfied
-           OR storyProgress > availableToProgress
-         )
-
-completed = state is active
-            AND player resolves one quest choice
-```
-
-说明：
-
-- v1 是单段式支线，`active -> completed` 由一次支线抉择直接触发。
-- `missed` 专指“从未真正接取就跨过窗口”。
-- `failed` 专指“已经接取，但没有在窗口内完成，或被明确对立条件打断”。
-- v1 不允许把 `missed` 伪装成 `failed`，也不允许把 `failed` 静默回退为 `locked`。
 
 ### 3.4 未来奖励强度推荐公式
 
@@ -106,27 +72,28 @@ RewardTier = BaseTierByStoryProgress + ModifierByRisk + ModifierByUniqueness
 ## 4. 观测指标
 
 - 当前线索命中率：在关键主线节点推进后，是否能稳定看到 1~3 条新线索，而不是长期只剩占位文案。
-- 线索去重正确率：同轮计算时是否因为标题碰撞误吞不同支线。
-- 支线密度：单个章节窗口内建议同时显性的支线不要多于 3 条，否则正式任务 UI 很难保持 375x667 的单屏可用性。
-- 任务转化率：未来正式任务上线后，`available -> active -> completed` 的比例应可被追踪，而不是只知道“线索出现过”。
-- 错过率：未来 v1 任务的 `available -> missed` 比例应可追踪，避免窗口窄到几乎必错过，或宽到没有存在感。
-- 唯一奖励重复率：未来唯一奖励不应因读档或重复触发被二次结算。
+- 线索去重正确率：同轮计算时是否因为标题碰撞误吞不同旧事线索。
+- 地点委托密度：单个地点组建议仍保持 4 条上下，否则正式任务 UI 很难保持 375x667 的单屏可用性。
+- 委托转化率：当前 `available -> active -> completed/failed` 的比例应可被追踪，而不是只知道“地点里曾经有委托”。
+- 地点族命中率：黄枫谷与乱星海的别名地点进入时，是否仍能看到同组委托与空态。
+- 唯一奖励重复率：正式委托奖励不应因读档或重复结算被二次发放。
 
 ## 5. 联动参数
 
-- `storyProgress`：决定任务窗口与奖励基线。
-- `flags`：决定具体旧账、旧情、旧案是否已经被主线写入。
-- `npcRelations`：决定“人情线”支线是否值得进入正式任务池。
-- `routeScores`：当前线索未直接读取，但未来会决定同类任务的默认 `tradeoff` 与结算偏向。
+- `currentLocation`：决定是否命中地点族与委托榜口径。
+- `realmScore`：决定委托是否进入可见区间。
+- `visibleLocations / COMMISSION_BOARD_LOCATION_ALIASES`：决定黄枫谷与乱星海等地点族的委托复用范围。
+- `routeScores`：决定正式委托 choice 的结算偏向。
+- `flags` 与 `npcRelations`：当前主要影响 legacy 旧事 fallback，而非正式地点委托主显示。
 - `inventory` 与物品系统：未来正式任务奖励进入背包后，持续语义应交给 `inventory-and-item-system`。
 - `cultivation-and-expedition-system`：未来战斗支线、探索支线的资源产出与风险收益需要与主循环同步调参。
 
 ## 6. 风险说明
 
-- 若只调章节窗口，不同步考虑主线节奏，会导致支线不是过早剧透，就是过晚失重。
-- 若标题命名不稳，当前按标题去重的策略会误吞支线线索。
+- 若地点族定义与委托 `visibleLocations` 不同步，黄枫谷或乱星海的别名地点会出现“人在此地却无委托榜”的失配。
+- 若标题命名不稳，当前按标题去重的策略会误吞旧事线索。
 - 若未来任务奖励不按章节窗口分档，早期支线容易过肥，后期支线又会变成只剩情绪价值。
 - 若继续在同一容器里叠加更多元信息，却不拆出更强分组或折叠策略，会让 375x667 下的同行回响区变得过密。
-- 若 `availableFromProgress / availableToProgress` 不显式写入任务定义，`missed / failed` 会在实现时被拍脑袋解释，破坏规则书驱动开发。
-- 若 v1 混入真实时间 deadline，会额外引入时间戳兼容、离线结算和 UI 提示复杂度，不符合本轮最小闭环目标。
+- 若把 legacy 旧事窗口继续当成正式委托主口径，会把 `commission` 与 `clue` 两套运行时混回一层。
+- 若正式委托混入 `missed` 或真实时间 deadline，会与当前五态、存档兼容和 UI 词面直接冲突。
 - 若原著改写没有敏感边界，任务池会和当前项目口径冲突，破坏系列文档的一致性。

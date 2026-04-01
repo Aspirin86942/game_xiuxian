@@ -4,7 +4,7 @@
 
 记录地点委托系统当前已经实现的行为事实，而不是理想设计。
 
-截至 `2026-04-01`，当前运行时已经完成从旧 `sideQuests` 到 `commissions` 的切换。现在的真实形态是：
+截至 `2026-04-02`，当前运行时已经完成从旧 `sideQuests` 到 `commissions` 的切换。现在的真实形态是：
 
 - 仍保留 `getAvailableSideStories(state)` 生成的 legacy 风闻层，但它不再承担剧情页委托面板的主展示职责。
 - 正式地点委托统一由 `LOCATION_COMMISSIONS_V1` + `state.commissions` 驱动。
@@ -12,11 +12,13 @@
 
 当前最重要的现状基线如下：
 
-- `story-data.js` 通过 `LOCATION_COMMISSIONS_V1` 配置 8 条固定地点委托：
-  - 青牛镇 4 条：`山路送药`、`后山异响`、`走失耕牛`、`晨露换符水`
-  - 太南山 4 条：`摊前假丹砂`、`洞府探风`、`夜路押货`、`代买灵材`
+- `story-data.js` 通过 `LOCATION_COMMISSIONS_V1` 配置 16 条固定地点委托：
+  - 青牛镇 4 条：`山路送药`、`后山异响`、`失牛与雾`、`采露换符`
+  - 太南山 4 条：`摊前假丹砂`、`洞府探风`、`夜路押货`、`代购灵材`
+  - 黄枫谷 4 条：`丹房废炉`、`药园失窃`、`外山巡查`、`库房错账`
+  - 乱星海 4 条：`海雾失船`、`猎妖引潮`、`黑市转运`、`孤岛残阵`
 - `game-core.js` 当前委托状态机只支持 `hidden / available / active / completed / failed` 五态。
-- 存档已升级到 `SAVE_VERSION = 8`，正式任务字段从 `sideQuests` 迁移为 `commissions`。
+- 存档当前保持 `SAVE_VERSION = 8`，本轮只扩委托内容与地点范围，不再 bump 版本；正式任务字段已从 `sideQuests` 迁移为 `commissions`。
 - 剧情页委托面板当前只渲染地点委托卡片，不再混排 legacy 线索卡。
 - 当前仍没有独立任务日志、独立任务页、任务追踪器，也没有跨章节多段委托链。
 
@@ -25,7 +27,7 @@
 | 中文名 | 代码名 | 当前含义 |
 | --- | --- | --- |
 | legacy 风闻 | `getAvailableSideStories(state)` | 根据 `storyProgress`、`flags`、`npcRelations` 等即时推导出来的旁支风闻列表 |
-| 地点委托定义 | `LOCATION_COMMISSIONS_V1` | 当前 8 条固定地点委托的配置化定义 |
+| 地点委托定义 | `LOCATION_COMMISSIONS_V1` | 当前 16 条固定地点委托的配置化定义 |
 | 委托榜元信息 | `LOCATION_COMMISSION_BOARD_META` | 各地点的面板标题、空态标题和空态说明 |
 | 地点委托运行时 | `state.commissions` | 每条地点委托的当前状态、开放记录与最近一次结算结果 |
 | 可见地点委托 | `getVisibleCommissions(state)` | 依据地点与境界过滤后提供给 UI 的委托卡数据 |
@@ -38,11 +40,11 @@
 
 当前机制覆盖：
 
-- 8 条固定地点委托的地点门槛、境界门槛、接取、单段式结算与失败。
+- 16 条固定地点委托的地点门槛、境界门槛、接取、单段式结算与失败。
 - `currentLocation`、`realmScore`、背包资源对正式委托可见性和 choice 的影响。
 - v7 存档导入时丢弃退休的 `sideQuests` 并重建 `commissions` 字段。
 - 剧情页地点委托卡的最小 UI、按钮文案与空态文案。
-- 游历风声的 `commission -> clue -> resource` 顺序，其中会优先播报当前地点可接委托。
+- 游历风声的 `commission -> clue -> resource` 顺序，其中会优先播报当前地点可接委托，再回退 legacy 旧事线索与资源收益。
 - 正式委托奖励的一次性结算，包括轻量 `lingshi`、已有物品、`routeScores`、`flags` 和少量物品。
 
 当前机制不覆盖：
@@ -83,8 +85,8 @@
 ## 2.2 当前运行时事实（v8）
 
 - 正式任务字段已从 `sideQuests` 迁移为 `commissions`。
-- 当前只实现两组地点委托：`青牛镇` 与 `太南山`。
-- 委托可见性由 `currentLocation + realmScore` 决定，不再由 `storyProgress` 窗口直接控制。
+- 当前已实现四组地点委托：`青牛镇`、`太南山`、`黄枫谷`、`乱星海`。
+- 委托可见性由 `visibleLocations + realmScore` 决定；若定义未显式写 `visibleLocations`，运行时会按地点族回退到 `location` 或 `COMMISSION_BOARD_LOCATION_ALIASES`。
 - 运行时只保留 `hidden / available / active / completed / failed` 五态。
 - 同一时间只允许 1 条 `active` 委托。
 
@@ -128,7 +130,7 @@
 
 ## 7. 兼容策略
 
-- 当前已 bump 到 `SAVE_VERSION = 8`。
+- 当前仍为 `SAVE_VERSION = 8`，本轮不再 bump。
 - `MIN_SUPPORTED_SAVE_VERSION = 7`，v7 存档仍可导入。
 - v7 存档中的 `sideQuests` 视为退休字段，导入时直接丢弃，不逐条迁移结果。
 - 导入后会按 `LOCATION_COMMISSIONS_V1` 重建默认 `commissions`，再按当前 `currentLocation + realmScore` 同步正式委托可见性。
@@ -146,4 +148,4 @@
 - 当前代码与目标态的关键差距：
   - 已有正式委托生命周期，但还没有独立任务日志。
   - 已有卡内即时结算，但还没有多段式追踪。
-  - 目前只接入两组地点委托，黄枫谷与乱星海仍停留在规则书边界阶段。
+  - legacy 旧事线索仍与正式地点委托并存，但只承担 `clue` fallback，不再作为正式委托主口径。

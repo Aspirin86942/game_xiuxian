@@ -33,6 +33,7 @@
 - `boardLabel`
 - `category`
 - `location`
+- `visibleLocations`
 - `minRealmScore`
 - `maxRealmScore`
 - `detail`
@@ -60,6 +61,7 @@
 - `boardLabel`
 - `category`
 - `location`
+- `visibleLocations`
 - `minRealmScore`
 - `maxRealmScore`
 - `detail`
@@ -77,13 +79,14 @@
 
 - v7 存档中的 `sideQuests` 视为已退休字段。
 - 导入 v7 存档时，不尝试把旧 `sideQuests` 逐条迁移成新委托结果。
+- `normalizeCommissionRecords()` 必须按当前 `LOCATION_COMMISSIONS_V1` 自动补齐新增委托记录，旧存档缺少黄枫谷或乱星海条目时也不能漏建。
 - `mergeSave()` 应直接按 `LOCATION_COMMISSIONS_V1` 重建默认 `commissions`，再按当前 `currentLocation + realmScore` 同步可见性。
 
 ## 4. 稳定流程契约
 
 ### 4.1 正常生命周期
 
-1. 先按 `currentLocation + realmScore` 推导哪些委托进入 `available`。
+1. 先按 `visibleLocations -> COMMISSION_BOARD_LOCATION_ALIASES -> location` 的地点族回退，再叠加 `realmScore` 推导哪些委托进入 `available`。
 2. 玩家接取后，委托进入 `active`。
 3. 玩家在卡内选择一个 choice 后，委托进入 `completed` 或 `failed`。
 4. 结算后写入 `selectedChoiceId / lastResult / resolvedAtRealmScore`。
@@ -109,6 +112,7 @@
 
 - 当前最小 UI 继续复用 `#side-story-list`，但玩家语义必须统一为地点委托。
 - 当前剧情页委托区只渲染正式地点委托或地点空态，不再混排 legacy 风闻卡。
+- 黄枫谷与乱星海等地点族切换到别名地点时，仍必须继续显示同组委托榜与空态文案。
 - `side quest / task / available / active` 等内部术语可以保留在代码、规则书与测试变量中，但玩家界面必须统一映射为世界观词面。
 - 玩家可见层默认使用以下映射：
   - 系统总称 -> `地点委托`
@@ -137,12 +141,13 @@
 - 地点委托的数量和地点扩展顺序
 - `boardLabel` 与空态措辞的具体文案
 - 境界开放区间的具体数值
+- 黄枫谷、乱星海等地点族内的别名集合
 
 但以下项目本轮已锁定：
 
 - `commissions` 作为正式委托存档字段
 - `hidden / available / active / completed / failed` 五态
-- `currentLocation + realmScore` 作为可见性基础
+- `visibleLocations / COMMISSION_BOARD_LOCATION_ALIASES / location` 的地点族回退，加上 `realmScore` 作为可见性基础
 - 同一时间只允许 1 条 `active` 委托
 
 ## 8. 最低测试契约
@@ -155,7 +160,8 @@
 ### 8.2 代码接入后必须补齐的断言
 
 - v7 导入后应重建 `commissions`，并移除旧 `sideQuests`。
-- 青牛镇与太南山应按 `currentLocation + realmScore` 正确显示可见委托。
+- 旧存档缺少新增委托记录时，`normalizeCommissionRecords()` 会自动补齐黄枫谷与乱星海的新条目。
+- 青牛镇、太南山、黄枫谷与乱星海应按地点族 + `realmScore` 正确显示可见委托。
 - 任意时刻只能存在 1 条 `active` 委托。
 - 游历风声应优先播报当前地点可接委托。
 - 剧情页委托区词面应统一为 `地点委托 / 可接委托 / 已接手 / 已办妥 / 已失手`。
